@@ -14,7 +14,7 @@ Session 格式 v0 已随 alpha 版本发布，因此结构化 writer 变更不�
 
 `SESSION_FORMAT_VERSION` 是单调递增的当前 writer 整数。每个相邻 `vN -> vN+1` 转换由一个与 profile 无关的纯包负责。`@deepseek-ai/dsh-session-format` 只提供无损快照、唯一且无缺口的规划、仅 header 转换与整产物组合；`@deepseek-ai/dsh-session-format-catalog` 静态导入完整链，不依赖已挂载的 Cordis 插件。历史 codec 和归一化器位于具名迁移边包中，而当前 Session 与持久化代码只接纳最新逻辑类型。
 
-每条迁移边都会冻结严格的源与目标语义，其目标物理 codec 则保持词汇中立，使普通事件增长可以留在同一格式版本内。目录通过已安装的 peer `@deepseek-ai/dsh-session` 及其当前 `KNOWN_SESSION_EVENT_TYPES` 还原最终代，避免冻结的历史迁移边反过来成为当前词汇 owner。
+每条迁移边都会冻结严格的源与目标语义，其目标物理 codec 则保持词汇中立，使普通事件增长可以留在同一格式版本内。当前 writer 仍会追加到无后缀 v0 产物的第一方事件类型必须进入该冻结源清单，包括 `workspace/home`、`git/worktree` 与 `automation/start`；漏掉其中任一类型会拒绝本可无损的恒等迁移。目录通过已安装的 peer `@deepseek-ai/dsh-session` 及其当前 `KNOWN_SESSION_EVENT_TYPES` 还原最终代，避免冻结的历史迁移边反过来成为当前词汇 owner。
 
 JSONL provider 在 `open` 为已存储 Session 返回句柄前完成 ensure-current 工作。它选择最高规范 generation、迁移受支持的历史正文，并从同一物理快照解码当前结果；公开 `SessionPersistence` 与 `SessionHandle` 接口不包含迁移操作。仅 header 的 `stat` 与 `list` 会重新扫描 Session 目录，在内存中转换受支持的历史 header，且绝不发布后继。`create` 独立于 header 可读性检查规范文件名，因此每个现有 generation 都会占用其 Session id。
 

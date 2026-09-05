@@ -1,3 +1,4 @@
+import { isAbsolute } from 'node:path'
 import { SessionFormatError, sessionFormatCount, sessionFormatSafeInteger } from '@deepseek-ai/dsh-session-format'
 import type {
   SessionFormatEvent,
@@ -52,6 +53,11 @@ export function assertReleasedPayloadSemantics(event: SessionFormatEvent, versio
       if (data['usage'] !== undefined) tokenUsageValue(data['usage'], `${label} usage`)
       if (data['interrupted'] !== undefined) literalValue(data['interrupted'], [true], `${label} interrupted`)
       return
+    case 'automation/start':
+      nonEmptyString(data['ruleId'], `${label} ruleId`)
+      nonEmptyString(data['runId'], `${label} runId`)
+      instantValue(data['scheduledAt'], `${label} scheduledAt`)
+      return
     case 'command/done':
       nonEmptyString(data['commandId'], `${label} commandId`)
       literalValue(data['kind'], ['success', 'error'], `${label} kind`)
@@ -93,6 +99,11 @@ export function assertReleasedPayloadSemantics(event: SessionFormatEvent, versio
       return
     case 'feedback/record':
       nonEmptyString(data['text'], `${label} text`)
+      return
+    case 'git/worktree':
+      absolutePath(data['path'], `${label} path`)
+      nonEmptyString(data['branch'], `${label} branch`)
+      if (data['source'] !== undefined) literalValue(data['source'], ['delegation'], `${label} source`)
       return
     case 'goal/change':
       goalChangeValue(data, label)
@@ -288,6 +299,9 @@ export function assertReleasedPayloadSemantics(event: SessionFormatEvent, versio
       nonEmptyString(data['apiVersion'], `${label} apiVersion`)
       deepSeekSearchBodyValue(data['body'], `${label} body`)
       return
+    case 'workspace/home':
+      absolutePath(data['path'], `${label} path`)
+      return
     /* v8 ignore next -- the frozen disposition rejects unknown types before semantic dispatch. */
     default:
       throw new SessionFormatError(`released payload validator is missing event ${JSON.stringify(event.type)}`)
@@ -311,6 +325,11 @@ function stringValue(value: SessionFormatJsonValue | undefined, label: string): 
 
 function nonEmptyString(value: SessionFormatJsonValue | undefined, label: string): asserts value is string {
   if (typeof value !== 'string' || value.length === 0) throw new SessionFormatError(`${label} must be a non-empty string`)
+}
+
+function absolutePath(value: SessionFormatJsonValue | undefined, label: string): asserts value is string {
+  nonEmptyString(value, label)
+  if (!isAbsolute(value)) throw new SessionFormatError(`${label} must be absolute`)
 }
 
 function booleanValue(value: SessionFormatJsonValue | undefined, label: string): asserts value is boolean {

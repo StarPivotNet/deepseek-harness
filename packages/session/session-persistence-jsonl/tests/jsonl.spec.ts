@@ -869,6 +869,30 @@ describe('JsonlSessionPersistence: immutable format generations', () => {
     })
   })
 
+  it('migrates a released-v0 workspace/home overlay instead of refusing it as unknown', async () => {
+    const header = meta('released-v0-workspace-home', '/root/.dsh/no-repo')
+    const sourcePath = historicalLogPath(root, header.cwd, header.id)
+    const source = Buffer.from([
+      JSON.stringify(releasedV0Header(header)),
+      JSON.stringify({ type: 'workspace/home', seq: 0, time: 1, data: { path: '/root/CODE/talkmod' } }),
+      '',
+    ].join('\n'))
+    await mkdir(dirname(sourcePath), { recursive: true })
+    await writeFile(sourcePath, source)
+
+    await expect(readAll(ctx.sessionPersistence, header.id)).resolves.toEqual({
+      meta: { ...header, delegationDepth: 0 },
+      events: [{
+        type: 'workspace/home',
+        seq: SessionSeq(0),
+        time: 1,
+        data: { path: '/root/CODE/talkmod' },
+      }],
+    })
+    expect(await readFile(sourcePath)).toEqual(source)
+    await expect(stat(rawLogPath(root, header.cwd, header.id))).resolves.toMatchObject({})
+  })
+
   it('leaves v0 unchanged when migration policy refuses an unknown event', async () => {
     const header = meta('released-v0-refusal', '/work')
     const sourcePath = historicalLogPath(root, header.cwd, header.id)

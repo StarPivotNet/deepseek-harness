@@ -48,6 +48,7 @@ export const RELEASED_V0_EVENT_DISPOSITIONS: Readonly<Record<string, ReleasedV0P
     ['turn', 'step', 'message'],
     ['usage', 'interrupted'],
   ),
+  'automation/start': disposition(['ruleId', 'runId', 'scheduledAt']),
   'command/done': disposition(['commandId', 'kind'], ['text', 'sourceEventSeq']),
   'command/run': disposition(['commandId', 'name', 'source'], ['args']),
   'compaction/end': disposition(['compactionId', 'turn'], ['sourceCommandId', 'error']),
@@ -58,6 +59,7 @@ export const RELEASED_V0_EVENT_DISPOSITIONS: Readonly<Record<string, ReleasedV0P
     ['sourceCommandId', 'maxTokens', 'usage', 'rawOutput', 'llmStreamCall'],
   ),
   'feedback/record': disposition(['text']),
+  'git/worktree': disposition(['path', 'branch'], ['source']),
   'goal/change': disposition(
     ['kind', 'version', 'operation'],
     ['goal', 'roundsStarted', 'createdAt', 'updatedAt', 'cleared', 'clearedAt'],
@@ -123,6 +125,7 @@ export const RELEASED_V0_EVENT_DISPOSITIONS: Readonly<Record<string, ReleasedV0P
   'turn/start': disposition(['turn']),
   'user/message': disposition(['role', 'id', 'content', 'source']),
   'web/deepseek-search-llm-request': disposition(['endpoint', 'apiVersion', 'body']),
+  'workspace/home': disposition(['path']),
 })
 
 /** Stable sorted released-v0 event inventory. */

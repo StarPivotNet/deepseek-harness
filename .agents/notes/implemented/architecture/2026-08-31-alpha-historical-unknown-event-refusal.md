@@ -16,7 +16,7 @@ The alpha v0-to-v1 edge owns a frozen complete released-v0 event and payload inv
 
 The rule applies only while crossing a historical format edge. Ordinary current-format reading retains the established envelope behavior: an unknown required event refuses, while an unknown event carrying `ignorable: true` remains readable. New v1 external events therefore keep the existing equal-version extension seam, but they do not become implicitly migratable by a future format edge.
 
-Every first-party source event type has an executable disposition and target validator in the edge package. The catalog is build-static and profile-independent, so mounting or omitting the producer plugin cannot change whether an old artifact migrates.
+Every first-party source event type has an executable disposition and target validator in the edge package. The frozen inventory includes first-party log-only events that current writers still append onto suffixless v0 artifacts, including `workspace/home`, `git/worktree`, and `automation/start`. The catalog is build-static and profile-independent, so mounting or omitting the producer plugin cannot change whether an old artifact migrates.
 
 ## Consequences
 

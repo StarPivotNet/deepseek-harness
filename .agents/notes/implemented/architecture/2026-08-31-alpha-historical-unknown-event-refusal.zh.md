@@ -16,7 +16,7 @@ Alpha v0-to-v1 迁移边拥有冻结且完整的已发布 v0 事件与 payload �
 
 该规则只适用于跨越历史格式迁移边。普通当前格式读取保留既有信封行为：未知必需事件被拒绝，带 `ignorable: true` 的未知事件仍可读取。因此新的 v1 外部事件继续使用既有同版本扩展 seam，但不会自动获得未来格式迁移能力。
 
-每个第一方源事件类型都在迁移边包中拥有可执行 disposition 与目标 validator。catalog 在构建时静态确定且与 profile 无关，因此 producer 插件是否挂载不会改变旧产物能否迁移。
+每个第一方源事件类型都在迁移边包中拥有可执行 disposition 与目标 validator。冻结清单包含当前 writer 仍会追加到无后缀 v0 产物的第一方仅日志事件，包括 `workspace/home`、`git/worktree` 与 `automation/start`。catalog 在构建时静态确定且与 profile 无关，因此 producer 插件是否挂载不会改变旧产物能否迁移。
 
 ## 后果
 

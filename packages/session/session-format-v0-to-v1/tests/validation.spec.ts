@@ -48,6 +48,7 @@ const validPayloads: Readonly<Record<string, SessionFormatJsonValue>> = {
     provider: 'mock', model: 'mock', rawOutput: [textBlock], llmStreamCall: true,
   },
   'feedback/record': { text: 'feedback' },
+  'git/worktree': { path: '/worktrees/feature', branch: 'feature', source: 'delegation' },
   'goal/change': {
     kind: 'goal/change', version: 1, operation: 'create',
     goal: { id: 'goal-1', revision: 1, objective: 'ship', phase: 'active', maxGoalRounds: 3 },
@@ -74,6 +75,9 @@ const validPayloads: Readonly<Record<string, SessionFormatJsonValue>> = {
     reason: 'initial',
   },
   'sandbox/mode': { mode: 'workspace-write', source: 'delegation' },
+  'automation/start': {
+    ruleId: 'rule-1', runId: 'run-1', scheduledAt: '2026-08-31T00:00:00.000Z',
+  },
   'schedule/change': {
     version: 1, operation: 'create',
     schedule: { id: 'schedule-1', kind: 'after', prompt: 'remember', afterSeconds: 60, scheduledAt: '2026-08-31T00:00:00.000Z' },
@@ -128,6 +132,7 @@ const validPayloads: Readonly<Record<string, SessionFormatJsonValue>> = {
   'turn/end': { turn: 1, reason: { kind: 'completed' } },
   'turn/start': { turn: 1 },
   'user/message': userMessage,
+  'workspace/home': { path: '/root/CODE/talkmod' },
   'web/deepseek-search-llm-request': {
     endpoint: 'https://example.test/messages', apiVersion: '2023-06-01',
     body: {
@@ -210,11 +215,16 @@ function replaceAtPath(value: SessionFormatJsonValue, path: string, replacement:
 describe('released event and payload inventory', () => {
   it('has an executable valid fixture for every frozen released-v0 event type', () => {
     expect(Object.keys(validPayloads).sort()).toEqual([...RELEASED_V0_EVENT_TYPES].sort())
-    expect(RELEASED_V0_EVENT_TYPES).toHaveLength(51)
+    expect(RELEASED_V0_EVENT_TYPES).toHaveLength(54)
     expect(RELEASED_V0_EVENT_TYPES
       .filter(type => type !== 'assistant/chunk')
       .every(type => KNOWN_SESSION_EVENT_TYPES.has(type))).toBe(true)
     expect(KNOWN_SESSION_EVENT_TYPES.has('assistant/chunk')).toBe(false)
+    expect(RELEASED_V0_EVENT_TYPES).toEqual(expect.arrayContaining([
+      'automation/start',
+      'git/worktree',
+      'workspace/home',
+    ]))
     for (const [type, data] of Object.entries(validPayloads)) {
       expect(() => { assertPayload(type, data) }, type).not.toThrow()
     }
@@ -314,6 +324,27 @@ describe('released event and payload inventory', () => {
     const row = { type: 'plugin/unknown', seq: 0, time: 1, data: {}, ignorable: true }
     expect(() => releasedV0SessionFormatCodec.decodeArtifact(v0Header, [row]))
       .toThrow(/unknown historical event.*refuses.*ignorable/)
+  })
+
+  it('migrates first-party v0 overlay events that current writers still append', () => {
+    const rows = [
+      { type: 'workspace/home', seq: 0, time: 1, data: { path: '/root/CODE/talkmod' } },
+      {
+        type: 'git/worktree', seq: 1, time: 2,
+        data: { path: '/worktrees/feature', branch: 'feature' },
+      },
+      {
+        type: 'automation/start', seq: 2, time: 3,
+        data: { ruleId: 'rule-1', runId: 'run-1', scheduledAt: '2026-08-31T00:00:00.000Z' },
+      },
+    ]
+    const source = releasedV0SessionFormatCodec.decodeArtifact(v0Header, rows)
+    const migrated = sessionFormatV0ToV1.migrate(source)
+    expect(migrated.events.map(event => event.type)).toEqual([
+      'workspace/home', 'git/worktree', 'automation/start',
+    ])
+    expect(migrated.header.version).toBe(1)
+    expect(migrated.events[0]?.data).toEqual({ path: '/root/CODE/talkmod' })
   })
 
   it('keeps capturedFormatVersion v1-only inside session-reference sources', () => {
@@ -483,6 +514,7 @@ describe('released event and payload inventory', () => {
       }],
       ['command/done', { commandId: 'c', kind: 'error', text: 'failed' }],
       ['compaction/end', { compactionId: 'c', sourceCommandId: 'command', turn: 1, error: 'failure' }],
+      ['git/worktree', { path: '/worktrees/feature', branch: 'feature' }],
     ]
     for (const [type, data] of remaining) {
       expect(() => { assertPayload(type, data) }, type).not.toThrow()
@@ -566,6 +598,7 @@ describe('released event and payload inventory', () => {
         },
         reason: 'change', startsSeries: true,
       }],
+      ['git/worktree', { path: '/worktrees/feature', branch: 'feature', source: 'delegation' }],
     ]
     for (const [type, data] of cases) {
       expect(() => { assertPayload(type, data) }, type).not.toThrow()
@@ -575,6 +608,15 @@ describe('released event and payload inventory', () => {
   it('refuses every relationship-specific invalid payload branch', () => {
     const cases: Array<[string, SessionFormatJsonValue]> = [
       ['command/done', { commandId: 'c', kind: 'success', sourceEventSeq: 3 }],
+      ['workspace/home', { path: '' }],
+      ['workspace/home', { path: 'relative/home' }],
+      ['git/worktree', { path: '', branch: 'feature' }],
+      ['git/worktree', { path: 'relative/worktree', branch: 'feature' }],
+      ['git/worktree', { path: '/worktrees/feature', branch: '' }],
+      ['git/worktree', { path: '/worktrees/feature', branch: 'feature', source: 'runtime' }],
+      ['automation/start', { ruleId: '', runId: 'run-1', scheduledAt: '2026-08-31T00:00:00.000Z' }],
+      ['automation/start', { ruleId: 'rule-1', runId: '', scheduledAt: '2026-08-31T00:00:00.000Z' }],
+      ['automation/start', { ruleId: 'rule-1', runId: 'run-1', scheduledAt: 'not-an-instant' }],
       ['session/title-llm-request', {
         titleProvider: 'p', messageSeqs: [], route: { provider: 'p', model: 'm' },
         system: 's', messages: [userMessage], maxTokens: 1,
