@@ -12,7 +12,7 @@ Composer busy-Enter already persists through Host settings. Continuable settleme
 
 ## Decision
 
-Host namespace `subagent-delivery` carries three independent busy-state fields: `settlementBusy`, `reportBusy`, `jobBusy`. Each is `steer` or `queue`, schema default `steer`. The Subagents settings plugin registers the section. Settings → Subagents shows the Behavior group above the definition library. Runtime readers call `ctx.settings.get` at send time; a missing settings service or unregistered section is `steer`.
+Host namespace `subagent-delivery` carries three independent busy-state fields: `settlementBusy`, `reportBusy`, `jobBusy`. Each is `steer` or `queue`, schema default `steer`. The Subagents settings plugin registers the section. Settings → Subagents shows the Behavior group above the definition library. Runtime readers call `ctx.get('settings')?.get(...)` at send time; a missing settings service or unregistered section is `steer`.
 
 Placement, in order:
 
@@ -20,7 +20,9 @@ Placement, in order:
 2. An idle parent always `followup()`s.
 3. A busy parent uses the matching field: `steer` → nearest step, `queue` → later turn.
 
-Deployment `reportDelivery: quiet` and `completionDelivery: quiet` stay. They suppress idle wakeup for deterministic transcripts. They do not drop the message and they do not rewrite busy Steer into Queue.
+Job deployment `completionDelivery: quiet` and exhausted wake budgets leave idle completions pending without waking. Busy Job placement still follows `jobBusy`; neither setting drops the message or rewrites busy Steer into Queue.
+
+Steer admits a notice at the next step after the current model request and tool batch finish; it does not interrupt a running tool. Runtime readers resolve placement for each notice, so a setting changed during child or Job execution applies when that work reports or completes.
 
 The accepted product spec is [docs/specs/subagent-delivery-settings.md](../../../../docs/specs/subagent-delivery-settings.md).
 
@@ -38,8 +40,8 @@ The accepted product spec is [docs/specs/subagent-delivery-settings.md](../../..
 
 ## Consequences
 
-Busy report Steer is louder than the previous always-Queue report. Snapshot overlays that pin `reportDelivery: quiet` remain the way to keep one wake in a transcript.
+Busy report Steer can join the current turn; Queue reserves a later turn. Neither choice cancels the parent's active model request or tools.
 
-Busy Job Steer is almost the same as the previous inject for a running owner. Tests that assumed inject on the default running fake agent now expect `steer`.
+Busy Job delivery does not spend the idle wake budget. Tests cover settings changed during execution and preserve idle quiet delivery and wake-budget exhaustion.
 
 Composer `ui-conversation.busyEnter` is unchanged.

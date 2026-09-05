@@ -25,6 +25,9 @@ import type { SubagentRunEndInfo, SubagentRunInfo } from '../src/index.ts'
 import * as SubagentInvariant from '../src/invariant.ts'
 import { TestSessionQuery } from './test-session-query.ts'
 import { loadStoredSession } from './persistence-helpers.ts'
+import { MemorySettings } from '../../../settings/settings/tests/memory.ts'
+import z from '@deepseek-ai/schemastery'
+import { SUBAGENT_DELIVERY_SETTINGS_NAMESPACE } from '../src/delivery-settings.ts'
 
 type Script = ConstructorParameters<typeof MockAdapter>[0]
 
@@ -1972,7 +1975,7 @@ describe('continuable adjacent-Agent delivery', () => {
     await handle.dispose()
   })
 
-  it('steers an idle direct parent and preserves sender attribution', async () => {
+  it.each(['steer', 'queue'] as const)('wakes an idle direct parent with reportBusy=%s and preserves sender attribution', async (reportBusy) => {
     const releaseChild = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([
       { chunks: textResponse('child answer'), gate: releaseChild.promise },
@@ -1980,6 +1983,9 @@ describe('continuable adjacent-Agent delivery', () => {
       { chunks: textResponse('parent settlement ack') },
     ])
     const { ctx, parent } = await setupWith(adapter)
+    await ctx.plugin(MemorySettings)
+    ctx.settings.register(SUBAGENT_DELIVERY_SETTINGS_NAMESPACE, z.dict(z.string()))
+    await ctx.settings.update(SUBAGENT_DELIVERY_SETTINGS_NAMESPACE, { reportBusy })
     const started = await ctx.subagents.startContinuable(startSpec(parent))
     await vi.waitFor(() => {
       expect(adapter.requests.filter(request => request.sessionId === started.childId)).toHaveLength(1)
@@ -2014,6 +2020,46 @@ describe('continuable adjacent-Agent delivery', () => {
     })
   })
 
+  it.each(['reportBusy', 'settlementBusy'] as const)('reads %s at send time and preserves inbox placement', async (field) => {
+    const releaseParent = Promise.withResolvers<undefined>()
+    const releaseChild = Promise.withResolvers<undefined>()
+    const adapter = new GatedAdapter([
+      { chunks: textResponse('parent works'), gate: releaseParent.promise },
+      { chunks: textResponse('child answer'), gate: releaseChild.promise },
+      { chunks: textResponse('parent reacts') },
+      { chunks: textResponse('parent queued ack') },
+    ])
+    const { ctx, parent } = await setupWith(adapter)
+    await ctx.plugin(MemorySettings)
+    ctx.settings.register(SUBAGENT_DELIVERY_SETTINGS_NAMESPACE, z.dict(z.string()))
+    parent.followup(createUserMessage({ content: message('start working'), source: { kind: 'user' } }))
+    await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) })
+    const started = await ctx.subagents.startContinuable(startSpec(parent))
+    await vi.waitFor(() => { expect(adapter.requests).toHaveLength(2) })
+    await ctx.settings.update(SUBAGENT_DELIVERY_SETTINGS_NAMESPACE, { [field]: 'queue' })
+    if (field === 'reportBusy') {
+      const child = ctx.agents.get(started.childId)!
+      await ctx.subagents.sendMessage(child, parent.id, message('queued report'), { signal: testSignal })
+      expect(parent.inbox.nextStep).toHaveLength(0)
+      expect(parent.inbox.nextTurn).toHaveLength(1)
+      await ctx.settings.update(SUBAGENT_DELIVERY_SETTINGS_NAMESPACE, { reportBusy: 'steer' })
+      await ctx.subagents.sendMessage(child, parent.id, message('steered report'), { signal: testSignal })
+      expect(parent.inbox.nextStep).toHaveLength(1)
+    }
+    releaseChild.resolve(undefined)
+    await waitNoActivation(ctx, started.childId)
+    expect(parent.inbox.nextTurn).toHaveLength(1)
+    expect(parent.inbox.nextStep).toHaveLength(field === 'reportBusy' ? 2 : 0)
+    releaseParent.resolve(undefined)
+    await vi.waitFor(() => { expect(parent.status).toBe('idle') })
+    expect(parent.session.snapshotEvents().filter(event => event.type === 'turn/start')).toHaveLength(2)
+    expect(settlementNotices(parent)).toHaveLength(1)
+    if (field === 'reportBusy') {
+      const texts = userTexts(parent.session.snapshotEvents())
+      expect(texts.indexOf('steered report')).toBeLessThan(texts.indexOf('queued report'))
+    }
+  })
+
   it('rejects child-to-parent delivery when the direct parent is not live', async () => {
     const releaseChild = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([
@@ -2040,7 +2086,7 @@ describe('continuable adjacent-Agent delivery', () => {
     await waitNoActivation(ctx, started.childId)
   })
 
-  it('translates direct-parent Steer rejection into an availability error', async () => {
+  it('translates direct-parent waking rejection into an availability error', async () => {
     const releaseChild = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([
       { chunks: textResponse('child answer'), gate: releaseChild.promise },
@@ -2053,7 +2099,7 @@ describe('continuable adjacent-Agent delivery', () => {
       return found!
     })
     const rejection = new Error('parent closed admission')
-    vi.spyOn(parent, 'steer').mockImplementation(() => { throw rejection })
+    vi.spyOn(parent, 'followup').mockImplementation(() => { throw rejection })
 
     await expect(ctx.subagents.sendMessage(child, parent.id, message('cannot arrive'), {
       signal: testSignal,

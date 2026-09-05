@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-jobs` gives the agent three kind-independent tools for background work — `job_output`, `job_list`, and `job_kill` — so any job the agent started, whether a background command, a PTY send, or a subagent, is read, listed, and cancelled through the same controls. When a job finishes, the owning agent is told in-session: a busy agent gets the notice in its next step, an idle agent is woken with a follow-up turn, bounded per owner. Loading the plugin also attaches the job controller that lets producers start background work. The tools are generic UI cards over `ctx.jobs`; configuration tunes wait timeouts and completion delivery.
+`dsh-tool-jobs` gives the agent three kind-independent tools for background work — `job_output`, `job_list`, and `job_kill` — so any job the agent started, whether a background command, a PTY send, or a subagent, is read, listed, and cancelled through the same controls. When a job finishes, the owning agent is told in-session: a busy agent gets the notice in its next step by default or a later turn when configured; an idle agent is woken with a follow-up turn, bounded per owner. Loading the plugin also attaches the job controller that lets producers start background work. The tools are generic UI cards over `ctx.jobs`; configuration tunes wait timeouts and completion delivery.
 
 ## Table of Contents
 
@@ -37,7 +37,7 @@ The three tools return `{ text, job }`, `PublicJobSnapshot[]`, and `{ outcome: '
 
 ### Completion notices
 
-When a job finishes, the owning agent receives `background job <id> (<kind>: <label>) finished [status: ...]. Read its output with job_output.` as an in-session message. A busy agent has the notice injected into its next step — the turn cannot close while the inbox holds it, so several jobs settling together cost one step rather than one turn each. An idle agent is instead woken with a follow-up turn, because an unclaimed notice is a completion the model never learns about. A kill or a terminal read/wait marks the completion reported and suppresses the redundant notice, as does the teardown cancel that drains an owner or the service.
+When a job finishes, the owning agent receives `background job <id> (<kind>: <label>) finished [status: ...]. Read its output with job_output.` as an in-session message. A busy agent follows the Host `subagent-delivery.jobBusy` setting, read at each completion: `steer` (the default when settings or the section are absent) delivers to its next step; `queue` schedules a later turn. Steering waits for the current tool execution to finish. Busy deliveries do not spend the idle wake budget. An idle agent is instead woken with a follow-up turn, because an unclaimed notice is a completion the model never learns about. A kill or a terminal read/wait marks the completion reported and suppresses the redundant notice, as does the teardown cancel that drains an owner or the service.
 
 Waking is bounded: each owner may be woken `maxConsecutiveWakes` times before further notices degrade to injection, and claiming any user-authored message restores the budget. The bound exists because the chain is self-exciting — a woken turn may start the background job whose completion wakes it again. `completionDelivery: quiet` keeps even idle owners on the injection lane, which deterministic transcripts need.
 
@@ -75,7 +75,7 @@ This section explains the design decisions behind the tools and points at the co
 ### Design philosophy
 
 - **Kind-independent controls.** The same three tools read, list, and cancel jobs of every producer kind — bash, subagent, PTY — because all of them register through the generic `ctx.jobs` runtime.
-- **Delivery is owned here; recipients are the registry's.** The plugin decides how an unreported completion reaches the owner — injected into a busy step, or a woken turn on an idle owner — while the registry routes each settlement to the listeners its owner's scope chain reaches, so a mount under one preset never sees another preset's agents, and an agent reads exactly one notice per completion however many presets are mounted.
+- **Delivery is owned here; recipients are the registry's.** The plugin decides how an unreported completion reaches the owner — steered into a busy step, queued for a later turn, or a woken turn on an idle owner — while the registry routes each settlement to the listeners its owner's scope chain reaches, so a mount under one preset never sees another preset's agents, and an agent reads exactly one notice per completion however many presets are mounted.
 - **Producer-owned output bounds.** When a producer supplies `outputLimitBytes`, the complete model-facing result — output read, terminal kill snapshot, or completion notice — is capped after status and notice metadata are added; producers that omit it keep unbounded behavior.
 
 ### Source map
@@ -91,7 +91,7 @@ This section explains the design decisions behind the tools and points at the co
 
 ### Notice delivery lanes
 
-`onJobDone` skips jobs already reported or unowned. A `wakeup` delivery opens a turn on an idle owner while the budget lasts, tracked per exact `Agent` in a `WeakMap`; claiming a user-authored message (`agent/inbox/claimed`) resets that owner's budget. A busy owner — or any notice past the budget, or `quiet` delivery — is injected into the next-step inbox instead. Teardown settlements arrive already `reported`, so disposal never spends a model request announcing a notice nobody can read.
+`onJobDone` skips jobs already reported or unowned. A `wakeup` delivery opens a turn on an idle owner while the budget lasts, tracked per exact `Agent` in a `WeakMap`; claiming a user-authored message (`agent/inbox/claimed`) resets that owner's budget. Busy owners use `steer()` or `followup()` according to `jobBusy`, regardless of `completionDelivery`. Idle owners past the budget, or under `quiet` delivery, receive non-waking injection into the next-step inbox. Teardown settlements arrive already `reported`, so disposal never spends a model request announcing a notice nobody can read.
 
 </details>
 

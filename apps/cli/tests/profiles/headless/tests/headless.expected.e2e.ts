@@ -1,4 +1,4 @@
-import { readFile, readdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { join } from 'node:path'
@@ -816,4 +816,45 @@ describe('headless stream-json snapshots', () => {
     if (refreshing) await writeFile(streamExpected, normalized)
     await expectHeadlessStream(normalized, streamExpected)
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
+
+  it.each(['steer', 'queue'] as const)('applies persisted %s settlement delivery through the headless profile', async (delivery) => {
+    const configPath = fileURLToPath(new URL('../subagent-delivery-snapshot.patch.yml', import.meta.url))
+    const result = await runLoaderSmoke({
+      label: `persisted ${delivery} settlement delivery`,
+      tempDirPrefix: 'headless-delivery-settings-',
+      binScript,
+      libBinScript: binScript,
+      configPath,
+      binArgs: [configPath, 'Start one continuable background subagent and answer from its completion notice.'],
+      tsconfigPath,
+      env: {
+        DSH_SNAPSHOT_FILE: join(settlementScenarioDir, 'parent.replay.jsonl'),
+        DSH_SNAPSHOT_OVERRIDE: join(settlementScenarioDir, 'parent.override.json'),
+        DSH_SNAPSHOT_CHILD_FILES: join(settlementScenarioDir, 'child.replay.jsonl'),
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
+      },
+      prepare: async (cwd) => {
+        await mkdir(join(cwd, '.dsh'), { recursive: true })
+        await writeFile(join(cwd, '.dsh', 'settings.yaml'), `subagent-delivery:\n  settlementBusy: ${delivery}\n`)
+      },
+    })
+    const records = parseJsonl(result.stdout).flatMap(record => (
+      record.type === 'session_event' ? [record.event as JsonObject] : []
+    ))
+    const notice = records.find((record) => {
+      if (record.type !== 'agent/inbox/spliced') return false
+      const inserted = (record.data as JsonObject).inserted
+      return Array.isArray(inserted) && inserted.some((message: JsonObject) => (
+        (message.source as JsonObject).kind === 'subagent-settled'
+      ))
+    })
+    expect(notice?.data).toMatchObject({ target: delivery === 'steer' ? 'next-step' : 'next-turn' })
+    const admittedIndex = records.findIndex(record => record.type === 'user/message'
+      && ((record.data as JsonObject).source as JsonObject | undefined)?.kind === 'subagent-settled')
+    expect(admittedIndex).toBeGreaterThan(records.findIndex(record => record === notice))
+    const turnAtAdmission = records.slice(0, admittedIndex).findLast(record => record.type === 'turn/start')
+    expect(turnAtAdmission?.data).toMatchObject({ turn: delivery === 'steer' ? 1 : 2 })
+    expect(result.stderr).toBe('')
+  }, LOADER_SMOKE_TEST_TIMEOUT_MS)
+
 })

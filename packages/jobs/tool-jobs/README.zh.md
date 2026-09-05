@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-tool-jobs` 为 agent 提供三个与 kind 无关的后台工作工具——`job_output`、`job_list` 与 `job_kill`——因此 agent 启动的任何任务，无论是后台命令、PTY 发送还是 subagent，都可以通过同一套控制读取、列出和取消。任务完成时，拥有它的 agent 会在会话内收到通知：繁忙的 agent 在下一步收到通知，空闲的 agent 则被一个 follow-up 轮次唤醒，两者均按所有者设限。加载插件还会附加让生产方能够启动后台工作的任务控制器。这些工具是基于 `ctx.jobs` 的通用 UI 卡片；配置用于调节等待超时与完成投递。
+`dsh-tool-jobs` 为 agent 提供三个与 kind 无关的后台工作工具——`job_output`、`job_list` 与 `job_kill`——因此 agent 启动的任何任务，无论是后台命令、PTY 发送还是 subagent，都可以通过同一套控制读取、列出和取消。任务完成时，拥有它的 agent 会在会话内收到通知：繁忙的 agent 默认在下一步收到通知，也可配置为后续轮次；空闲的 agent 则被一个 follow-up 轮次唤醒，唤醒次数按所有者设限。加载插件还会附加让生产方能够启动后台工作的任务控制器。这些工具是基于 `ctx.jobs` 的通用 UI 卡片；配置用于调节等待超时与完成投递。
 
 ## 目录
 
@@ -37,7 +37,7 @@ kind: "package-reference"
 
 ### 完成通知
 
-任务完成时，拥有它的 agent 会收到会话内消息 `background job <id> (<kind>: <label>) finished [status: ...]. Read its output with job_output.`。繁忙的 agent 会在下一步收到注入的通知——inbox 尚有内容时轮次无法结束，因此同时结算的多个任务只花掉一步，而不是各占一轮。空闲的 agent 则被一个 follow-up 轮次唤醒，因为无人领取的通知等于模型永远不会知道的完成。kill 或针对终止任务的 read/wait 会把完成标为已报告并抑制重复通知；排空 owner 或服务的 teardown 取消同样如此。
+任务完成时，拥有它的 agent 会收到会话内消息 `background job <id> (<kind>: <label>) finished [status: ...]. Read its output with job_output.`。繁忙的 agent 遵循每次完成时读取的 Host `subagent-delivery.jobBusy` 设置：`steer`（缺少设置服务或区段时的默认值）投递到下一步；`queue` 安排到后续轮次。插话需要等待当前工具执行结束。繁忙期间的投递不消耗空闲唤醒预算。空闲的 agent 则被一个 follow-up 轮次唤醒，因为无人领取的通知等于模型永远不会知道的完成。kill 或针对终止任务的 read/wait 会把完成标为已报告并抑制重复通知；排空 owner 或服务的 teardown 取消同样如此。
 
 唤醒是有界的：每个所有者最多可被唤醒 `maxConsecutiveWakes` 次，此后的通知降级为注入；领取任何用户撰写的消息都会恢复预算。设界是因为这条链会自激——被唤醒的一轮可能启动某个后台任务，而它的完成又会唤醒同一个所有者。`completionDelivery: quiet` 让空闲所有者也在注入通道上，确定性 transcript 需要的正是这一点。
 
@@ -75,7 +75,7 @@ kind: "package-reference"
 ### 设计理念
 
 - **与 kind 无关的控制。** 同一套三个工具读取、列出和取消每种生产方 kind 的任务——bash、subagent、PTY——因为它们都通过通用的 `ctx.jobs` 运行时注册。
-- **投递归本插件，收件人归注册表。** 插件决定未报告的完成如何到达所有者——注入繁忙的一步，或唤醒空闲所有者的一轮——而注册表把每次结算路由给其所有者 scope 链所能抵达的监听器，因此某个 preset 下的挂载永远看不到另一个 preset 的 agent，无论挂载了多少 preset，一个 agent 每次完成都只读到一条通知。
+- **投递归本插件，收件人归注册表。** 插件决定未报告的完成如何到达所有者——插话到繁忙的一步、排队到后续轮次，或唤醒空闲所有者的一轮——而注册表把每次结算路由给其所有者 scope 链所能抵达的监听器，因此某个 preset 下的挂载永远看不到另一个 preset 的 agent，无论挂载了多少 preset，一个 agent 每次完成都只读到一条通知。
 - **生产方自有的输出上限。** 生产方提供 `outputLimitBytes` 时，完整的模型侧结果——输出读取、终止 kill 快照或完成通知——会在添加状态与通知元数据之后被施加上限；省略该字段的生产方保持无界行为。
 
 ### 源码地图
@@ -91,7 +91,7 @@ kind: "package-reference"
 
 ### 通知投递通道
 
-`onJobDone` 跳过已报告或无所有者的任务。`wakeup` 投递在预算内为空闲所有者开启一轮，按确切 `Agent` 记录在 `WeakMap` 中；领取用户撰写的消息（`agent/inbox/claimed`）会重置该所有者的预算。繁忙的所有者——或超出预算的任何通知，以及 `quiet` 投递——改为注入 next-step inbox。teardown 结算抵达时已标记为 `reported`，因此释放永远不会花一次模型请求来宣布无人能读的通知。
+`onJobDone` 跳过已报告或无所有者的任务。`wakeup` 投递在预算内为空闲所有者开启一轮，按确切 `Agent` 记录在 `WeakMap` 中；领取用户撰写的消息（`agent/inbox/claimed`）会重置该所有者的预算。繁忙的所有者按 `jobBusy` 使用 `steer()` 或 `followup()`，不受 `completionDelivery` 影响。空闲所有者超出预算或使用 `quiet` 投递时，通过不唤醒的注入进入 next-step inbox。teardown 结算抵达时已标记为 `reported`，因此释放永远不会花一次模型请求来宣布无人能读的通知。
 
 </details>
 

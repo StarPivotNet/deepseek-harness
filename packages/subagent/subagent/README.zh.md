@@ -48,7 +48,7 @@ kind: "package-reference"
 
 ### 消息、中断与发现
 
-每个确切在线 Agent 都可以对直接可继续 child 使用 `sendMessage()`；驻留的可继续 child 还可以对自己的直接 parent 使用它。正在工作的目标通过 Steer 在最近 step 接收消息；空闲目标启动轮次，且只有直接 child 可以冷恢复。parent 也可以随时中断正在运行的后代或列举自己的子级。浏览器发出的继续执行 prompt 可以携带图片部分：Host 先通过附件存储完成整批图片的准入与持久化，子级 inbox 才接受这条消息；当子级声明的模型不接受图片输入时拒绝投递。发现覆盖两种形态：服务列举直接子级与完整后代树——模式、活动状态与血缘——直接读取在线会话状态与可选持久化，不加载任何子 agent。
+每个确切在线 Agent 都可以对直接可继续 child 使用 `sendMessage()`；驻留的可继续 child 还可以对自己的直接 parent 使用它。繁忙 child 通过 Steer 在最近 step 接收消息；繁忙 parent 遵循发送时读取的 Host `subagent-delivery.reportBusy`（默认 `steer`，`queue` 则进入后续轮次）。空闲目标启动轮次，且只有直接 child 可以冷恢复。parent 也可以随时中断正在运行的后代或列举自己的子级。浏览器发出的继续执行 prompt 可以携带图片部分：Host 先通过附件存储完成整批图片的准入与持久化，子级 inbox 才接受这条消息；当子级声明的模型不接受图片输入时拒绝投递。发现覆盖两种形态：服务列举直接子级与完整后代树——模式、活动状态与血缘——直接读取在线会话状态与可选持久化，不加载任何子 agent。
 
 ### 失败与恢复
 
@@ -91,7 +91,7 @@ kind: "package-reference"
 
 ### 可继续流程
 
-管理器预留子 agent 身份、解析持久化描述符、创建（或冷恢复）子 agent、把它安装进 Activation 并提交提示词。`ContinuableCreateSpec` 可以携带已解析的 `cwd`；`ContinuableStartSpec.cwd` 覆盖该值，`childSessionMeta()` 把胜出值写入子 header，因此冷恢复使用已记录目录而无需再次调用提供方。后续消息经子 agent 自己的 inbox 成为 FIFO 轮次；没有 Activation 时从持久化会话冷恢复。当驻留 Activation 结算时，管理器会在父级自身的轮次流中告知该子级的直接父级。 管理器预留 child 身份、解析持久化描述符、创建（或冷恢复）child、把它安装进 Activation 并提交提示词。模型编写的消息通过固定 Steer 调度跨一条 parent/child 边；host 协议保留内部 Queue 适配器以创建独立轮次。直接 child 不存在 Activation 时会从持久化会话冷恢复。当驻留 Activation 结算时，管理器会在 parent 自身的轮次流中告知该 child 的直接 parent。
+管理器预留子 agent 身份、解析持久化描述符、创建（或冷恢复）子 agent、把它安装进 Activation 并提交提示词。`ContinuableCreateSpec` 可以携带已解析的 `cwd`；`ContinuableStartSpec.cwd` 覆盖该值，`childSessionMeta()` 把胜出值写入子 header，因此冷恢复使用已记录目录而无需再次调用提供方。后续消息经子 agent 自己的 inbox 成为 FIFO 轮次；没有 Activation 时从持久化会话冷恢复。当驻留 Activation 结算时，管理器会在父级自身的轮次流中告知该子级的直接父级。 管理器预留 child 身份、解析持久化描述符、创建（或冷恢复）child、把它安装进 Activation 并提交提示词。模型编写的消息跨一条 parent/child 边；繁忙 parent 的投递遵循 Host 报告设置，而 child 的投递使用 Steer；host 协议保留内部 Queue 适配器以创建独立轮次。直接 child 不存在 Activation 时会从持久化会话冷恢复。当驻留 Activation 结算时，管理器会在 parent 自身的轮次流中告知该 child 的直接 parent。
 
 ### 所有权与不变式
 

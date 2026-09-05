@@ -13,7 +13,7 @@
  *
  * Public operations express caller intent: `start` returns one published owned
  * one-shot run, `startContinuable` establishes a durable continuable child, and
- * `sendMessage` steers between adjacent Agents without exposing whether a child
+ * `sendMessage` delivers between adjacent Agents without exposing whether a child
  * is resident. Continuable children never become a {@link SubagentRun}: the
  * continuation manager holds their `AgentHandle` directly and orders every turn
  * through the child's own inbox, so providers contribute only the detached
@@ -231,8 +231,9 @@ export class SubagentRuntime extends TypertRemoteService {
   }
 
   /**
-   * Steer one model-authored message to the sender's direct parent or direct
-   * continuable child. A running target admits it at the nearest step boundary;
+   * Send one model-authored message to the sender's direct parent or direct
+   * continuable child. A busy parent follows Host `subagent-delivery.reportBusy`;
+   * a busy child admits it at the nearest step boundary;
    * an idle target starts a turn, and an absent direct child cold-resumes from
    * persistence. The service derives durable sender attribution from the exact
    * live sender. Caller cancellation stops only pre-acceptance work.

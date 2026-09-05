@@ -49,6 +49,7 @@ import {
 } from './child-agent.ts'
 import type { DelegatedPolicyOverrides } from './child-agent.ts'
 import { assertSubagentMaxDepth } from './depth.ts'
+import { readBusyDelivery } from './delivery-settings.ts'
 import type { ContinuableCreateRequest, ContinuableCreateSpec, SubagentResult, SubagentStartRequest } from './types.ts'
 import type { ActivationObserver, ActivationTerminal } from './lifecycle.ts'
 import { SubagentError } from './error.ts'
@@ -839,7 +840,11 @@ export class SubagentContinuationManager {
     message: ReturnType<typeof createUserMessage>,
   ): void {
     try {
-      parent.steer(message)
+      if (parent.status === 'idle' || readBusyDelivery(this.ctx, 'reportBusy') === 'queue') {
+        parent.followup(message)
+      } else {
+        parent.steer(message)
+      }
     } catch (error: unknown) {
       throw new SubagentError(
         'direct parent is not live; the message was not delivered',
@@ -1670,15 +1675,14 @@ export class SubagentContinuationManager {
         parent.inject(message)
         return
       }
-      // An idle parent has nothing else to look at, so it gets one ordinary
-      // turn. A busy parent is steered instead of woken: `Inbox.claim()` takes
-      // the whole next-step batch at one boundary, so several children settling
-      // together cost one step rather than one turn each. Steering rather than
-      // injecting closes the window where a driver retires between this status
-      // read and the send, which would strand the notice unclaimed.
+      // Read placement at delivery so changes apply to already-running children.
+      // Both methods wake if the driver retires before accepting the message.
       this.sendWaking(parent, message, () => {
-        if (parent.status === 'idle') parent.followup(message)
-        else parent.steer(message)
+        if (parent.status === 'idle' || readBusyDelivery(this.ctx, 'settlementBusy') === 'queue') {
+          parent.followup(message)
+        } else {
+          parent.steer(message)
+        }
       })
     } catch (error: unknown) {
       this.ctx.logger.warn(

@@ -626,26 +626,54 @@ describe('completion notice delivery', () => {
     expect(inject).not.toHaveBeenCalled()
   })
 
-  it('does not spend the idle wake budget on a busy owner', async () => {
+  it('reads jobBusy when each job settles, including after settings change', async () => {
+    const { ctx } = await setup()
+    let section: { jobBusy: 'queue' | 'steer' } | undefined
+    const get = vi.fn(() => section)
+    ctx.provide('settings', { get })
+    const inject = vi.fn()
+    const followup = vi.fn()
+    const steer = vi.fn()
+    const owner = fakeAgent(ctx, 'sess-1', { inject, followup, steer })
+    const p = producer({ owner })
+    ctx.jobs.start(p.spec)
+    section = { jobBusy: 'queue' }
+    p.settle({ status: 'completed' })
+    await tick()
+    expect(followup).toHaveBeenCalledTimes(1)
+    section = { jobBusy: 'steer' }
+    await settleTasks(ctx, owner, 1)
+    section = undefined
+    await settleTasks(ctx, owner, 1)
+    expect(steer).toHaveBeenCalledTimes(2)
+    expect(followup).toHaveBeenCalledTimes(1)
+    expect(inject).not.toHaveBeenCalled()
+    expect(get).toHaveBeenCalledTimes(3)
+    expect(get).toHaveBeenCalledWith('subagent-delivery')
+  })
+
+  it.each(['steer', 'queue'] as const)('does not spend the idle wake budget on a busy owner using %s', async (jobBusy) => {
     const { ctx } = await setup({ maxConsecutiveWakes: 1 })
+    ctx.provide('settings', { get: () => ({ jobBusy }) })
     const inject = vi.fn()
     const followup = vi.fn()
     const steer = vi.fn()
     const owner = fakeAgent(ctx, 'sess-1', { inject, followup, steer })
 
     await settleTasks(ctx, owner, 2)
-    expect(steer).toHaveBeenCalledTimes(2)
-    expect(followup).not.toHaveBeenCalled()
+    expect(steer).toHaveBeenCalledTimes(jobBusy === 'steer' ? 2 : 0)
+    expect(followup).toHaveBeenCalledTimes(jobBusy === 'queue' ? 2 : 0)
     expect(inject).not.toHaveBeenCalled()
 
     ;(owner as { status: 'idle' | 'running' }).status = 'idle'
     await settleTasks(ctx, owner, 1)
-    expect(followup).toHaveBeenCalledTimes(1)
+    expect(followup).toHaveBeenCalledTimes(jobBusy === 'queue' ? 3 : 1)
     expect(inject).not.toHaveBeenCalled()
   })
 
   it('never wakes an idle owner under quiet delivery', async () => {
     const { ctx } = await setup({ completionDelivery: 'quiet' })
+    ctx.provide('settings', { get: () => ({ jobBusy: 'queue' }) })
     const inject = vi.fn()
     const followup = vi.fn()
     const steer = vi.fn()
@@ -660,8 +688,9 @@ describe('completion notice delivery', () => {
     expect(steer).not.toHaveBeenCalled()
   })
 
-  it('still steers a busy owner under quiet delivery', async () => {
+  it.each(['steer', 'queue'] as const)('still uses %s for a busy owner under quiet delivery', async (jobBusy) => {
     const { ctx } = await setup({ completionDelivery: 'quiet' })
+    ctx.provide('settings', { get: () => ({ jobBusy }) })
     const inject = vi.fn()
     const followup = vi.fn()
     const steer = vi.fn()
@@ -671,9 +700,9 @@ describe('completion notice delivery', () => {
 
     p.settle({ status: 'completed' })
     await tick()
-    expect(steer).toHaveBeenCalledTimes(1)
+    expect(steer).toHaveBeenCalledTimes(jobBusy === 'steer' ? 1 : 0)
     expect(inject).not.toHaveBeenCalled()
-    expect(followup).not.toHaveBeenCalled()
+    expect(followup).toHaveBeenCalledTimes(jobBusy === 'queue' ? 1 : 0)
   })
 
   it('degrades to injection once the consecutive wake budget is spent', async () => {

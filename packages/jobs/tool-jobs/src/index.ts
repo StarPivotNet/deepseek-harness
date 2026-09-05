@@ -2,8 +2,8 @@
  * Model-facing `job_output`, `job_list`, and `job_kill` tools over
  * `ctx.jobs`. Loading the plugin attaches the controller required by
  * producers. It also delivers unreported completions to the owning agent:
- * injected into a busy owner's next step, or opening a turn on an idle one
- * under the default `wakeup` delivery, bounded per owner.
+ * steered or queued according to Host settings while busy, or opening a turn
+ * on an idle one under the default `wakeup` delivery, bounded per owner.
  * @module @deepseek-ai/dsh-tool-jobs
  */
 
@@ -16,14 +16,17 @@ import type { GenericCallView, ToolDefinition, ToolExecution } from '@deepseek-a
 import { JobId } from '@deepseek-ai/dsh-jobs'
 import type { JobSnapshot } from '@deepseek-ai/dsh-jobs'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 
 export const name = 'tool-jobs'
 export const inject = ['tools', 'jobs', 'systemPrompt']
 
+const deliverySettingsNamespace = settingsNamespace('subagent-delivery')
+
 /**
  * How an unreported completion reaches an owner that is already idle: `wakeup`
  * opens a turn for it, `quiet` leaves it pending until something else wakes the
- * owner. A busy owner is injected either way.
+ * owner. Busy owners follow the Host `subagent-delivery.jobBusy` setting.
  */
 export type CompletionDelivery = 'quiet' | 'wakeup'
 
@@ -266,11 +269,9 @@ export function apply(ctx: Context, config: Config): void {
   })
 
   // Use the exact lifecycle owner; reusable ids could resolve to a replacement.
-  // A busy owner is injected: the notice waits in its next-step inbox, which
-  // the turn cannot close over, so jobs settling together cost one step. An
-  // idle owner is woken instead, because an unclaimed notice is a completion
-  // the model never learns about. Either way, disposal before the claim
-  // discards it with the owner, and teardown settlements arrive `reported`.
+  // Busy placement follows send-time settings; idle wakes spend a bounded
+  // budget. Disposal before the claim discards the notice with the owner,
+  // and teardown settlements arrive `reported`.
   //
   // The registry routes each settlement to the listeners its owner's scope
   // chain reaches, so a mount under one preset never sees another preset's
@@ -289,8 +290,16 @@ export function apply(ctx: Context, config: Config): void {
         summary: completionSummary(snapshot),
       },
     })
+    if (owner.status === 'running') {
+      const section = ctx.get('settings')?.get(deliverySettingsNamespace) as
+        | { jobBusy?: unknown }
+        | undefined
+      if (section?.jobBusy === 'queue') owner.followup(message)
+      else owner.steer(message)
+      return
+    }
     const spent = spentWakes.get(owner) ?? 0
-    if (delivery === 'wakeup' && owner.status === 'idle' && spent < wakeBudget) {
+    if (delivery === 'wakeup' && spent < wakeBudget) {
       spentWakes.set(owner, spent + 1)
       owner.followup(message)
       return
