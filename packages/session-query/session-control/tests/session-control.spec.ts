@@ -133,6 +133,77 @@ describe('SessionControl', () => {
     await ctx.fiber.dispose()
   })
 
+  it('stops reading older sessions once a query reaches its result cap', async () => {
+    const ctx = await harness()
+    try {
+      createNamed(ctx, 'newest', 'Matching title', { createdAt: 2 })
+      createNamed(ctx, 'oldest', 'Matching title', { createdAt: 1 })
+      const readTitles = ctx.sessionQuery.readTitleSnapshots.bind(ctx.sessionQuery)
+      const reads = vi.spyOn(ctx.sessionQuery, 'readTitleSnapshots').mockImplementation((ids, signal) => {
+        if (ids.includes(SessionId('oldest'))) throw new Error('unnecessary older log read')
+        return readTitles(ids, signal)
+      })
+
+      await expect(ctx.sessionControl.search({ query: 'MATCHING', limit: 1 })).resolves.toEqual([
+        expect.objectContaining({ sessionId: SessionId('newest'), title: 'Matching title' }),
+      ])
+      expect(reads).toHaveBeenCalledTimes(1)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('continues title matching across batches after archive filtering in newest-first order', async () => {
+    const ctx = await harness()
+    try {
+      createNamed(ctx, 'archived', 'Needle archived', { createdAt: 6 })
+      createNamed(ctx, 'title-match', 'Needle title', { createdAt: 5 })
+      createNamed(ctx, 'unmatched', 'Other title', { createdAt: 4 })
+      createNamed(ctx, 'cwd-match', 'Folder title', { createdAt: 3, cwd: '/NEEDLE' })
+      createNamed(ctx, 'needle-older', 'Older title', { createdAt: 2 })
+      ctx.provide('workspaceRegistry', { archivedSessionIds: [SessionId('archived')] })
+      const reads = vi.spyOn(ctx.sessionQuery, 'readTitleSnapshots')
+
+      await expect(ctx.sessionControl.search({ query: 'needle', limit: 2, archive: 'exclude' })).resolves.toEqual([
+        expect.objectContaining({ sessionId: SessionId('title-match'), title: 'Needle title' }),
+        expect.objectContaining({ sessionId: SessionId('cwd-match'), title: 'Folder title' }),
+      ])
+      expect(reads.mock.calls.map(([ids]) => ids)).toEqual([
+        [SessionId('title-match'), SessionId('unmatched')],
+        [SessionId('cwd-match')],
+      ])
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('cancels a later title batch without reading remaining sessions', async () => {
+    const ctx = await harness()
+    try {
+      createNamed(ctx, 'newest', 'Other title', { createdAt: 3 })
+      createNamed(ctx, 'middle', 'Matching title', { createdAt: 2 })
+      createNamed(ctx, 'oldest', 'Matching title', { createdAt: 1 })
+      const controller = new AbortController()
+      const readTitles = ctx.sessionQuery.readTitleSnapshots.bind(ctx.sessionQuery)
+      const reads = vi.spyOn(ctx.sessionQuery, 'readTitleSnapshots').mockImplementation((ids, signal) => {
+        if (ids.includes(SessionId('middle'))) {
+          controller.abort('stop')
+          return Promise.resolve([])
+        }
+        return readTitles(ids, signal)
+      })
+
+      await expect(ctx.sessionControl.search({ query: 'matching', limit: 1 }, controller.signal))
+        .rejects.toEqual(expectCode('SESSION_CONTROL_CANCELLED'))
+      expect(reads.mock.calls.map(([ids, signal]) => ({ ids, signal }))).toEqual([
+        { ids: [SessionId('newest')], signal: controller.signal },
+        { ids: [SessionId('middle')], signal: controller.signal },
+      ])
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('falls back to the session id when the title observation fails', async () => {
     const ctx = await harness()
     const session = ctx.sessions.create(SessionId('untitled'))

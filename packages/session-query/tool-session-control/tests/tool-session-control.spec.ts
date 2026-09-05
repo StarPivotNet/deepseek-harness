@@ -16,6 +16,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as ToolSessionControl from '@deepseek-ai/dsh-tool-session-control'
 import SessionTitle from '@deepseek-ai/dsh-session-title'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import WorkspaceRegistry from '@deepseek-ai/dsh-workspace'
 import { MemoryStorageBackend } from '../../../storage/storage-domain/tests/helpers/memory-backend.ts'
 
@@ -38,6 +39,7 @@ class TestSessionQueryEngine extends SessionQueryEngine {
 
 async function directoryHarness(): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SessionStore)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(TestSessionQueryEngine)

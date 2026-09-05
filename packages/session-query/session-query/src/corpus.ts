@@ -120,13 +120,13 @@ export class SessionCorpus {
   }
 
   /**
-   * Project unique logical sources immediately from one persistence listing.
+   * Project unique logical sources using per-session persistence observations.
    *
    * The synchronous projector runs before a persisted worker claims its next id.
    * Full logs are borrowed only for that call and never retained by the batch.
    * @param sessionIds - sessions to resolve in first-occurrence order.
    * @param project - synchronous fold that owns/clones every retained value.
-   * @param signal - cancellation shared by listing and every persisted inspection.
+   * @param signal - cancellation shared by metadata and every persisted inspection.
    * @returns one fulfilled or rejected projected result per unique requested id.
    */
   async projectMany<Value>(
@@ -156,29 +156,17 @@ export class SessionCorpus {
       return orderedResults(ids, resolved)
     }
 
-    let persisted: SessionHeader[]
-    try {
-      persisted = await listPersisted(persistence, signal)
-      signal?.throwIfAborted()
-    } catch (error: unknown) {
-      if (signal?.aborted) signal.throwIfAborted()
-      for (const sessionId of unresolved) {
-        resolved.set(sessionId, { sessionId, status: 'rejected', reason: error })
-      }
-      return orderedResults(ids, resolved)
-    }
-    const persistedById = new Map(persisted.map(header => [header.id, header]))
     const resolvePersisted = async (sessionId: SessionId): Promise<void> => {
-      const listed = persistedById.get(sessionId)
-      if (listed === undefined) {
-        const attached = this._ctx.sessions.get(sessionId)
-        resolved.set(sessionId, attached === undefined
-          ? { sessionId, status: 'rejected', reason: notFound(sessionId) }
-          : projectSource(sessionId, sourceLive(attached), project, signal))
-        return
-      }
       try {
         signal?.throwIfAborted()
+        const observed = await statPersisted(persistence, sessionId, signal)
+        signal?.throwIfAborted()
+        const live = this._ctx.sessions.get(sessionId)
+        if (live !== undefined) {
+          resolved.set(sessionId, projectSource(sessionId, sourceLive(live), project, signal))
+          return
+        }
+        if (observed === undefined) throw notFound(sessionId)
         const loaded = await inspectPersisted(persistence, sessionId, signal)
         signal?.throwIfAborted()
         const attached = this._ctx.sessions.get(sessionId)
@@ -186,7 +174,7 @@ export class SessionCorpus {
           resolved.set(sessionId, projectSource(sessionId, sourceLive(attached), project, signal))
           return
         }
-        assertSessionHeadersCompatible(loaded.header, listed)
+        assertSessionHeadersCompatible(loaded.header, observed)
         resolved.set(sessionId, projectSource(sessionId, {
           header: loaded.header,
           events: loaded.events,
@@ -268,6 +256,32 @@ async function listPersisted(
       { cause: error },
     )
   }
+}
+
+async function statPersisted(
+  persistence: SessionPersistence,
+  sessionId: SessionId,
+  signal?: AbortSignal,
+): Promise<SessionHeader | undefined> {
+  let header: SessionHeader | undefined
+  try {
+    const snapshot = await persistence.stat(sessionId, signal === undefined ? undefined : { signal })
+    header = snapshot?.header
+  } catch (error: unknown) {
+    if (signal?.aborted) signal.throwIfAborted()
+    throw new SessionQueryError(
+      `failed to observe stored session "${sessionId}": ${errorMessage(error)}`,
+      'SESSION_QUERY_PERSISTENCE_FAILED',
+      { cause: error },
+    )
+  }
+  if (header !== undefined && header.id !== sessionId) {
+    throw new SessionQueryError(
+      `session persistence returned "${header.id}" for "${sessionId}"`,
+      'SESSION_QUERY_SOURCE_CONFLICT',
+    )
+  }
+  return header
 }
 
 async function inspectPersisted(

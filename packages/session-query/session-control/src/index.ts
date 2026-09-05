@@ -80,24 +80,29 @@ export class SessionControl extends Service {
     const archivedIds = this.archivedIds()
     const filtered = records.filter(record => matchesArchive(archivedIds.has(record.header.id), archive))
     const needle = request.query?.toLocaleLowerCase() ?? ''
-    const inspected = needle === '' ? filtered.slice(0, limit) : filtered
-    const observations = await settleWithCancellation(
-      this.ctx.sessionQuery.readTitleSnapshots(inspected.map(record => record.header.id), signal),
-      signal,
-    )
-    return inspected.map((record, index) => {
-      const observation = observations[index] as SessionTitleObservationResult
-      const title = observation.status === 'fulfilled'
-        ? observation.value.title?.title ?? record.header.id
-        : record.header.id
-      return { record, title }
-    }).filter(({ record, title }) => {
-      if (needle === '') return true
-      return record.header.id.toLocaleLowerCase().includes(needle)
-        || record.header.cwd?.toLocaleLowerCase().includes(needle) === true
-        || title.toLocaleLowerCase().includes(needle)
-    }).slice(0, limit).map(({ record, title }) =>
-      this.toEntry(record, title, archivedIds.has(record.header.id)))
+    const matches: SessionControlEntry[] = []
+    for (let offset = 0; offset < filtered.length && matches.length < limit;) {
+      assertNotCancelled(signal)
+      const inspected = filtered.slice(offset, offset + limit - matches.length)
+      const observations = await settleWithCancellation(
+        this.ctx.sessionQuery.readTitleSnapshots(inspected.map(record => record.header.id), signal),
+        signal,
+      )
+      for (const [index, record] of inspected.entries()) {
+        const observation = observations[index] as SessionTitleObservationResult
+        const title = observation.status === 'fulfilled'
+          ? observation.value.title?.title ?? record.header.id
+          : record.header.id
+        if (needle === ''
+          || record.header.id.toLocaleLowerCase().includes(needle)
+          || record.header.cwd?.toLocaleLowerCase().includes(needle) === true
+          || title.toLocaleLowerCase().includes(needle)) {
+          matches.push(this.toEntry(record, title, archivedIds.has(record.header.id)))
+        }
+      }
+      offset += inspected.length
+    }
+    return matches
   }
 
   /**
