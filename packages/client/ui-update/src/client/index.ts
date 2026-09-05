@@ -14,6 +14,11 @@ import {
   type ProductCheckResult,
   type ProductUpdateSettings,
 } from '../update-settings.ts'
+import {
+  desktopCanInstall,
+  readDesktopInstallBridge,
+  readDesktopUpdateProgress,
+} from './desktop-install.ts'
 import { UpdateRow, type ProductUpdateUiStatus, type UpdateRowInjected } from './UpdateRow.tsx'
 import { UpdateToast, type UpdateToastInjected } from './UpdateToast.tsx'
 import { en, zh, type ProductUpdateLocaleKey } from './locales.ts'
@@ -36,7 +41,7 @@ export const inject = ['slots', 'locale', 'settingsScope', 'connection']
 /**
  * Register dictionaries, the General Settings row, and the overlay toast.
  * The row hydrates from the Host settings cache; Check now is the only
- * client-initiated poll.
+ * client-initiated poll. Packaged desktop Install goes through `window.dshDesktop`.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
@@ -45,6 +50,7 @@ export function apply(ctx: ClientContext): void {
     checking: false,
     error: false,
     result: undefined,
+    install: { phase: 'idle', received: 0, total: 0 },
   })
   const scope = ctx.settingsScope.bind<ProductUpdateSettings>({
     namespace: PRODUCT_UPDATE_SETTINGS_NAMESPACE,
@@ -106,16 +112,91 @@ export function apply(ctx: ClientContext): void {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  const canInstall = (): boolean => desktopCanInstall()
+
+  const installNow = (): void => {
+    if (!desktopCanInstall()) return
+    const snapshot = status.getSnapshot()
+    const phase = snapshot.install?.phase
+    if (phase === 'downloading' || phase === 'verifying' || phase === 'applying' || phase === 'ready') return
+    const latest = snapshot.result?.latest
+    const artifact = latest?.artifact
+    const installUpdate = readDesktopInstallBridge()?.installUpdate
+    if (latest === undefined || artifact === undefined || installUpdate === undefined) return
+    status.update((draft) => {
+      draft.install = { phase: 'downloading', received: 0, total: artifact.size }
+    })
+    void installUpdate({
+      tag: latest.tag,
+      version: latest.version,
+      artifact,
+    }).then((payload) => {
+      if (payload.ok) {
+        status.update((draft) => {
+          draft.install = { phase: 'ready', received: artifact.size, total: artifact.size }
+        })
+        return
+      }
+      status.update((draft) => {
+        draft.install = { phase: 'error', received: 0, total: 0, error: payload.error }
+      })
+    }, () => {
+      status.update((draft) => {
+        draft.install = { phase: 'error', received: 0, total: 0 }
+      })
+    })
+  }
+
+  const cancelInstall = (): void => {
+    readDesktopInstallBridge()?.cancelUpdate?.()
+  }
+
+  const relaunchToUpdate = (): void => {
+    readDesktopInstallBridge()?.relaunchToUpdate?.()
+  }
+
+  ctx.effect(() => {
+    const unsub = readDesktopInstallBridge()?.onUpdateProgress?.((event) => {
+      const progress = readDesktopUpdateProgress(event)
+      if (progress === undefined) return
+      status.update((draft) => {
+        if (progress.phase === 'downloading') {
+          draft.install = { phase: 'downloading', received: progress.received, total: progress.total }
+          return
+        }
+        if (progress.phase === 'error') {
+          draft.install = { phase: 'error', received: 0, total: 0, error: progress.message }
+          return
+        }
+        if (progress.phase === 'ready') {
+          const size = draft.result?.latest?.artifact?.size ?? 0
+          draft.install = { phase: 'ready', received: size, total: size }
+          return
+        }
+        draft.install = { phase: progress.phase, received: draft.install?.received ?? 0, total: draft.install?.total ?? 0 }
+      })
+    })
+    return unsub ?? (() => {})
+  }, 'product-update: desktop-progress')
+
   const rowInjected = (): UpdateRowInjected => ({
     hooks: { status },
     checkNow,
     dismiss,
     openRelease,
+    canInstall,
+    installNow,
+    cancelInstall,
+    relaunchToUpdate,
   })
   const toastInjected = (): UpdateToastInjected => ({
     hooks: { status },
     dismiss,
     openRelease,
+    canInstall,
+    installNow,
+    cancelInstall,
+    relaunchToUpdate,
   })
 
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({

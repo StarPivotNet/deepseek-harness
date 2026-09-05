@@ -32,8 +32,9 @@ macOS 上窗口使用 `titleBarStyle: hiddenInset`：原生红绿灯按钮位于
 pnpm run desktop:pack -- --platform darwin
 ```
 
-`Release (desktop)`（`.github/workflows/release-desktop.yml`）打包这三份安装包，并把它们发布为该标签的 GitHub Release。说明会列出距上一个 `desktop-v*` 标签的提交。desktop 包保持 `private`，不是 npm family 成员。序列说明见 [desktop GitHub Release Agent Note](../../.agents/notes/implemented/process/2026-08-17-desktop-github-release.md)。
+`Release (desktop)`（`.github/workflows/release-desktop.yml`）打包这三份安装包，并把它们发布为该标签的 GitHub Release。说明会列出距上一个 `desktop-v*` 标签的提交。desktop 包保持 `private`，不是 npm family 成员。序列说明见 [desktop GitHub Release Agent Note](../../.agents/notes/implemented/process/2026-08-17-desktop-github-release.zh.md)。打包后的窗口可以从该 Release **安装** 更新的 `desktop-v*` 归档（用 `SHA256SUMS` 校验 SHA-256）并 **重启** 以替换正在运行的应用；checkout 启动不会这样做。该路径见 [应用内更新 Agent Note](../../.agents/notes/implemented/feature/2026-09-16-desktop-in-app-update.zh.md)。
 
 ## Known Limitations and Deferred Work
 
-- 没有自动更新、代码签名、托盘或多窗口。checkout 启动方式仍是 `pnpm desktop` / `dsh desktop`。
+- 应用内安装只在打包构建（`app.isPackaged`）中运行。checkout 启动方式仍是 `pnpm desktop` / `dsh desktop`。
+- 没有代码签名、托盘或多窗口。归档保持未签名。

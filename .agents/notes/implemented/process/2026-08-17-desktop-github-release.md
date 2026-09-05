@@ -56,7 +56,7 @@ What this costs:
 - **Unsigned artifacts.** macOS Gatekeeper and Windows SmartScreen warn on first launch until signing is added.
 - **Host size.** Each installer embeds a `pnpm deploy` of `@deepseek-ai/dsh` plus Node, so the download is much larger than the Electron shell.
 - **Peer installation during deploy.** `@deepseek-ai/dsh` is not a closed runtime manifest; pack enables `auto-install-peers` so the staged Host can boot `dsh web`.
-- **No auto-update.** Users download a newer GitHub Release themselves.
+- **Unsigned, no electron-updater.** Packaged desktop can still Install a matching archive from this GitHub Release ([in-app update](../feature/2026-09-16-desktop-in-app-update.md)). Signing remains deferred.
 
 ## Testing
 

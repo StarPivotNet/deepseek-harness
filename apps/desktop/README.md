@@ -32,8 +32,9 @@ From the repository root, after `pnpm run build`:
 pnpm run desktop:pack -- --platform darwin
 ```
 
-`Release (desktop)` (`.github/workflows/release-desktop.yml`) packs those three installers and publishes them as that tag's GitHub Release. The notes list commits since the previous `desktop-v*` tag. The desktop package stays `private`; it is not an npm family member. The [desktop GitHub Release Agent Note](../../.agents/notes/implemented/process/2026-08-17-desktop-github-release.md) owns the sequence.
+`Release (desktop)` (`.github/workflows/release-desktop.yml`) packs those three installers and publishes them as that tag's GitHub Release. The notes list commits since the previous `desktop-v*` tag. The desktop package stays `private`; it is not an npm family member. The [desktop GitHub Release Agent Note](../../.agents/notes/implemented/process/2026-08-17-desktop-github-release.md) owns the sequence. A packaged window can **Install** a newer `desktop-v*` archive from that Release (SHA-256 verified against `SHA256SUMS`) and **Restart** to replace the running app; checkout launches do not. The [in-app update Agent Note](../../.agents/notes/implemented/feature/2026-09-16-desktop-in-app-update.md) owns that path.
 
 ## Known Limitations and Deferred Work
 
-- No auto-update, code signing, tray, or multi-window support. Checkout launch remains `pnpm desktop` / `dsh desktop`.
+- In-app install runs only in a packaged build (`app.isPackaged`). Checkout launch remains `pnpm desktop` / `dsh desktop`.
+- No code signing, tray, or multi-window support. Archives stay unsigned.

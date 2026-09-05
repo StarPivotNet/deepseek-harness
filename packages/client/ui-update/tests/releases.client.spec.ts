@@ -7,6 +7,7 @@ function release(partial: Partial<GithubRelease> & Pick<GithubRelease, 'tag_name
     draft: false,
     prerelease: false,
     body: 'notes',
+    assets: [],
     ...partial,
   }
 }
@@ -23,6 +24,24 @@ describe('parseGithubReleases', () => {
     expect(parseGithubReleases([{ tag_name: 'dsh-v1.0.0', html_url: 'u', draft: 'no', prerelease: false, body: null }])).toBeUndefined()
     expect(parseGithubReleases([{ tag_name: 'dsh-v1.0.0', html_url: 'u', draft: false, prerelease: 1, body: null }])).toBeUndefined()
     expect(parseGithubReleases([{ tag_name: 'dsh-v1.0.0', html_url: 'u', draft: false, prerelease: false, body: 1 }])).toBeUndefined()
+    expect(parseGithubReleases([{
+      tag_name: 'dsh-v1.0.0',
+      html_url: 'u',
+      draft: false,
+      prerelease: false,
+      body: null,
+      assets: [{ name: 'x.zip' }],
+    }])).toBeUndefined()
+  })
+
+  it('treats missing assets as none', () => {
+    expect(parseGithubReleases([{
+      tag_name: 'dsh-v1.0.0',
+      html_url: 'https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v1.0.0',
+      draft: false,
+      prerelease: false,
+      body: null,
+    }])).toEqual([release({ tag_name: 'dsh-v1.0.0', body: null })])
   })
 })
 

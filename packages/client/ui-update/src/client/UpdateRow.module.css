@@ -48,5 +48,22 @@
 .actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+}
+
+.progress {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 280px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--dsw-alias-bg-layer-3);
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--dsw-alias-label-primary);
 }

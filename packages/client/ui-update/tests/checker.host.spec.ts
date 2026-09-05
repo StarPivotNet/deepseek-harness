@@ -231,6 +231,125 @@ describe('checkProductUpdate', () => {
     expect(urls[0]).toContain('StarPivotNet/deepseek-harness')
     expect(result.channel).toBe('desktop')
     expect(result.latest?.tag).toBe('desktop-v1.2.4')
+    expect(result.latest?.artifact).toBeUndefined()
+  })
+
+  it('attaches the matching desktop archive when SHA256SUMS verifies', async () => {
+    const hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    const name = 'DeepSeek Harness-1.2.4-win.zip'
+    const download = (file: string): string =>
+      `https://github.com/StarPivotNet/deepseek-harness/releases/download/desktop-v1.2.4/${encodeURIComponent(file)}`
+    const body = JSON.stringify([{
+      tag_name: 'desktop-v1.2.4',
+      html_url: 'https://github.com/StarPivotNet/deepseek-harness/releases/tag/desktop-v1.2.4',
+      draft: false,
+      prerelease: false,
+      body: 'notes',
+      assets: [
+        { name, browser_download_url: download(name), size: 42 },
+        { name: 'SHA256SUMS', browser_download_url: download('SHA256SUMS'), size: 80 },
+      ],
+    }])
+    const urls: string[] = []
+    const opts = options({
+      env: { DSH_PRODUCT_VERSION: '1.2.3', DSH_PRODUCT_CHANNEL: 'desktop' },
+      fetchImpl: async (input) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+        urls.push(url)
+        if (url.endsWith('/SHA256SUMS')) return new Response(`${hash}  ${name}\n`, { status: 200 })
+        return new Response(body, { status: 200 })
+      },
+    })
+    const result = await checkProductUpdate({ ...opts, platform: 'win32', arch: 'x64' })
+    expect(urls.some(url => url.endsWith('/SHA256SUMS'))).toBe(true)
+    expect(result.latest?.artifact).toEqual({
+      name,
+      url: download(name),
+      sha256: hash,
+      size: 42,
+      platform: 'win32',
+    })
+  })
+
+  it('keeps the desktop tag available when SHA256SUMS cannot be fetched', async () => {
+    const name = 'DeepSeek Harness-1.2.4-win.zip'
+    const download = (file: string): string =>
+      `https://github.com/StarPivotNet/deepseek-harness/releases/download/desktop-v1.2.4/${encodeURIComponent(file)}`
+    const body = JSON.stringify([{
+      tag_name: 'desktop-v1.2.4',
+      html_url: 'https://github.com/StarPivotNet/deepseek-harness/releases/tag/desktop-v1.2.4',
+      draft: false,
+      prerelease: false,
+      body: 'notes',
+      assets: [
+        { name, browser_download_url: download(name), size: 42 },
+        { name: 'SHA256SUMS', browser_download_url: download('SHA256SUMS'), size: 80 },
+      ],
+    }])
+    const opts = options({
+      env: { DSH_PRODUCT_VERSION: '1.2.3', DSH_PRODUCT_CHANNEL: 'desktop' },
+      fetchImpl: async (input) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+        if (url.endsWith('/SHA256SUMS')) return new Response('nope', { status: 500 })
+        return new Response(body, { status: 200 })
+      },
+    })
+    const result = await checkProductUpdate({ ...opts, platform: 'win32', arch: 'x64' })
+    expect(result.available).toBe(true)
+    expect(result.latest?.tag).toBe('desktop-v1.2.4')
+    expect(result.latest?.artifact).toBeUndefined()
+  })
+
+  it('does not attach an archive on the CLI channel', async () => {
+    const name = 'DeepSeek Harness-1.2.4-win.zip'
+    const body = JSON.stringify([{
+      tag_name: 'dsh-v1.2.4',
+      html_url: 'https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v1.2.4',
+      draft: false,
+      prerelease: false,
+      body: 'notes',
+      assets: [
+        {
+          name,
+          browser_download_url: `https://github.com/deepseek-ai/deepseek-harness/releases/download/dsh-v1.2.4/${encodeURIComponent(name)}`,
+          size: 42,
+        },
+      ],
+    }])
+    const opts = options({
+      fetchImpl: async () => new Response(body, { status: 200 }),
+    })
+    const result = await checkProductUpdate({ ...opts, platform: 'win32', arch: 'x64' })
+    expect(result.latest?.artifact).toBeUndefined()
+  })
+
+  it('rethrows when SHA256SUMS fetch is aborted', async () => {
+    const name = 'DeepSeek Harness-1.2.4-win.zip'
+    const download = (file: string): string =>
+      `https://github.com/StarPivotNet/deepseek-harness/releases/download/desktop-v1.2.4/${encodeURIComponent(file)}`
+    const body = JSON.stringify([{
+      tag_name: 'desktop-v1.2.4',
+      html_url: 'https://github.com/StarPivotNet/deepseek-harness/releases/tag/desktop-v1.2.4',
+      draft: false,
+      prerelease: false,
+      body: 'notes',
+      assets: [
+        { name, browser_download_url: download(name), size: 42 },
+        { name: 'SHA256SUMS', browser_download_url: download('SHA256SUMS'), size: 80 },
+      ],
+    }])
+    const abort = Object.assign(new Error('aborted'), { name: 'AbortError' })
+    const opts = options({
+      env: { DSH_PRODUCT_VERSION: '1.2.3', DSH_PRODUCT_CHANNEL: 'desktop' },
+      fetchImpl: async (input) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+        if (url.endsWith('/SHA256SUMS')) throw abort
+        return new Response(body, { status: 200 })
+      },
+    })
+    await expect(checkProductUpdate({ ...opts, platform: 'win32', arch: 'x64' }))
+      .rejects.toMatchObject({ name: 'AbortError' })
+    expect(opts.writes).toEqual([])
   })
 
   it('throws when the caller aborts before fetch', async () => {

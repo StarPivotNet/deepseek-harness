@@ -1,7 +1,10 @@
 /** GitHub Releases JSON → the newest applicable product release. */
 
+import { parseGithubReleaseAssets, type GithubReleaseAsset, type ProductReleaseArtifact } from './artifact.ts'
 import { isGithubHttpsUrl } from './github-url.ts'
 import { isNewer, isPrereleaseVersion, parseSemver } from './semver.ts'
+
+export type { GithubReleaseAsset, ProductReleaseArtifact }
 
 /** One GitHub Releases API row, narrowed to the fields the picker reads. */
 export interface GithubRelease {
@@ -10,6 +13,7 @@ export interface GithubRelease {
   draft: boolean
   prerelease: boolean
   body: string | null
+  assets: GithubReleaseAsset[]
 }
 
 /** Product-facing release the checker persists and the UI renders. */
@@ -18,6 +22,7 @@ export interface ProductRelease {
   version: string
   url: string
   notes: string
+  artifact?: ProductReleaseArtifact
 }
 
 /**
@@ -37,12 +42,15 @@ export function parseGithubReleases(json: unknown): GithubRelease[] | undefined 
     if (typeof rec.draft !== 'boolean') return undefined
     if (typeof rec.prerelease !== 'boolean') return undefined
     if (rec.body !== null && typeof rec.body !== 'string') return undefined
+    const assets = parseGithubReleaseAssets(rec.assets)
+    if (assets === undefined) return undefined
     out.push({
       tag_name: rec.tag_name,
       html_url: rec.html_url,
       draft: rec.draft,
       prerelease: rec.prerelease,
       body: rec.body,
+      assets,
     })
   }
   return out

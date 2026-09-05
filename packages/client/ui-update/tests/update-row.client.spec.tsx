@@ -25,41 +25,69 @@ const latest = {
   notes: 'notes',
 }
 
-function mountRow(status: ProductUpdateUiStatus) {
+const desktopLatest = {
+  tag: 'desktop-v1.2.4',
+  version: '1.2.4',
+  url: 'https://github.com/StarPivotNet/deepseek-harness/releases/tag/desktop-v1.2.4',
+  notes: 'notes',
+  artifact: {
+    name: 'DeepSeek Harness-1.2.4-win.zip',
+    url: 'https://github.com/StarPivotNet/deepseek-harness/releases/download/desktop-v1.2.4/DeepSeek%20Harness-1.2.4-win.zip',
+    sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    size: 100,
+    platform: 'win32' as const,
+  },
+}
+
+function mountRow(status: ProductUpdateUiStatus, canInstall = false) {
   const checkNow = vi.fn()
   const dismiss = vi.fn()
   const openRelease = vi.fn()
+  const installNow = vi.fn()
+  const cancelInstall = vi.fn()
+  const relaunchToUpdate = vi.fn()
   const props: UpdateRowProps = {
     ...runtime,
     useStatus: bindSnapshotSelector(createSnapshotStore(status)),
     checkNow,
     dismiss,
     openRelease,
+    canInstall: () => canInstall,
+    installNow,
+    cancelInstall,
+    relaunchToUpdate,
     t: makeTranslate(en),
   }
   render(<UpdateRow {...props} />)
-  return { checkNow, dismiss, openRelease }
+  return { checkNow, dismiss, openRelease, installNow, cancelInstall, relaunchToUpdate }
 }
 
-function mountToast(status: ProductUpdateUiStatus) {
+function mountToast(status: ProductUpdateUiStatus, canInstall = false) {
   const dismiss = vi.fn()
   const openRelease = vi.fn()
+  const installNow = vi.fn()
+  const cancelInstall = vi.fn()
+  const relaunchToUpdate = vi.fn()
   const props: UpdateToastProps = {
     ...runtime,
     useStatus: bindSnapshotSelector(createSnapshotStore(status)),
     dismiss,
     openRelease,
+    canInstall: () => canInstall,
+    installNow,
+    cancelInstall,
+    relaunchToUpdate,
     t: makeTranslate(en),
   }
   render(<UpdateToast {...props} />)
-  return { dismiss, openRelease }
+  return { dismiss, openRelease, installNow, cancelInstall, relaunchToUpdate }
 }
 
 describe('UpdateRow', () => {
   it('explains the check and keeps Check now enabled while idle', () => {
     mountRow({ checking: false, error: false, result: undefined })
     expect(screen.getByText('Product updates')).toBeDefined()
-    expect(screen.getByText(/does not download or install/)).toBeDefined()
+    expect(screen.getByText(/Checking itself does not download/)).toBeDefined()
     expect(screen.getByText('Not checked yet')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Check now' })).toBeDefined()
   })
@@ -111,6 +139,55 @@ describe('UpdateRow', () => {
     })
     expect(screen.getByText('This release was dismissed.')).toBeDefined()
   })
+
+  it('offers Install only when a packaged desktop artifact is present', () => {
+    const idle = {
+      checking: false,
+      error: false,
+      result: {
+        available: true,
+        currentVersion: '1.2.3',
+        latest: desktopLatest,
+        checkedAt: 1,
+        channel: 'desktop' as const,
+      },
+    }
+    mountRow(idle, false)
+    expect(screen.queryByRole('button', { name: 'Install' })).toBeNull()
+    cleanup()
+    const b = mountRow(idle, true)
+    fireEvent.click(screen.getByRole('button', { name: 'Install' }))
+    expect(b.installNow).toHaveBeenCalledOnce()
+    cleanup()
+    const downloading = mountRow({
+      ...idle,
+      install: { phase: 'downloading', received: 40, total: 100 },
+    }, true)
+    expect(screen.getByText('Downloading… 40%')).toBeDefined()
+    expect(screen.getByRole('progressbar')).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(downloading.cancelInstall).toHaveBeenCalledOnce()
+    cleanup()
+    const ready = mountRow({
+      ...idle,
+      install: { phase: 'ready', received: 100, total: 100 },
+    }, true)
+    expect(screen.getByText('Update downloaded. Restart to apply it.')).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'Restart' }))
+    expect(ready.relaunchToUpdate).toHaveBeenCalledOnce()
+    cleanup()
+    mountRow({
+      ...idle,
+      install: { phase: 'error', received: 0, total: 0 },
+    }, true)
+    expect(screen.getByText('Could not install the update.')).toBeDefined()
+    cleanup()
+    mountRow({
+      ...idle,
+      install: { phase: 'verifying', received: 100, total: 100 },
+    }, true)
+    expect(screen.getByText('Downloading the update…')).toBeDefined()
+  })
 })
 
 describe('UpdateToast', () => {
@@ -130,5 +207,43 @@ describe('UpdateToast', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(b.openRelease).toHaveBeenCalledOnce()
     expect(b.dismiss).toHaveBeenCalledOnce()
+  })
+
+  it('offers Install on the toast when a packaged desktop artifact is present', () => {
+    const idle = {
+      checking: false,
+      error: false,
+      result: {
+        available: true,
+        currentVersion: '1.2.3',
+        latest: desktopLatest,
+        checkedAt: 1,
+        channel: 'desktop' as const,
+      },
+    }
+    const b = mountToast(idle, true)
+    fireEvent.click(screen.getByRole('button', { name: 'Install' }))
+    expect(b.installNow).toHaveBeenCalledOnce()
+    cleanup()
+    const ready = mountToast({
+      ...idle,
+      install: { phase: 'ready', received: 100, total: 100 },
+    }, true)
+    expect(screen.getByText('Update downloaded. Restart to apply it.')).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'Restart' }))
+    expect(ready.relaunchToUpdate).toHaveBeenCalledOnce()
+    cleanup()
+    const downloading = mountToast({
+      ...idle,
+      install: { phase: 'downloading', received: 10, total: 100 },
+    }, true)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(downloading.cancelInstall).toHaveBeenCalledOnce()
+    cleanup()
+    mountToast({
+      ...idle,
+      install: { phase: 'error', received: 0, total: 0 },
+    }, true)
+    expect(screen.getByText('Could not install the update.')).toBeDefined()
   })
 })

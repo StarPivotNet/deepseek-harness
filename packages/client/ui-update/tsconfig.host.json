@@ -14,6 +14,7 @@
     "src/channel.ts",
     "src/releases.ts",
     "src/semver.ts",
+    "src/artifact.ts",
     "src/github-url.ts",
     "src/product-version.ts",
     "src/update-settings.ts"

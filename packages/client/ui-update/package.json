@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-update",
-  "description": "Product-update plugin: GitHub Releases poller, Settings row, overlay toast; never downloads or installs",
+  "description": "Product-update plugin: GitHub Releases poller, Settings row, overlay toast; packaged desktop can install",
   "version": "0.1.3-alpha.1",
   "publishConfig": {
     "access": "public"

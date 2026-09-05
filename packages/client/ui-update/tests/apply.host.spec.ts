@@ -5,6 +5,7 @@ import type { ConnectionRpcHandler, HostConnectionHandle } from '@deepseek-ai/ds
 import {
   Config, PRODUCT_UPDATE_RPC_CHANNEL, PRODUCT_UPDATE_SETTINGS_NAMESPACE, apply, inject,
 } from '@deepseek-ai/dsh-client-ui-update'
+import { desktopArtifactName, isSupportedDesktopTarget } from '../src/artifact.ts'
 
 class MemorySettings extends SettingsProvider {
   readonly writable = true
@@ -64,6 +65,70 @@ describe('client-ui-update host', () => {
     expect((ctx.settings.get(ns) as { dismissedTag?: string }).dismissedTag).toBe('dsh-v1.2.4')
     await fiber.dispose()
     expect(ctx.settings.describe().map(row => row.ns)).not.toContain(ns)
+  })
+
+  it('attaches a desktop archive from SHA256SUMS on the desktop channel', async () => {
+    const hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    const names = [
+      desktopArtifactName('1.2.4', 'darwin'),
+      desktopArtifactName('1.2.4', 'linux'),
+      desktopArtifactName('1.2.4', 'win32'),
+    ]
+    const download = (file: string): string =>
+      `https://github.com/StarPivotNet/deepseek-harness/releases/download/desktop-v1.2.4/${encodeURIComponent(file)}`
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings).await()
+    const handlerRef: { current: ConnectionRpcHandler | undefined } = { current: undefined }
+    ctx.provide('connection', fakeConnection(handlerRef))
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      if (url.endsWith('/SHA256SUMS')) {
+        return new Response(names.map(name => `${hash}  ${name}`).join('\n') + '\n', { status: 200 })
+      }
+      return new Response(JSON.stringify([{
+        tag_name: 'desktop-v1.2.4',
+        html_url: 'https://github.com/StarPivotNet/deepseek-harness/releases/tag/desktop-v1.2.4',
+        draft: false,
+        prerelease: false,
+        body: 'notes',
+        assets: [
+          ...names.map(name => ({ name, browser_download_url: download(name), size: 42 })),
+          { name: 'SHA256SUMS', browser_download_url: download('SHA256SUMS'), size: 80 },
+        ],
+      }]), { status: 200 })
+    })
+    vi.stubGlobal('fetch', fetchImpl)
+    vi.stubEnv('DSH_PRODUCT_VERSION', '1.2.3')
+    vi.stubEnv('DSH_PRODUCT_CHANNEL', 'desktop')
+    const fiber = ctx.plugin({ inject: [...inject], Config, apply })
+    await fiber.await()
+    const ns = settingsNamespace(PRODUCT_UPDATE_SETTINGS_NAMESPACE)
+    const expectedName = isSupportedDesktopTarget(process.platform, process.arch)
+      && (process.platform === 'darwin' || process.platform === 'linux' || process.platform === 'win32')
+      ? desktopArtifactName('1.2.4', process.platform)
+      : undefined
+    await vi.waitFor(() => {
+      const latest = (ctx.settings.get(ns) as { lastResult?: { latest?: { artifact?: { name: string } } } } | undefined)
+        ?.lastResult?.latest
+      expect(latest?.artifact?.name).toBe(expectedName)
+    })
+    const handler = handlerRef.current
+    if (handler === undefined) throw new Error('product-update RPC handler missing after apply')
+    const checked = await handler('check', { force: true }, new AbortController().signal)
+    expect(checked).toMatchObject({
+      ok: true,
+      value: {
+        available: true,
+        channel: 'desktop',
+        latest: {
+          tag: 'desktop-v1.2.4',
+          ...expectedName === undefined
+            ? {}
+            : { artifact: { name: expectedName, sha256: hash, size: 42, platform: process.platform } },
+        },
+      },
+    })
+    await fiber.dispose()
   })
 
   it('polls on the configured interval and clears the timer on dispose', async () => {

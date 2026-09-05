@@ -12,6 +12,7 @@
     "src/client/**/*.ts",
     "src/client/**/*.tsx",
     "src/css-modules.d.ts",
+    "src/artifact.ts",
     "src/github-url.ts",
     "src/rpc-channel.ts",
     "src/update-settings.ts",

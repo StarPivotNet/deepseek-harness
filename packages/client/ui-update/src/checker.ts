@@ -10,6 +10,7 @@ import {
   releaseTagPrefix,
   type ProductChannelConfig,
 } from './channel.ts'
+import { attachDesktopArtifact } from './artifact.ts'
 import { githubReleasesUrl, parseGithubReleases, pickLatestRelease } from './releases.ts'
 import { readProductVersion, type ProductVersionRequire } from './product-version.ts'
 import type { ProductCheckResult, ProductUpdateSettings } from './update-settings.ts'
@@ -36,6 +37,10 @@ export interface ProductUpdateCheckerOptions {
   requireFn?: ProductVersionRequire
   /** Caller cancellation; dispose of the Host poller aborts an in-flight fetch. */
   signal?: AbortSignal
+  /** Host platform used to pick a desktop archive; defaults to `process.platform`. */
+  platform?: string
+  /** Host arch used to pick a desktop archive; defaults to `process.arch`. */
+  arch?: string
 }
 
 /** Failure the RPC layer maps to `internal`. */
@@ -182,14 +187,28 @@ export async function checkProductUpdate(
   }
 
   const latest = pickLatestRelease(releases, currentVersion, releaseTagPrefix(channel))
+  const row = latest === undefined ? undefined : releases.find(entry => entry.tag_name === latest.tag)
+  const attached = latest === undefined || channel !== 'desktop' || row === undefined
+    ? latest
+    : await attachDesktopArtifact({
+      release: latest,
+      assets: row.assets,
+      repo,
+      platform: options.platform ?? process.platform,
+      arch: options.arch ?? process.arch,
+      fetchImpl,
+      timeoutMs,
+      ...options.signal === undefined ? {} : { signal: options.signal },
+      userAgent: 'dsh-product-update/' + currentVersion,
+    })
+  throwIfCallerAborted(options.signal)
   const result = withDismiss({
-    available: latest !== undefined,
+    available: attached !== undefined,
     currentVersion,
-    ...latest === undefined ? {} : { latest },
+    ...attached === undefined ? {} : { latest: attached },
     checkedAt,
     channel,
   }, settings.dismissedTag)
-  throwIfCallerAborted(options.signal)
   await options.writeSettings(persistSuccessfulCheck(settings, {
     lastCheckAt: checkedAt,
     lastResult: result,

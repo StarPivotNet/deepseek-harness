@@ -56,7 +56,7 @@ Status: implemented
 - **未签名产物。** 在加入签名之前，macOS Gatekeeper 和 Windows SmartScreen 会在首次启动时警告。
 - **Host 体积。** 每个安装包都内嵌 `@deepseek-ai/dsh` 的 `pnpm deploy` 和 Node，下载体积远大于 Electron 外壳。
 - **deploy 时安装 peer。** `@deepseek-ai/dsh` 不是封闭 runtime manifest；pack 打开 `auto-install-peers`，暂存的 Host 才能启动 `dsh web`。
-- **没有自动更新。** 用户自行下载更新的 GitHub Release。
+- **未签名，没有 electron-updater。** 打包桌面端仍可从该 GitHub Release 安装匹配的归档（[应用内更新](../feature/2026-09-16-desktop-in-app-update.zh.md)）。签名仍然推迟。
 
 ## Testing
 

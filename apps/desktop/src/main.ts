@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { applyCompletedDockIcon } from './dock-attention.ts'
 import { isReusableListenPort, startWebHost, stopWebHost, type StartedHost } from './host.ts'
+import { bindDesktopUpdateIpc, createDesktopUpdater, type DesktopUpdateProgress } from './update.ts'
 import { APP_USER_MODEL_ID, desktopIconPath } from './icon.ts'
 import { windowsShortcutPath, windowsShortcutSpec } from './shortcut.ts'
 import {
@@ -255,6 +256,21 @@ if (!gotLock) {
 } else {
   const dockIconPng = readFileSync(desktopIconPath())
   let previousCompletedUnread = 0
+  const updater = createDesktopUpdater({
+    isPackaged: app.isPackaged,
+    platform: process.platform,
+    execPath: process.execPath,
+    userData: app.getPath('userData'),
+    pid: process.pid,
+    ...process.env.APPIMAGE === undefined || process.env.APPIMAGE === '' ? {} : { appImage: process.env.APPIMAGE },
+    sendProgress: (event: DesktopUpdateProgress) => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        window.webContents.send('dsh-desktop:update-progress', event)
+      }
+    },
+    quit: () => { app.quit() },
+  })
+  bindDesktopUpdateIpc(ipcMain, updater)
   ipcMain.on('dsh-desktop:set-completed-unread', (_event, count: unknown) => {
     const next = typeof count === 'number' && Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0
     applyCompletedDockIcon(
