@@ -244,14 +244,12 @@ export function apply(ctx: ClientContext): void {
   // The Plugins settings page composes feature-owned tabs under
   // `settings.plugins.tab`; registering a competing `settings.section` with
   // the shell's own id would be dropped by the first-wins section dedupe.
-  // Synchronous registration: the lazy slots.inject callback never fired in
-  // the packaged composition, so the Discover tab silently never appeared.
-  ctx.effect(() => ctx.slots.register({
+  ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
     name: 'settings.plugins.tab',
     id: 'discover',
     order: 5,
     label: () => t('nav'),
     locale: NS,
     inject: injected,
-  }, MarketplaceSettingsSection), 'plugin-marketplace: discover tab')
+  }, MarketplaceSettingsSection))
 }
