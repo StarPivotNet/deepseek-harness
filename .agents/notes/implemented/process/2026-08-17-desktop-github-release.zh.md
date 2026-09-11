@@ -19,7 +19,7 @@ Status: implemented
 - `pnpm --filter @deepseek-ai/dsh deploy --legacy --prod` 写入 `dist-desktop/staging/host/dsh`。
 - runner 上的 Node 24 二进制复制到该树旁，名为 `host/node` 或 `host/node.exe`。
 - 编译后的 desktop `lib/`、`assets/` 和 `package.json` 复制到 `dist-desktop/staging/app`，避免 electron-builder 遍历 workspace。
-- electron-builder 打包该叶子，并带上 `extraResources/host`。暂存应用名是 `dsh-desktop`，Linux/Windows 可执行文件名是 `DeepSeekHarness`，因为 AppImage 拒绝 scoped npm 名。macOS 和 Linux 使用 `icon-512.png`；Windows 使用多尺寸 ICO。Windows 上打包器启动 `pnpm.cmd`，并写出 zip 而不是 NSIS，因为 `pnpm dlx` 会把 NSIS 模板嵌进 makensis 打不开的路径。
+- electron-builder 打包该叶子，并带上 `extraResources/host`。暂存应用名是 `dsh-desktop`，Linux/Windows 可执行文件名是 `DeepSeekHarness`，因为 AppImage 拒绝 scoped npm 名。macOS 和 Linux 使用 `icon-512.png`；Windows 使用多尺寸 ICO。Windows 上打包器启动 `pnpm.cmd`，并写出 zip 而不是 NSIS，因为 `pnpm dlx` 会把 NSIS 模板嵌进 makensis 打不开的路径。写出的配置会设置 Electron fuse，使归档不能以 Node 运行、不接受 `NODE_OPTIONS` 或 `--inspect`、只从 asar 加载应用，并启用 cookie 加密与 asar 完整性校验。签名安装包打包器使用同一组 fuse 值。
 
 打包后的窗口先解析 `process.resourcesPath/host/dsh/lib/bin.js` 和内置 Node，再考虑 checkout 或记住的系统 Node。checkout 启动方式不变。
 
@@ -31,7 +31,7 @@ Status: implemented
 | `ubuntu-24.04` | `DeepSeek Harness-<version>.AppImage` |
 | `windows-latest` | `DeepSeek Harness-<version>-win.zip` |
 
-推送 `desktop-v*` 会打包并发布。`publish=false` 的手动触发只打包。发布必须来自匹配标签；`contents: write` 仅限于 publish job。publish job 只上传 `*.zip`、`*.AppImage` 和 `SHA256SUMS`；像 `linux-unpacked` 这样的 electron-builder 残留目录不会进入 Release。Release 说明先写归档约定，再列出距上一个 `desktop-v*` 标签的提交（`scripts/desktop/pack.ts` 中的 `desktopReleaseNotes`）。
+推送 `desktop-v*` 会打包并发布。`publish=false` 的手动触发只打包。发布必须来自匹配标签；`contents: write` 仅限于 publish job。publish job 只上传 `*.zip`、`*.AppImage` 和 `SHA256SUMS`；像 `linux-unpacked` 这样的 electron-builder 残留目录不会进入 Release。仅当桌面端版本本身含 `-` 时，发布才把 GitHub Release 标为 prerelease。Release 说明先写归档约定，再列出距上一个 `desktop-v*` 标签的提交（`scripts/desktop/pack.ts` 中的 `desktopReleaseNotes`）。
 
 ## Alternatives considered
 
@@ -60,4 +60,4 @@ Status: implemented
 
 ## Testing
 
-`scripts/desktop/pack.spec.ts` 固定标签命名、产物名、平台 flag、Windows 上的 `pnpm.cmd` 启动、发布标签拒绝，以及 changelog 说明。`apps/desktop/tests/host.spec.ts` 固定打包 Host 识别、对内置 Node 的优先选择，以及 512px 安装包图标。工作流是实际执行的打包与发布路径。
+`scripts/desktop/pack.spec.ts` 固定标签命名、产物名、平台 flag、Windows 上的 `pnpm.cmd` 启动、发布标签拒绝、changelog 说明，以及 JSON 序列化后的 Electron fuse 对象。`apps/desktop/tests/host.spec.ts` 固定打包 Host 识别、对内置 Node 的优先选择，以及 512px 安装包图标。工作流是实际执行的打包与发布路径。

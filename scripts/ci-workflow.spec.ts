@@ -1041,6 +1041,13 @@ describe('Desktop release workflow', () => {
     expect(publishScript).toContain('dist-desktop/release/*.zip')
     expect(publishScript).toContain('dist-desktop/release/*.AppImage')
     expect(publishScript).toContain('dist-desktop/release/SHA256SUMS')
+    const createRelease = publish.steps.find(step =>
+      isRecord(step) && step.name === 'Create GitHub Release')
+    if (!isRecord(createRelease) || typeof createRelease.run !== 'string') {
+      throw new TypeError('Desktop publish job must define a Create GitHub Release script')
+    }
+    expect(createRelease.run).toContain('if [[ "$version" == *-* ]]; then')
+    expect(createRelease.run).toContain('extra+=(--prerelease)')
   })
 })
 

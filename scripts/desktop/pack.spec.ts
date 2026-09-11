@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import {
   builderTarget,
   clampDesktopReleaseNotes,
+  desktopElectronBuilderConfig,
   desktopReleaseNotes,
   desktopReleaseTag,
   desktopVersion,
@@ -170,5 +171,19 @@ describe('desktop builder targets', () => {
   it('allows unused Electron signer patches when deploying the Host', () => {
     const source = readFileSync(join(import.meta.dirname, 'pack.ts'), 'utf8')
     expect(source).toContain('--config.allow-unused-patches=true')
+  })
+
+  it('writes Electron fuses into the GitHub packer electron-builder JSON', () => {
+    const written = JSON.parse(JSON.stringify(desktopElectronBuilderConfig('1.0.0', 'darwin', '39.0.0'))) as {
+      electronFuses: unknown
+    }
+    expect(written.electronFuses).toEqual({
+      runAsNode: false,
+      enableCookieEncryption: true,
+      enableNodeOptionsEnvironmentVariable: false,
+      enableNodeCliInspectArguments: false,
+      enableEmbeddedAsarIntegrityValidation: true,
+      onlyLoadAppFromAsar: true,
+    })
   })
 })
