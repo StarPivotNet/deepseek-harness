@@ -292,9 +292,13 @@ function resolvePnpmEntry(environment: NodeJS.ProcessEnv): string | undefined {
   if (raw !== undefined && raw !== '' && !/npm-cli\.js$/iu.test(raw)) candidates.push(raw)
   const pathDirs = (environment.PATH ?? '').split(delimiter).filter(dir => dir.length > 0)
   for (const dir of pathDirs) {
-    for (const name of process.platform === 'win32' ? ['pnpm.cmd', 'pnpm.cjs'] : ['pnpm']) {
-      candidates.push(join(dir, name))
-    }
+    candidates.push(
+      join(dir, 'pnpm.cjs'),
+      // pnpm exec prepends the workspace `node_modules/.bin`; the pnpm
+      // package itself lives one directory up in that layout, which is
+      // also how pnpm/action-setup arranges its own install.
+      join(dir, '..', 'pnpm', 'bin', 'pnpm.cjs'),
+    )
   }
   for (const candidate of candidates) {
     try {
