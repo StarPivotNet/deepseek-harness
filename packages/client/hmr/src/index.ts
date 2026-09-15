@@ -2,7 +2,7 @@
  * HMR plugin, node half: the host end of the dev reload chain. One interval
  * stat-polls every graph row's client bundle (polling by design: network mounts
  * deliver no inotify events), reports changes through
- * `clientModuleHost.rebuilt(id)`, and serves the `/plugins/events` SSE channel
+ * `clientModules.rebuilt(id)`, and serves the `/plugins/events` SSE channel
  * broadcasting graph/rebuilt/reload frames to the browser half (src/client/).
  * The web bundle mounts this row unconditionally. Automatic rebuilt
  * broadcasts stay off until the Host `client-hmr.autoReload` setting is
@@ -15,7 +15,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import type {} from '@deepseek-ai/dsh-settings/types'
 import z from '@deepseek-ai/schemastery'
-// Empty type imports carry the clientModuleHost/webServer Context merges.
+// Type imports carry the clientModules/webServer Context merges.
 import type { ClientArtifactBaseline } from '@deepseek-ai/dsh-client-modules'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type { PluginsEventFrame } from './events.ts'
@@ -76,7 +76,7 @@ function sameBundleStat(left: WatchedBundleStat, right: WatchedBundleStat): bool
 /**
  * Mount the dev chain: bundle watches, optional rebuilt broadcasts, the SSE
  * channel, and POST /plugins/reload.
- * @param ctx - host plugin context carrying clientModuleHost and webServer.
+ * @param ctx - host plugin context carrying clientModules and webServer.
  * @param config - validated {@link Config}.
  * @returns nothing; watches, routes, and settings registration live on the fiber.
  */

@@ -20,25 +20,26 @@ const PARENT_PATH_SEGMENT = /(?:^|[\\/])\.\.(?:[\\/]|$)/
  *   makes a symlinked cwd's filesystem identity observable.
  * @returns the calling agent's session cwd, or undefined for a non-agent caller (the backend then applies its own default).
  */
-export function sessionCwd(exec: ToolExecution, requestedPath: string): string | undefined {
+export function sessionCwd(exec: ToolExecution, requestedPath?: string): string | undefined {
   const cwd = exec.agent === undefined ? undefined : sessionWorkingDirectory(exec.agent.session)
-  if (cwd === undefined || (!PARENT_PATH_SEGMENT.test(cwd) && !PARENT_PATH_SEGMENT.test(requestedPath))) return cwd
+  if (cwd === undefined) return cwd
+  if (!PARENT_PATH_SEGMENT.test(cwd) && (requestedPath === undefined || !PARENT_PATH_SEGMENT.test(requestedPath))) {
+    return cwd
+  }
   return canonicalPath(cwd)
 }
 
 /**
  * Resolution options shared by all model-facing filesystem tools.
  * @param exec - the tool-execution context supplying session cwd and cancellation.
- * @param requestedPath - the path the provider will resolve.
  * @param policyWorkspaceRoot - resolved per-call root, when a mutation carries sandbox policy.
  * @returns provider resolution options for the current tool call.
  */
 export function sessionResolveOptions(
   exec: ToolExecution,
-  requestedPath: string,
   policyWorkspaceRoot?: string,
 ): { cwd?: string; signal?: AbortSignal } {
-  const cwd = policyWorkspaceRoot ?? sessionCwd(exec, requestedPath)
+  const cwd = policyWorkspaceRoot ?? sessionCwd(exec)
   return {
     ...cwd !== undefined ? { cwd } : {},
     signal: exec.signal,

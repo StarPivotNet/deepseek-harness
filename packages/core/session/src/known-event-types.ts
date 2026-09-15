@@ -42,6 +42,7 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'goal/change',
   'hook/invoked',
   'hook/result',
+  'image/offload',
   'llm/retry',
   'llm/retry-started',
   'model/selection',
@@ -79,4 +80,9 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'user/message',
   'web/deepseek-search-llm-request',
   'workspace/home',
+])
+
+/** Event types whose model-visible effects require an explicit pure interpreter. */
+export const MESSAGE_PROJECTION_EVENT_TYPES: ReadonlySet<string> = new Set([
+  'image/offload',
 ])

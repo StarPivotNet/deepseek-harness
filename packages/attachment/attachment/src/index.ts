@@ -10,7 +10,7 @@ import type {
   FileAttachmentRef,
   ImageAttachmentLimits,
   ImageAttachmentRef,
-  ImageRequestPolicy,
+  ImageRequestTarget,
   RequestImageAttachment,
   RequestVideoAttachment,
   SaveFileAttachment,
@@ -28,7 +28,8 @@ export { AttachmentId, ImageVariantId } from './brand.ts'
 export { AttachmentError, isAttachmentError, isImageAdmissionError, isVideoAdmissionError } from './error.ts'
 export type { AttachmentErrorCode, ImageAdmissionErrorCode, VideoAdmissionErrorCode } from './error.ts'
 export { admitEncodedFile, admitEncodedImages, admitEncodedVideos, admitPromptContent } from './admission.ts'
-export { requestImageDimensions } from './request-projection.ts'
+export { longEdgeDimensions, requestImageDimensions } from './request-projection.ts'
+export type { ProjectedDimensions } from './request-projection.ts'
 export type {
   AttachmentId as AttachmentIdType,
   AdmittedPromptContentPart,
@@ -39,7 +40,7 @@ export type {
   FileAttachmentRef,
   ImageAttachmentLimits,
   ImageAttachmentRef,
-  ImageRequestPolicy,
+  ImageRequestTarget,
   ImageMediaType,
   PromptContentPart,
   RequestImageAttachment,
@@ -243,18 +244,18 @@ export abstract class AttachmentStore extends Service {
   /**
    * Generate or read one deterministic model-request version from the stored normalized image.
    * @param ref - durable provider-independent normalized attachment reference.
-   * @param policy - exact route pixel budget and encoded-byte target; a target no ladder quality meets yields the smallest ladder output.
+   * @param target - route-chosen dimensions and byte target; an unmet byte target yields the smallest ladder output.
    * @param signal - optional cancellation.
    * @returns request bytes and the cache/upload identity covering every transform input.
    */
   readImageRequest(
     ref: ImageAttachmentRef,
-    policy: ImageRequestPolicy,
+    target: ImageRequestTarget,
     signal?: AbortSignal,
   ): Promise<RequestImageAttachment> {
     signal?.throwIfAborted()
     void ref
-    void policy
+    void target
     return Promise.reject(new AttachmentError(
       'The mounted attachment provider cannot derive model-request images.',
       'ATTACHMENT_PROJECTION_UNSUPPORTED',

@@ -15,10 +15,13 @@ import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import {
   boot,
   composeEntries,
+  createProfileResolutionGeneration,
   loadLayeredEnv,
   loadProfileDirectory,
   loadOverlayPatches,
+  PluginPackages,
   provideProfile,
+  type Profile,
 } from '@deepseek-ai/dsh-app-boot'
 import { provideCmdline } from '@deepseek-ai/dsh-cmdline'
 import { DSH_LAUNCH_ENVIRONMENT_KEY } from '@deepseek-ai/dsh-launch-environment'
@@ -150,9 +153,20 @@ function isProjectPath(projectDir: string, target: string): boolean {
   return path === root || path.startsWith(root + sep)
 }
 
-function desktopPatches(runtimeDir: string, projectDir: string, allowLinkedPackages: boolean): PatchOptions[] {
-  const dshRoot = dirname(packageManifestPath(runtimeDir, '@deepseek-ai/dsh'))
-  const profile = loadProfileDirectory('dsh desktop', projectDir, join(dshRoot, 'package.json'))
+interface DesktopComposition {
+  readonly installAnchor: string
+  readonly profile: Profile
+  readonly patches: PatchOptions[]
+}
+
+function desktopComposition(
+  runtimeDir: string,
+  projectDir: string,
+  allowLinkedPackages: boolean,
+): DesktopComposition {
+  const installAnchor = packageManifestPath(runtimeDir, '@deepseek-ai/dsh')
+  const dshRoot = dirname(installAnchor)
+  const profile = loadProfileDirectory('dsh desktop', projectDir, installAnchor)
   for (const layer of profile.layers) {
     if (!allowLinkedPackages && !isProjectPath(projectDir, layer.packageDir) && !isProjectPath(runtimeDir, layer.packageDir)) {
       throw new Error(`dsh desktop: profile bundle ${JSON.stringify(layer.packageName)} resolved outside the Desktop runtime and profile`)
@@ -174,7 +188,7 @@ function desktopPatches(runtimeDir: string, projectDir: string, allowLinkedPacka
       },
     }])
   }
-  return layers.flat()
+  return { installAnchor, profile, patches: layers.flat() }
 }
 
 function dshVersion(runtimeDir: string): string {
@@ -283,19 +297,22 @@ export async function runDesktopHost(
   writeResponse: (frame: Buffer) => Promise<void>,
   options: { allowLinkedPackages?: boolean } = {},
 ): Promise<DesktopHostController> {
+  const absoluteRuntime = resolve(runtimeDir)
   const absoluteProject = resolve(projectDir)
   mkdirSync(absoluteProject, { recursive: true })
   const rootConfig = join(absoluteProject, ROOT_CONFIG_FILENAME)
   writeFileSync(rootConfig, ROOT_CONFIG)
   const environment = loadLayeredEnv('dsh desktop')
+  const composition = desktopComposition(absoluteRuntime, absoluteProject, options.allowLinkedPackages === true)
+  const resolution = await createProfileResolutionGeneration({
+    installAnchor: composition.installAnchor,
+    profile: composition.profile,
+  })
   let current: Context | undefined
-  const ctx = await boot('dsh desktop', rootConfig, structuredClone(desktopPatches(
-    resolve(runtimeDir),
-    absoluteProject,
-    options.allowLinkedPackages === true,
-  )), (hostCtx) => {
+  const ctx = await boot('dsh desktop', rootConfig, structuredClone(composition.patches), async (hostCtx) => {
     current = hostCtx
     hostCtx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, environment)
+    await hostCtx.plugin(PluginPackages, { generation: resolution })
     provideCmdline(hostCtx, { args: [], exit: () => {} })
     // The in-Host marketplace and profile-aware rows read the Electron-owned
     // desktop project directory; mutations there stay subject to its lock.
@@ -314,7 +331,7 @@ export async function runDesktopHost(
     throw new Error('dsh desktop: composition did not provide connection, typertGateway, and clientModules')
   }
   const api = connection.createSharedFetchHandler('/api')
-  const assets = assetHandler(ctx, resolve(runtimeDir))
+  const assets = assetHandler(ctx, absoluteRuntime)
   const streams = remoteStreamHandler(ctx)
   const requests = new Map<number, AbortController>()
   let disposing: Promise<void> | undefined
@@ -330,7 +347,7 @@ export async function runDesktopHost(
   }
 
   return {
-    dshVersion: dshVersion(resolve(runtimeDir)),
+    dshVersion: dshVersion(absoluteRuntime),
     cancel(streamId) {
       requests.get(streamId)?.abort()
     },

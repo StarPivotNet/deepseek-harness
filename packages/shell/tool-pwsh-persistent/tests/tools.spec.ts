@@ -27,7 +27,7 @@ afterEach(async () => {
   for (const ctx of contexts.splice(0)) await ctx.fiber.dispose()
 })
 
-function agent(ctx: Context, cwd: string | undefined): Agent {
+async function agent(ctx: Context, cwd: string | undefined): Promise<Agent> {
   const id = SessionId(`persistent-pwsh-owner-${callNumber}`)
   const scope = ctx.plugin(() => {})
   const session = Session.create(id, [], {
@@ -53,7 +53,7 @@ function agent(ctx: Context, cwd: string | undefined): Agent {
     runMaintenance: task => task(new AbortController().signal),
     whenIdle: () => Promise.resolve(),
   }
-  ctx.agents.register(value)
+  await ctx.agents.register(value)
   return value
 }
 
@@ -324,7 +324,7 @@ async function setup(
   const stub = stubBackend(initialMode)
   ctx.terminals.registerBackend(stub.backend)
   const fiber = await ctx.plugin(ToolPwshPersistent, config)
-  return { ctx, stub, fiber, owner: agent(ctx, '/workspace') }
+  return { ctx, stub, fiber, owner: await agent(ctx, '/workspace') }
 }
 
 describe('tool-pwsh-persistent', () => {
@@ -348,7 +348,7 @@ describe('tool-pwsh-persistent', () => {
     expect(stub.sessions).toHaveLength(1)
     expect(stub.sessions[0]?.sends).toBe(3)
 
-    const ownerWithoutCwd = agent(ctx, undefined)
+    const ownerWithoutCwd = await agent(ctx, undefined)
     expect(text(await call(ctx, ownerWithoutCwd, 'pwd'))).toBe('hello from stub')
     expect(stub.sessions).toHaveLength(2)
 
@@ -604,7 +604,7 @@ describe('tool-pwsh-persistent', () => {
       }),
     })
     const fiber = await ctx.plugin(ToolPwshPersistent, { backendType: 'slow' })
-    const owner = agent(ctx, '/workspace')
+    const owner = await agent(ctx, '/workspace')
     const running = call(ctx, owner, 'pwd')
     await spawnStarted.promise
     await fiber.dispose()

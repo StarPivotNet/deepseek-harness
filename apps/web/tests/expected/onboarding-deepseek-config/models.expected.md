@@ -19,6 +19,9 @@
     - button "Agent 预设":
       - img
       - text: Agent 预设
+    - button "已归档会话":
+      - img
+      - text: 已归档会话
     - button "系统提示词":
       - img
       - text: 系统提示词
@@ -43,7 +46,8 @@
       - group:
         - text: 自定义设置 API 地址
         - textbox "API 地址":
-          - /placeholder: https://api.deepseek.com
+          - /placeholder: https://api.deepseek.com/anthropic
+        - text: 请填写与当前连接配置兼容的 API 地址。
         - region "模型目录":
           - text: 模型目录 已自定义模型目录
           - button "恢复默认模型"

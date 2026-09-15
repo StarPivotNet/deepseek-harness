@@ -101,7 +101,7 @@ export class ReactLoopAgent implements Agent {
     public readonly options: AgentOptions,
     public readonly session: Session,
   ) {
-    this.requestSurfaceGeneration = session.surface.replaceGeneration
+    this.requestSurfaceGeneration = session.surface.contentGeneration
     this.dispatch = agentEvents(loopCtx, this)
     this.scope = createScope(loopCtx, this)
     this.ctx = this.scope.ctx
@@ -181,7 +181,8 @@ export class ReactLoopAgent implements Agent {
         return await job(maintenance.abort.signal)
       } finally {
         this.setPhase({ kind: 'idle', lastTurn: maintenance.lastTurn })
-        if (maintenance.wakeRequested && this.inbox.hasPending) this.wakeDriver()
+        const cause = maintenance.abort.signal.reason as AgentCancelCause | undefined
+        if (cause?.kind !== 'disposed' && maintenance.wakeRequested && this.inbox.hasPending) this.wakeDriver()
         done.resolve()
       }
     })()
@@ -386,7 +387,7 @@ export class ReactLoopAgent implements Agent {
       const commits = this.systemPrompt.project(renderedPrompt, {
         inHistory: preparedCall?.systemPromptUpdate === 'in-history',
         startsSeries: startsRequestSeries
-          || this.requestSurfaceGeneration !== this.session.surface.replaceGeneration
+          || this.requestSurfaceGeneration !== this.session.surface.contentGeneration
           || this.toolsChanged(assembly.tools),
       })
       for (const { message, intent } of commits) {
@@ -580,7 +581,7 @@ export class ReactLoopAgent implements Agent {
     signal: AbortSignal,
   ): GenerateOptions {
     const { session } = this
-    const surfaceGeneration = session.surface.replaceGeneration
+    const surfaceGeneration = session.surface.contentGeneration
     const header = canonicalHeader({
       config,
       ...preparedCall === undefined ? {} : { adapterDefaults: preparedCall.adapterDefaults },

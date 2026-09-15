@@ -11,6 +11,7 @@
 - navigation "Turn navigation":
   - button "Jump to turn 1"
   - button "Jump to turn 2"
+  - button "Jump to turn 3"
 - button "System prompt":
   - img
   - img
@@ -70,6 +71,21 @@
 - button "Ran for {{duration}}":
   - img
   - text: Ran for {{duration}}
+- text: {{clock}} Keep this later input in the original conversation. {{clock}}
+- button "Copy":
+  - img
+- paragraph: ORIGINAL ONLY
+- button "Copy":
+  - img
+- button "Good response":
+  - img
+- button "Bad response":
+  - img
+- button "Branch into a new conversation":
+  - img
+- button "Ran for {{duration}}":
+  - img
+  - text: Ran for {{duration}}
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands":
@@ -79,9 +95,9 @@
   - text: DeepSeek-V4-Flash
   - img
 - button "Send message" [disabled]
-- button "2 turns 3 steps · {{throughput}} tok/s":
+- button "3 turns 4 steps · {{throughput}} tok/s":
   - img
-  - text: 2 turns 3 steps{{throughput}} tok/s
+  - text: 3 turns 4 steps{{throughput}} tok/s
 - button "7.9K tok · Cache hit 98%":
   - img
   - text: 7.9K tokCache hit 98%
