@@ -26,8 +26,11 @@ export interface PackedIdentity {
  * @param tarball - absolute tarball path.
  * @returns Every path inside the archive.
  */
+/** GNU tar reads `D:\\path` as a remote host; local reads need the escape on Windows. */
+const tarLocalArgs = process.platform === 'win32' ? ['--force-local'] : []
+
 export function tarballFiles(tarball: string): string[] {
-  return capture('tar', ['-tzf', tarball]).split(/\r?\n/u).filter(line => line !== '')
+  return capture('tar', [...tarLocalArgs, '-tzf', tarball]).split(/\r?\n/u).filter(line => line !== '')
 }
 
 /**
@@ -36,7 +39,7 @@ export function tarballFiles(tarball: string): string[] {
  * @returns The name and version the tarball declares.
  */
 export function packedIdentity(tarball: string): PackedIdentity {
-  const manifest: unknown = JSON.parse(capture('tar', ['-xOzf', tarball, 'package/package.json']))
+  const manifest: unknown = JSON.parse(capture('tar', [...tarLocalArgs, '-xOzf', tarball, 'package/package.json']))
   if (manifest === null || typeof manifest !== 'object') throw new Error(`${tarball} has no manifest`)
   const { name, version } = manifest as Record<string, unknown>
   if (typeof name !== 'string' || typeof version !== 'string') throw new Error(`${tarball} manifest lacks name/version`)
