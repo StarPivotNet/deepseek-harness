@@ -1,9 +1,9 @@
 /** Build one release target with matching Electron, Node.js, and dsh architecture. */
 
 import { spawn } from 'node:child_process'
-import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
-import { join, resolve } from 'node:path'
+import { delimiter, join, resolve } from 'node:path'
 import {
   desktopBuildRecordFilename,
   resolveDesktopAutoUpdateConfig,
@@ -260,9 +260,9 @@ function runPnpm(
   env: NodeJS.ProcessEnv = process.env,
   cwd: string = APP_ROOT,
 ): Promise<void> {
-  const pnpmEntry = process.env.npm_execpath
-  if (pnpmEntry === undefined || pnpmEntry === '') {
-    throw new Error('desktop package: invoke this script through a pnpm package command')
+  const pnpmEntry = resolvePnpmEntry(process.env)
+  if (pnpmEntry === undefined) {
+    throw new Error('desktop package: no pnpm executable on PATH for nested package commands')
   }
   return new Promise((resolvePromise, reject) => {
     const child = spawn(process.execPath, [pnpmEntry, ...args], {
@@ -276,6 +276,26 @@ function runPnpm(
       else reject(new Error(`desktop package: pnpm ${args.join(' ')} exited with ${String(code ?? signal)}`))
     })
   })
+}
+
+/**
+ * Resolve a Node-runnable pnpm entry for nested commands. `npm_execpath` is
+ * absent under `pnpm exec` and may name npm under an npx wrapper, so PATH
+ * lookup is the fallback both cases can rely on.
+ * @param environment - Environment carrying `npm_execpath` and `PATH`.
+ * @returns an absolute JS entry path, or undefined when nothing resolves.
+ */
+function resolvePnpmEntry(environment: NodeJS.ProcessEnv): string | undefined {
+  const raw = environment.npm_execpath
+  if (raw !== undefined && raw !== '' && !/npm-cli\.js$/iu.test(raw)) return raw
+  const pathDirs = (environment.PATH ?? '').split(delimiter).filter(dir => dir.length > 0)
+  for (const dir of pathDirs) {
+    for (const name of process.platform === 'win32' ? ['pnpm.cmd', 'pnpm.cjs'] : ['pnpm']) {
+      const candidate = join(dir, name)
+      if (existsSync(candidate)) return candidate
+    }
+  }
+  return undefined
 }
 
 /**

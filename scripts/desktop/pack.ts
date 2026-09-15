@@ -421,13 +421,15 @@ function prepareDesktopRuntime(platform: DesktopPlatform): PreparedDesktopRuntim
   const target = prepareTargetName(platform)
   // Fork releases publish without Apple credentials; the enclosing unsigned
   // app is the trust root and native files keep linker ad-hoc signatures.
-  // `run` (not `exec`) keeps npm_execpath set to pnpm for the prepare chain's
-  // nested package commands; pnpm 11 passes unknown boolean flags through.
+  // `pnpm --dir exec` hands unknown flags to the child command untouched,
+  // where `pnpm run` re-parses script names and flags per pnpm version.
   run(pnpmBin(), [
-    '--filter',
-    '@deepseek-ai/dsh-desktop',
-    'run',
-    `package:${target}`,
+    '--dir',
+    join('apps', 'desktop'),
+    'exec',
+    'tsx',
+    'scripts/package-target.ts',
+    target,
     '--prepare-only',
   ], root, { DSH_DESKTOP_UNSIGNED_RUNTIME: '1' })
   const targetRoot = join(desktopBuildTargets, target)
