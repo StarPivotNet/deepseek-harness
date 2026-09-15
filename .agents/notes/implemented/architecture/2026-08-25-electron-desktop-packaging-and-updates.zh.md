@@ -81,7 +81,7 @@ Electron 更新只使用一个 `electron-updater` 发布流和签名 `electron-b
 
 ## 安全与发布策略
 
-核心 dsh 和私有 Desktop Host 只来自签名应用的资源树。插件安装接受桌面策略允许的 registry 包规格，不接受原始 pnpm 命令。激活前要求精确版本、锁文件完整性、经过审查的 `allowBuilds` 集合和仅限用户访问的目录权限。
+核心 dsh 和私有 Desktop Host 只来自签名应用的资源树。插件安装接受桌面策略允许的 registry 包规格，不接受原始 pnpm 命令。激活前要求精确版本、锁文件完整性、经过审查的 `allowBuilds` 集合和仅限用户访问的目录权限。打包会翻转 Electron fuse，使交付的二进制不能以 Node 运行、不接受 `NODE_OPTIONS` 或 `--inspect` 命令行参数、只从 asar 加载应用，并启用 cookie 加密与 asar 完整性校验。签名安装包打包器与 GitHub zip/AppImage 打包器都设置这些值。
 
 Electron 发布产物必须签名；macOS 产物必须公证。发布自动化必须通过明确的环境变量提供应用 ID、macOS Developer ID 限定名、预期 Team ID 与一套完整的 notarytool 凭据。配置加载会拒绝缺失或格式错误的标识符和不完整的公证凭据，macOS 打包还会强制签名，避免证书发现过程静默选择其他已安装身份或生成未签名发布。运行时准备会验证每个内嵌 Mach-O 文件的精确 Authority 与 Team ID，以及时间戳和 hardened-runtime 标记。签名后钩子会执行 Apple 的深度严格应用验证，并要求同一叶证书 Authority 与 Team ID 完全匹配，验证通过后才继续生成产物。固定目标安装包命令使用[隔离的 App 副本并行公证](../process/2026-09-09-parallel-macos-notarization.zh.md)：ZIP 包含已钉票的 App，签名 DMG 则携带覆盖其中未钉票 App 的票据。DMG 的 artifact-completion hook 要求其使用配置的身份、具备有效票据并通过 Gatekeeper。只有两条产物流都成功，命令才会移入其输出并写入发布完成记录；仅生成目录的命令仍会公证 App 并钉票。macOS 更新使用签名 ZIP，因此 DMG 不生成 blockmap；否则钉票会让已经生成的 DMG blockmap 失效。自定义协议提供已安装的前端分发目录和活跃模块图点名的客户端文件，并拒绝路径穿越或访问这些根目录之外的内容。插件安装器 API 只对 Electron 拥有的管理 GUI 可用，不存在于浏览器应用或后端 RPC 中。
 

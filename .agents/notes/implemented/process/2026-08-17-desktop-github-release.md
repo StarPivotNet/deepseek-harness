@@ -19,7 +19,7 @@ The published version is `apps/desktop/package.json`'s `version`, which already 
 - `pnpm --filter @deepseek-ai/dsh deploy --legacy --prod` writes `dist-desktop/staging/host/dsh`.
 - The runner's Node 24 binary is copied beside that tree as `host/node` or `host/node.exe`.
 - The compiled desktop `lib/`, `assets/`, and `package.json` are copied into `dist-desktop/staging/app` so electron-builder does not walk the workspace.
-- electron-builder packages that leaf with `extraResources/host`. The staged app name is `dsh-desktop` and the Linux/Windows executable is `DeepSeekHarness`, because AppImage rejects the scoped npm name. macOS and Linux take `icon-512.png`; Windows takes the multi-size ICO. On Windows the packer spawns `pnpm.cmd` and writes a zip, not NSIS, because `pnpm dlx` nests NSIS templates behind a path that makensis cannot open.
+- electron-builder packages that leaf with `extraResources/host`. The staged app name is `dsh-desktop` and the Linux/Windows executable is `DeepSeekHarness`, because AppImage rejects the scoped npm name. macOS and Linux take `icon-512.png`; Windows takes the multi-size ICO. On Windows the packer spawns `pnpm.cmd` and writes a zip, not NSIS, because `pnpm dlx` nests NSIS templates behind a path that makensis cannot open. The written config sets Electron fuses so the archive cannot run as Node, does not honor `NODE_OPTIONS` or `--inspect`, loads the app only from asar, and enables cookie encryption plus asar integrity validation. The signed installer packer duplicates the same fuse values.
 
 A packaged window resolves `process.resourcesPath/host/dsh/lib/bin.js` and the bundled Node before any checkout or remembered system Node. Checkout launch is unchanged.
 
@@ -31,7 +31,7 @@ A packaged window resolves `process.resourcesPath/host/dsh/lib/bin.js` and the b
 | `ubuntu-24.04` | `DeepSeek Harness-<version>.AppImage` |
 | `windows-latest` | `DeepSeek Harness-<version>-win.zip` |
 
-Pushing `desktop-v*` packs and publishes. A manual dispatch with `publish=false` only packs. Publication requires the matching tag; `contents: write` is limited to the publish job. The publish job uploads only `*.zip`, `*.AppImage`, and `SHA256SUMS`; electron-builder leftover directories such as `linux-unpacked` stay out of the Release. Release notes name the archive contract, then list commits since the previous `desktop-v*` tag (`desktopReleaseNotes` in `scripts/desktop/pack.ts`).
+Pushing `desktop-v*` packs and publishes. A manual dispatch with `publish=false` only packs. Publication requires the matching tag; `contents: write` is limited to the publish job. The publish job uploads only `*.zip`, `*.AppImage`, and `SHA256SUMS`; electron-builder leftover directories such as `linux-unpacked` stay out of the Release. Publication marks the GitHub Release as prerelease only when the desktop version itself contains `-`. Release notes name the archive contract, then list commits since the previous `desktop-v*` tag (`desktopReleaseNotes` in `scripts/desktop/pack.ts`).
 
 ## Alternatives considered
 
@@ -60,4 +60,4 @@ What this costs:
 
 ## Testing
 
-`scripts/desktop/pack.spec.ts` pins tag naming, artifact names, platform flags, the Windows `pnpm.cmd` spawn, publish-tag rejection, and changelog notes. `apps/desktop/tests/host.spec.ts` pins packaged Host detection, bundled Node preference, and the 512px installer mark. The workflow is the executed pack-and-publish path.
+`scripts/desktop/pack.spec.ts` pins tag naming, artifact names, platform flags, the Windows `pnpm.cmd` spawn, publish-tag rejection, changelog notes, and the Electron fuses object after JSON serialization. `apps/desktop/tests/host.spec.ts` pins packaged Host detection, bundled Node preference, and the 512px installer mark. The workflow is the executed pack-and-publish path.

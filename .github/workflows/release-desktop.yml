@@ -198,10 +198,14 @@ jobs:
           '
           shopt -s nullglob
           archives=(dist-desktop/release/*.zip dist-desktop/release/*.AppImage)
+          extra=()
+          if [[ "$version" == *-* ]]; then
+            extra+=(--prerelease)
+          fi
           gh release create "$tag" \
             --title "DeepSeek Harness 桌面版 ${version}" \
             --notes-file /tmp/dsh-desktop-notes.md \
             --verify-tag \
-            --prerelease \
+            "${extra[@]}" \
             "${archives[@]}" \
             dist-desktop/release/SHA256SUMS

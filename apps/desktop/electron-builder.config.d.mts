@@ -4,6 +4,14 @@ export interface DesktopElectronBuilderConfig {
   readonly directories: {
     readonly output: string
   }
+  readonly electronFuses: {
+    readonly runAsNode: false
+    readonly enableCookieEncryption: true
+    readonly enableNodeOptionsEnvironmentVariable: false
+    readonly enableNodeCliInspectArguments: false
+    readonly enableEmbeddedAsarIntegrityValidation: true
+    readonly onlyLoadAppFromAsar: true
+  }
   readonly extraResources: readonly [
     { readonly from: string, readonly to: 'runtime' },
     { readonly from: string, readonly to: 'dsh' },

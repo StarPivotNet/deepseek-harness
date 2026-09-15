@@ -30,6 +30,20 @@ export const DESKTOP_PLATFORMS = ['darwin', 'linux', 'win32'] as const
 export type DesktopPlatform = (typeof DESKTOP_PLATFORMS)[number]
 
 /**
+ * Electron fuses written into the GitHub zip/AppImage packer config.
+ * The signed installer packer duplicates the same values in
+ * `apps/desktop/electron-builder.config.mjs`.
+ */
+export const DESKTOP_ELECTRON_FUSES = {
+  runAsNode: false,
+  enableCookieEncryption: true,
+  enableNodeOptionsEnvironmentVariable: false,
+  enableNodeCliInspectArguments: false,
+  enableEmbeddedAsarIntegrityValidation: true,
+  onlyLoadAppFromAsar: true,
+} as const
+
+/**
  * Read the desktop package version that names the GitHub Release tag.
  * @param manifestPath - desktop `package.json`.
  * @returns the version string.
@@ -438,15 +452,18 @@ function stageHost(skipBuild = false): void {
 }
 
 /**
- * Write the electron-builder config that consumes the staged Host.
+ * electron-builder JSON for the GitHub zip/AppImage packer.
  * @param version - desktop package version.
  * @param platform - packaged platform.
- * @returns the config path.
+ * @param electronVersion - Electron version written into the config.
+ * @returns the config object later serialized to staging.
  */
-function writeBuilderConfig(version: string, platform: DesktopPlatform): string {
-  mkdirSync(stagingRoot, { recursive: true })
-  const configPath = join(stagingRoot, 'electron-builder.json')
-  const config = {
+export function desktopElectronBuilderConfig(
+  version: string,
+  platform: DesktopPlatform,
+  electronVersion: string,
+): Record<string, unknown> {
+  return {
     appId: 'ai.deepseek.dsh.desktop',
     productName: 'DeepSeek Harness',
     copyright: 'Copyright © DeepSeek',
@@ -458,7 +475,7 @@ function writeBuilderConfig(version: string, platform: DesktopPlatform): string 
       name: 'dsh-desktop',
       version,
     },
-    electronVersion: installedElectronVersion(),
+    electronVersion,
     nodeGypRebuild: false,
     npmRebuild: false,
     executableName: 'DeepSeekHarness',
@@ -495,8 +512,23 @@ function writeBuilderConfig(version: string, platform: DesktopPlatform): string 
       icon: join(desktopRoot, 'assets', 'icon.ico'),
       target: ['zip'],
     },
+    electronFuses: { ...DESKTOP_ELECTRON_FUSES },
   }
-  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`)
+}
+
+/**
+ * Write the electron-builder config that consumes the staged Host.
+ * @param version - desktop package version.
+ * @param platform - packaged platform.
+ * @returns the config path.
+ */
+function writeBuilderConfig(version: string, platform: DesktopPlatform): string {
+  mkdirSync(stagingRoot, { recursive: true })
+  const configPath = join(stagingRoot, 'electron-builder.json')
+  writeFileSync(
+    configPath,
+    `${JSON.stringify(desktopElectronBuilderConfig(version, platform, installedElectronVersion()), null, 2)}\n`,
+  )
   return configPath
 }
 
