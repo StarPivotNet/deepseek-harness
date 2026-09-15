@@ -28,14 +28,14 @@ const DESKTOP_UPLOAD_CREDENTIAL_ENV_NAMES = new Set([
 ])
 
 /** Fixed platform and architecture identifiers exposed by package scripts. */
-export type DesktopPackageTargetName = 'mac-arm64' | 'mac-x64' | 'win-x64'
+export type DesktopPackageTargetName = 'mac-arm64' | 'mac-x64' | 'win-x64' | 'linux-x64'
 
 /** One supported release target and its electron-builder selectors. */
 export interface DesktopPackageTarget {
   readonly name: DesktopPackageTargetName
-  readonly platform: 'darwin' | 'win32'
+  readonly platform: 'darwin' | 'win32' | 'linux'
   readonly arch: 'arm64' | 'x64'
-  readonly builderPlatform: '--mac' | '--win'
+  readonly builderPlatform: '--mac' | '--win' | '--linux'
   readonly builderArch: '--arm64' | '--x64'
 }
 
@@ -59,6 +59,13 @@ const TARGETS: Record<DesktopPackageTargetName, DesktopPackageTarget> = {
     platform: 'win32',
     arch: 'x64',
     builderPlatform: '--win',
+    builderArch: '--x64',
+  },
+  'linux-x64': {
+    name: 'linux-x64',
+    platform: 'linux',
+    arch: 'x64',
+    builderPlatform: '--linux',
     builderArch: '--x64',
   },
 }
@@ -158,6 +165,9 @@ export function resolveDesktopPackageTarget(
   }
   if (target.platform === 'darwin' && hostPlatform !== 'darwin') {
     throw new Error(`desktop package: ${name} requires a macOS build host`)
+  }
+  if (target.platform === 'linux' && hostPlatform !== 'linux') {
+    throw new Error(`desktop package: ${name} requires a Linux build host`)
   }
   if (name === 'mac-arm64' && hostArch !== 'arm64') {
     throw new Error('desktop package: mac-arm64 requires an Apple Silicon build host')
@@ -268,6 +278,28 @@ function runPnpm(
   })
 }
 
+/**
+ * Run one flagged repository script with the workspace tsx loader, keeping
+ * argument passing out of pnpm's own flag parser.
+ * @param args - script path relative to the repository root plus its arguments.
+ * @param env - child environment.
+ * @returns completion promise.
+ */
+function runRepositoryScript(args: readonly string[], env: NodeJS.ProcessEnv): Promise<void> {
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn(process.execPath, ['--import', 'tsx/esm', ...args], {
+      cwd: REPOSITORY_ROOT,
+      env,
+      stdio: 'inherit',
+    })
+    child.once('error', reject)
+    child.once('close', (code, signal) => {
+      if (code === 0) resolvePromise()
+      else reject(new Error(`desktop package: node ${args.join(' ')} exited with ${String(code ?? signal)}`))
+    })
+  })
+}
+
 async function main(): Promise<void> {
   const invocation = parseDesktopPackageInvocation(process.argv.slice(2))
   const { target } = invocation
@@ -288,7 +320,9 @@ async function main(): Promise<void> {
     if (!invocation.unsigned && process.env[name] !== undefined) electronBuilderEnv[name] = process.env[name]
   }
   await runPnpm(['run', 'build:official'], buildEnv, REPOSITORY_ROOT)
-  await runPnpm(['run', 'release:pack', '--family', 'dsh', '--out', buildPaths.packedDsh], buildEnv, REPOSITORY_ROOT)
+  // `pnpm run <script> --flags` lets pnpm 11 swallow the flags as npm config;
+  // flagged repository scripts are invoked through Node with the tsx loader instead.
+  await runRepositoryScript(['scripts/release/pack.ts', '--family', 'dsh', '--out', buildPaths.packedDsh], buildEnv)
   await runPnpm([
     '--dir',
     'apps/desktop-host',
@@ -296,7 +330,7 @@ async function main(): Promise<void> {
     '--pack-destination',
     buildPaths.packedDsh,
   ], buildEnv, REPOSITORY_ROOT)
-  await runPnpm(['run', 'release:pack', '--family', 'vendor', '--out', buildPaths.packedVendor], buildEnv, REPOSITORY_ROOT)
+  await runRepositoryScript(['scripts/release/pack.ts', '--family', 'vendor', '--out', buildPaths.packedVendor], buildEnv)
   rmSync(buildPaths.packedLandlock, { recursive: true, force: true })
   mkdirSync(buildPaths.packedLandlock, { recursive: true })
   await runPnpm(['--dir', 'native/system', 'run', 'build:ts'], buildEnv, REPOSITORY_ROOT)

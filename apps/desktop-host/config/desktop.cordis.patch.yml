@@ -21,6 +21,14 @@
 - id: directory-picker
   disabled: true
 
+# Desktop serves over pipes with no webserver, so the plugin-catalog HTTP
+# route has no consumer here; Discover reads the same catalog file directly
+# from the profile (see readShippedCatalog). The marketplace Host half and
+# its browser tabs stay active: installs run through the profile service
+# the Desktop Host provides, with the packaged pnpm on the child PATH.
+- id: plugin-catalog
+  disabled: true
+
 - id: connection
   inject:
     - credentials

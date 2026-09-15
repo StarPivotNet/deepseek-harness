@@ -2,6 +2,8 @@
  * In-box Host marketplace. Registers a loopback Connection RPC channel
  * at /plugin-marketplace so the browser half does not need api-remotes.
  */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import {
@@ -16,7 +18,7 @@ import {
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import {
-  emptyCatalog, isCatalogUrl, MAX_CATALOG_BYTES, normalizeCatalogUrls,
+  BUILTIN_CATALOG_PATH, emptyCatalog, isCatalogUrl, MAX_CATALOG_BYTES, normalizeCatalogUrls,
   parseCatalogDocument, sourceTitleFromUrl,
 } from './catalog.ts'
 import {
@@ -514,6 +516,42 @@ function resolveCatalogFetchUrl(ctx: Context, url: string): string {
   return `http://${host}:${String(server.port)}${url}`
 }
 
+/**
+ * Read the shipped catalog straight from the profile's installed
+ * `dsh-host-plugin-catalog` package. Desktop Hosts run without a web server,
+ * so the in-box path has no HTTP route to self-fetch; the file ships inside
+ * the same profile the route would serve from.
+ * @param ctx - plugin context carrying the `profile` service.
+ * @param url - the in-box catalog path.
+ * @returns the parsed catalog, or the structured fetch failure.
+ */
+function readShippedCatalog(
+  ctx: Context,
+  url: string,
+): Promise<
+  | { readonly ok: true; readonly source: CatalogSource; readonly entries: readonly CatalogPlugin[] }
+  | { readonly ok: false; readonly source: CatalogSource }
+> {
+  const source: CatalogSource = { url, title: sourceTitleFromUrl(url), ok: false, count: 0 }
+  try {
+    const file = join(requireProfile(ctx).dir, 'node_modules', '@deepseek-ai', 'dsh-host-plugin-catalog', 'catalog.json')
+    const buffer = readFileSync(file)
+    if (buffer.byteLength > MAX_CATALOG_BYTES) {
+      return Promise.resolve({ ok: false, source: { ...source, error: 'catalog too large' } })
+    }
+    const document = parseCatalogDocument(JSON.parse(buffer.toString('utf8')), url)
+    if (!document.ok) return Promise.resolve({ ok: false, source: { ...source, error: document.message } })
+    return Promise.resolve({
+      ok: true,
+      source: { url, title: document.title, ok: true, count: document.entries.length },
+      entries: document.entries.map(entry => ({ ...entry, sourceUrl: url, sourceTitle: document.title })),
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return Promise.resolve({ ok: false, source: { ...source, error: `shipped catalog unreadable: ${message}` } })
+  }
+}
+
 async function fetchCatalog(
   ctx: Context,
   url: string,
@@ -527,6 +565,10 @@ async function fetchCatalog(
       ok: false,
       source: { url, title: sourceTitleFromUrl(url), ok: false, error: 'URL must be http(s) or the shipped catalog path', count: 0 },
     }
+  }
+  if (url === BUILTIN_CATALOG_PATH) {
+    const server = ctx.get('webServer') as { port?: number } | undefined
+    if (typeof server?.port !== 'number') return readShippedCatalog(ctx, url)
   }
   const controller = new AbortController()
   const timer = setTimeout(() => { controller.abort() }, timeoutMs)

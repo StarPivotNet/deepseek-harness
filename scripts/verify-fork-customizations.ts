@@ -62,6 +62,21 @@ const CHECKS: readonly CustomizationCheck[] = [
       }
     },
   },
+  {
+    label: 'Desktop keeps the marketplace rows active (Discover reads the shipped file)',
+    check: (repoRoot) => {
+      const patch = join(repoRoot, 'apps', 'desktop-host', 'config', 'desktop.cordis.patch.yml')
+      return !fileContains(patch, '- id: plugin-marketplace\n  disabled: true')
+        && !fileContains(patch, '- id: ui-settings-plugin-marketplace\n  disabled: true')
+    },
+  },
+  {
+    label: 'marketplace host can read the shipped catalog without a web server',
+    check: repoRoot => fileContains(
+      join(repoRoot, 'packages', 'client', 'ui-settings-plugin-marketplace', 'src', 'host', 'index.ts'),
+      'readShippedCatalog',
+    ),
+  },
 ]
 
 /**

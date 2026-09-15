@@ -167,8 +167,11 @@ describe('desktop builder targets', () => {
     expect(pnpmBin()).toBe(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
   })
 
-  it('allows unused Electron signer patches when deploying the Host', () => {
+  it('ships the renderer shell and the prepared runtime resources', () => {
     const source = readFileSync(join(import.meta.dirname, 'pack.ts'), 'utf8')
-    expect(source).toContain('--config.allow-unused-patches=true')
+    expect(source).toContain("'renderer/**/*'")
+    expect(source).toContain("{ from: prepared.runtime, to: 'runtime' }")
+    expect(source).toContain("{ from: prepared.dsh, to: 'dsh' }")
+    expect(source).toContain("{ from: join(prepared.dsh, 'node_modules'), to: 'dsh/node_modules' }")
   })
 })

@@ -89,34 +89,10 @@ jobs:
         shell: bash
         run: pnpm exec tsx scripts/desktop/pack.ts --platform ${{ matrix.platform }}
 
-      # Boot-smoke the staged Host on the POSIX packers: a composition or
-      # deploy-closure breakage must fail the pack job instead of shipping
-      # an archive that cannot start.
-      # Use node --import (not pnpm exec): pnpm exec can re-resolve the workspace
-      # after pack and prune the tsx bin the smoke needs.
-      - name: Boot-smoke the staged Host
-        if: matrix.platform != 'win32'
-        shell: bash
-        env:
-          # electron-builder may leave NODE_ENV=production and prune tsx; keep smoke runnable.
-          NODE_ENV: development
-        run: |
-          pnpm install --frozen-lockfile --ignore-scripts
-          smoke_home="$(mktemp -d "${RUNNER_TEMP:-/tmp}/dsh-smoke-home.XXXXXX")"
-          export HOME="$smoke_home"
-          export DSH_HOME="$smoke_home/.dsh"
-          mkdir -p "$DSH_HOME"
-          # Capture a short raw Host boot attempt for triage if smoke fails.
-          set +e
-          dist-desktop/staging/host/node dist-desktop/staging/host/dsh/lib/bin.js web --port 0 --no-open             > /tmp/dsh-staged-host-boot.log 2>&1 &
-          host_pid=$!
-          sleep 8
-          kill "$host_pid" 2>/dev/null || true
-          wait "$host_pid" 2>/dev/null || true
-          set -e
-          echo "===== staged Host raw boot (8s) ====="
-          sed -n '1,200p' /tmp/dsh-staged-host-boot.log || true
-          node --import tsx/esm scripts/desktop/host-boot-smoke.ts --host dist-desktop/staging/host
+      # Host boot coverage is owned by the prepare chain inside pack:
+      # `prepare:dsh` runs `smokeDesktopRuntime` against the exact resource
+      # tree (DesktopHostProcess boot + Web frontend fetch) and fails the
+      # pack before electron-builder ships an archive that cannot start.
 
       - uses: actions/upload-artifact@v4
         with:

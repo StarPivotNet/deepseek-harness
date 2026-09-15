@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
-import { extname, join, normalize, resolve, sep } from 'node:path'
+import { delimiter, dirname, extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   app,
@@ -207,8 +207,13 @@ async function main(): Promise<void> {
   const backend = new DesktopBackendController((onFailure) => {
     if (development === undefined) manager.assertProfileRuntime(activeProject)
     const hostInspectPort = developmentHostInspectPort(development !== undefined)
+    // In-Host profile management (plugin marketplace installs) resolves a
+    // `pnpm` executable from PATH; the packaged runtime ships one beside Node.
+    const hostEnvironment = development === undefined
+      ? { ...process.env, PATH: `${dirname(resources.pnpm)}${delimiter}${process.env.PATH ?? ''}` }
+      : process.env
     const host = new DesktopHostProcess(resources.node, development ?? resources.dsh, activeProject,
-      hostInspectPort, process.env, onFailure)
+      hostInspectPort, hostEnvironment, onFailure)
     return {
       start: () => host.start(),
       stop: () => host.stop(),

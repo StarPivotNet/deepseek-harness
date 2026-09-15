@@ -1,24 +1,23 @@
 /**
- * Stage a packaged desktop Host and run electron-builder for one platform.
- * The window stays an Electron shell; the Host is a `pnpm deploy` of
- * `@deepseek-ai/dsh` plus a Node 24 binary copied from this runner
+ * Stage a packaged desktop runtime and run electron-builder for one platform.
+ * The window stays an Electron shell; resources carry the Desktop-managed
+ * `runtime/` (Node + pnpm) and `dsh/` (Host package set) prepared by
+ * `apps/desktop` `package:<target> -- --prepare-only`
  * ([rationale](../../.agents/notes/implemented/process/2026-08-17-desktop-github-release.md)).
  */
 
 import { spawnSync } from 'node:child_process'
-import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { restoreVendoredHostPackages } from '../docker/restore-vendored-host.ts'
-import { backfillWorkspaceHostClosure } from './backfill-host-closure.ts'
 import { isEntry } from '../release/process.ts'
 
 const root = resolve(import.meta.dirname, '../..')
 const desktopRoot = join(root, 'apps', 'desktop')
 const stagingRoot = join(root, 'dist-desktop', 'staging')
 const appRoot = join(stagingRoot, 'app')
-const hostRoot = join(stagingRoot, 'host')
 const outDir = join(root, 'dist-desktop', 'release')
+const desktopBuildTargets = join(desktopRoot, '.desktop-build', 'targets')
 
 /** electron-builder pin used by both local and CI packaging. */
 export const ELECTRON_BUILDER_SPEC = 'electron-builder@26.15.3'
@@ -366,12 +365,13 @@ export function parsePlatform(value: string | undefined): DesktopPlatform {
  * @param command - executable.
  * @param args - arguments.
  * @param cwd - working directory.
+ * @param environment - extra variables layered over the packer environment.
  */
-function run(command: string, args: readonly string[], cwd: string = root): void {
+function run(command: string, args: readonly string[], cwd: string = root, environment: Record<string, string> = {}): void {
   const result = spawnSync(command, [...args], {
     cwd,
     stdio: 'inherit',
-    env: { ...process.env, CI: 'true' },
+    env: { ...process.env, CI: 'true', ...environment },
     shell: process.platform === 'win32',
   })
   if (result.error !== undefined) throw result.error
@@ -388,62 +388,85 @@ export function pnpmBin(): string {
   return process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 }
 
-/**
- * Copy this runner's Node binary into the staged Host.
- * @param destination - packaged Host root.
- */
-function stageNodeBinary(destination: string): string {
-  const name = process.platform === 'win32' ? 'node.exe' : 'node'
-  const staged = join(destination, name)
-  cpSync(process.execPath, staged)
-  if (process.platform !== 'win32') chmodSync(staged, 0o755)
-  return staged
+/** Prepared resource directories the packaged app loads at runtime. */
+interface PreparedDesktopRuntime {
+  readonly runtime: string
+  readonly dsh: string
 }
 
 /**
- * Deploy `@deepseek-ai/dsh` into `dist-desktop/staging/host/dsh` and copy Node.
- * @param skipBuild - skip `pnpm run build` when artifacts already exist.
+ * Map a packaging platform to the `apps/desktop` prepare target that owns its runtime tree.
+ * @param platform - packaged platform.
+ * @returns the `package:<name>` target name.
  */
-function stageHost(skipBuild = false): void {
-  if (!skipBuild) run(pnpmBin(), ['run', 'build'])
-  const bin = join(root, 'apps', 'cli', 'lib', 'bin.js')
-  if (!existsSync(bin)) {
-    throw new Error('desktop pack: apps/cli/lib/bin.js is missing; run without --skip-build')
+function prepareTargetName(platform: DesktopPlatform): 'mac-arm64' | 'win-x64' | 'linux-x64' {
+  switch (platform) {
+    case 'darwin': return 'mac-arm64'
+    case 'win32': return 'win-x64'
+    case 'linux': return 'linux-x64'
+    default: {
+      const exhaustive: never = platform
+      throw new Error(`desktop pack: unsupported platform ${String(exhaustive)}`)
+    }
   }
-  rmSync(stagingRoot, { recursive: true, force: true })
-  mkdirSync(hostRoot, { recursive: true })
-  const deployed = join(hostRoot, 'dsh')
+}
+
+/**
+ * Run the `apps/desktop` preparation chain into `.desktop-build/targets/<target>`
+ * and return the resource roots electron-builder must ship.
+ * @param platform - packaged platform.
+ * @returns verified `runtime/` and `dsh/` roots.
+ */
+function prepareDesktopRuntime(platform: DesktopPlatform): PreparedDesktopRuntime {
+  const target = prepareTargetName(platform)
+  // Fork releases publish without Apple credentials; the enclosing unsigned
+  // app is the trust root and native files keep linker ad-hoc signatures.
+  // `run` (not `exec`) keeps npm_execpath set to pnpm for the prepare chain's
+  // nested package commands; pnpm 11 passes unknown boolean flags through.
   run(pnpmBin(), [
     '--filter',
-    '@deepseek-ai/dsh',
-    'deploy',
-    '--legacy',
-    '--prod',
-    // Production Host deploy omits Electron's patched signer.
-    '--config.allow-unused-patches=true',
-    '--config.node-linker=hoisted',
-    '--config.auto-install-peers=true',
-    '--config.link-workspace-packages=true',
-    deployed,
-  ])
-  if (!existsSync(join(deployed, 'lib', 'bin.js'))) {
-    throw new Error('desktop pack: pnpm deploy did not write apps/cli/lib/bin.js into the Host tree')
+    '@deepseek-ai/dsh-desktop',
+    'run',
+    `package:${target}`,
+    '--prepare-only',
+  ], root, { DSH_DESKTOP_UNSIGNED_RUNTIME: '1' })
+  const targetRoot = join(desktopBuildTargets, target)
+  const runtime = join(targetRoot, 'runtime')
+  const dsh = join(targetRoot, 'dsh')
+  const nodeEntry = join(runtime, 'node', platform === 'win32' ? 'node.exe' : 'node')
+  for (const [label, path] of [['runtime node', nodeEntry], ['runtime pnpm', join(runtime, 'pnpm', 'bin', 'pnpm.mjs')], ['dsh node_modules', join(dsh, 'node_modules')]] as const) {
+    if (!existsSync(path)) throw new Error(`desktop pack: prepared ${label} is missing at ${path}`)
   }
-  restoreVendoredHostPackages(deployed, root)
-  const backfilled = backfillWorkspaceHostClosure(deployed, root)
-  if (backfilled.length > 0) {
-    console.log(`desktop pack: backfilled Host workspace closure: ${backfilled.join(', ')}`)
-  }
-  stageNodeBinary(hostRoot)
+  return { runtime, dsh }
 }
 
 /**
- * Write the electron-builder config that consumes the staged Host.
+ * Adopt the previous prepare output for a local re-pack without rebuilding.
+ * @param platform - packaged platform.
+ * @returns verified `runtime/` and `dsh/` roots.
+ */
+function reusePreparedRuntime(platform: DesktopPlatform): PreparedDesktopRuntime {
+  const target = prepareTargetName(platform)
+  const targetRoot = join(desktopBuildTargets, target)
+  const runtime = join(targetRoot, 'runtime')
+  const dsh = join(targetRoot, 'dsh')
+  const nodeEntry = join(runtime, 'node', platform === 'win32' ? 'node.exe' : 'node')
+  for (const [label, path] of [['runtime node', nodeEntry], ['runtime pnpm', join(runtime, 'pnpm', 'bin', 'pnpm.mjs')], ['dsh node_modules', join(dsh, 'node_modules')]] as const) {
+    if (!existsSync(path)) {
+      throw new Error(`desktop pack: --skip-build needs a prepared ${label} at ${path}; run without --skip-build`)
+    }
+  }
+  return { runtime, dsh }
+}
+
+/**
+ * Write the electron-builder config that ships the prepared runtime resources.
  * @param version - desktop package version.
  * @param platform - packaged platform.
+ * @param prepared - verified resource roots from the prepare chain.
  * @returns the config path.
  */
-function writeBuilderConfig(version: string, platform: DesktopPlatform): string {
+function writeBuilderConfig(version: string, platform: DesktopPlatform, prepared: PreparedDesktopRuntime): string {
   mkdirSync(stagingRoot, { recursive: true })
   const configPath = join(stagingRoot, 'electron-builder.json')
   const config = {
@@ -464,14 +487,15 @@ function writeBuilderConfig(version: string, platform: DesktopPlatform): string 
     executableName: 'DeepSeekHarness',
     files: [
       'lib/**/*',
+      'renderer/**/*',
       'assets/**/*',
       'package.json',
     ],
     extraResources: [
-      {
-        from: hostRoot,
-        to: 'host',
-      },
+      { from: prepared.runtime, to: 'runtime' },
+      { from: prepared.dsh, to: 'dsh' },
+      // electron-builder drops a source directory's root node_modules; stage it explicitly.
+      { from: join(prepared.dsh, 'node_modules'), to: 'dsh/node_modules' },
     ],
     asar: true,
     artifactName: platform === 'darwin'
@@ -517,8 +541,8 @@ export function installedElectronVersion(): string {
 }
 
 /**
- * Write a dependency-free staged desktop manifest. Host code lives in
- * extraResources; electron-builder must not scan pnpm workspaces from this leaf.
+ * Write a dependency-free staged desktop manifest. The bundle inlines every
+ * runtime dependency; electron-builder must not scan pnpm workspaces from this leaf.
  * @param manifestPath - staged `apps/desktop` package.json copy.
  */
 export function pinStagedElectronVersion(manifestPath: string): void {
@@ -546,7 +570,7 @@ function stageApp(): void {
   }
   rmSync(appRoot, { recursive: true, force: true })
   mkdirSync(appRoot, { recursive: true })
-  for (const name of ['lib', 'assets', 'package.json'] as const) {
+  for (const name of ['lib', 'renderer', 'assets', 'package.json'] as const) {
     cpSync(join(desktopRoot, name), join(appRoot, name), { recursive: true })
   }
   pinStagedElectronVersion(join(appRoot, 'package.json'))
@@ -558,15 +582,15 @@ function stageApp(): void {
 }
 
 /**
- * Package the staged Host with electron-builder.
+ * Package the prepared runtime with electron-builder.
  * @param platform - packaged platform.
- * @param skipBuild - skip the repository build before staging.
+ * @param skipBuild - reuse an existing prepared runtime tree instead of re-running the prepare chain.
  */
 function packDesktop(platform: DesktopPlatform, skipBuild = false): void {
   const version = desktopVersion()
-  stageHost(skipBuild)
+  const prepared = skipBuild ? reusePreparedRuntime(platform) : prepareDesktopRuntime(platform)
   stageApp()
-  const configPath = writeBuilderConfig(version, platform)
+  const configPath = writeBuilderConfig(version, platform, prepared)
   rmSync(outDir, { recursive: true, force: true })
   mkdirSync(outDir, { recursive: true })
   const target = builderTarget(platform)

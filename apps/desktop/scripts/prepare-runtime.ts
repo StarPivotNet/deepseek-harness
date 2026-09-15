@@ -88,6 +88,12 @@ function preparePnpm(): string {
   const destination = join(RUNTIME_ROOT, 'pnpm')
   rmSync(destination, { recursive: true, force: true })
   cpSync(packageDir, destination, { recursive: true })
+  // In-Host profile management (plugin marketplace installs) resolves pnpm
+  // from PATH by executable name; the npm package only ships JS entries.
+  const binDir = join(destination, 'bin')
+  const unixEntry = join(binDir, 'pnpm')
+  writeFileSync(unixEntry, '#!/bin/sh\nexec "$(dirname "$0")/../../node/node" "$(dirname "$0")/pnpm.cjs" "$@"\n', { mode: 0o755 })
+  writeFileSync(join(binDir, 'pnpm.cmd'), '@echo off\r\n"%~dp0..\\..\\node\\node.exe" "%~dp0pnpm.cjs" %*\r\n')
   return manifest.version
 }
 

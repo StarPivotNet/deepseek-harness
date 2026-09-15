@@ -60,6 +60,7 @@ declare module '@deepseek-ai/cordis' {
 export class HostConnectionService extends Service implements HostConnectionHandle {
   private readonly interceptors = new Map<string, ConnectionRpcInterceptor>()
   private readonly fetchRoutes = new Map<string, RegisteredFetchRoute>()
+  private readonly channelRoutes = new Map<string, ConnectionFetchHandler>()
 
   /**
    * Provide the Host half over the active HTTP server.
@@ -126,6 +127,9 @@ export class HostConnectionService extends Service implements HostConnectionHand
         const pathname = new URL(request.url).pathname
         const route = this.fetchRoutes.get(pathname)
         if (route?.methods.has(request.method) === true) return route.fetch(request)
+        for (const [channel, channelHandler] of this.channelRoutes) {
+          if (pathname === channel || pathname.startsWith(`${channel}/`)) return channelHandler.fetch(request)
+        }
         const endpoint = endpointFromPath(channel, pathname)
         const interceptor = this.interceptors.get(channel)
         if (endpoint === undefined || interceptor === undefined || !interceptor.matches(endpoint)) {
@@ -162,6 +166,13 @@ export class HostConnectionService extends Service implements HostConnectionHand
   ): () => Promise<void> {
     assertChannel(channel)
     const fetchHandler = rpcFetchHandler(channel, handler)
+    // Pipe transports without an HTTP server dispatch the same channel
+    // handler through createSharedFetchHandler, so the registration lives on
+    // the service table beside the webServer route.
+    owner.effect(() => {
+      this.channelRoutes.set(channel, fetchHandler)
+      return () => { this.channelRoutes.delete(channel) }
+    }, `client-connection: ${channel} rpc channel table`)
     const route: WebRoute = {
       kind: 'prefix',
       path: channel,

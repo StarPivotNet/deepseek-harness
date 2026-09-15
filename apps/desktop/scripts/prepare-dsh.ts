@@ -134,7 +134,15 @@ async function main(): Promise<void> {
       }
     }
     if (process.platform === 'darwin') {
-      await signMacOSRuntime(DSH_OUTPUT_ROOT, resolveDesktopAppId(process.env), resolveMacOSSigningEnvironment(process.env))
+      // Unsigned releases publish without Apple credentials: the runtime keeps
+      // its linker ad-hoc signatures and ships behind the enclosing unsigned app.
+      const unsignedRuntime = process.env.DSH_DESKTOP_UNSIGNED_RUNTIME === '1'
+      if (process.env.DSH_DESKTOP_UNSIGNED_RUNTIME !== undefined && !['0', '1'].includes(process.env.DSH_DESKTOP_UNSIGNED_RUNTIME)) {
+        throw new Error('desktop runtime: DSH_DESKTOP_UNSIGNED_RUNTIME must be 0 or 1')
+      }
+      if (!unsignedRuntime) {
+        await signMacOSRuntime(DSH_OUTPUT_ROOT, resolveDesktopAppId(process.env), resolveMacOSSigningEnvironment(process.env))
+      }
     }
     writeDesktopRuntime(DSH_OUTPUT_ROOT, release, packageSet.packages.map(entry => entry.name), target)
     const descriptor = await verifyDesktopRuntime(DSH_OUTPUT_ROOT, release.version, target)

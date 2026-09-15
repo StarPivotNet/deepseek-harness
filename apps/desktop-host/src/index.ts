@@ -8,7 +8,7 @@ import { createRequire } from 'node:module'
 import { closeSync, createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { once } from 'node:events'
 import { readFile } from 'node:fs/promises'
-import { dirname, extname, join, normalize, resolve, sep } from 'node:path'
+import { basename, dirname, extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
@@ -18,6 +18,7 @@ import {
   loadLayeredEnv,
   loadProfileDirectory,
   loadOverlayPatches,
+  provideProfile,
 } from '@deepseek-ai/dsh-app-boot'
 import { provideCmdline } from '@deepseek-ai/dsh-cmdline'
 import { DSH_LAUNCH_ENVIRONMENT_KEY } from '@deepseek-ai/dsh-launch-environment'
@@ -296,6 +297,13 @@ export async function runDesktopHost(
     current = hostCtx
     hostCtx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, environment)
     provideCmdline(hostCtx, { args: [], exit: () => {} })
+    // The in-Host marketplace and profile-aware rows read the Electron-owned
+    // desktop project directory; mutations there stay subject to its lock.
+    provideProfile(hostCtx, {
+      name: basename(absoluteProject),
+      dir: absoluteProject,
+      installAnchor: join(absoluteProject, 'package.json'),
+    })
   })
   current = ctx
   const connection = ctx.get('connection')
@@ -339,9 +347,12 @@ export async function runDesktopHost(
           signal: controller.signal,
         }
         const request = new Request(url, init)
+        // Non-GET application posts outside /api are loopback RPC channels
+        // (for example the plugin marketplace); the connection handler owns
+        // them and answers 404 for anything unclaimed.
         const response = url.pathname === DESKTOP_STREAM_PATH
           ? await streams.fetch(request)
-          : url.pathname.startsWith('/api/')
+          : url.pathname.startsWith('/api/') || (request.method !== 'GET' && request.method !== 'HEAD' && !url.pathname.startsWith('/plugins/'))
             ? await api.fetch(request)
             : await assets.fetch(request)
         await writeResponse(encodeDesktopResponseStart(command.streamId, {
