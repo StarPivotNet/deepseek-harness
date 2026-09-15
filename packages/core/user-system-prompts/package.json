@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-user-system-prompts",
   "description": "User-authored system-prompt library and per-model assembly",
-  "version": "0.1.3-alpha.2",
+  "version": "0.1.5-rc.2.3",
   "publishConfig": {
     "access": "public"
   },
