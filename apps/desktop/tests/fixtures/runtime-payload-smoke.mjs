@@ -64,8 +64,13 @@ async function checkPty() {
   }
 }
 
-/** The prebuilt Node-API flock addon owns the lease path fs-ext used to serve. */
+/**
+ * The prebuilt Node-API flock addon owns the POSIX lease path fs-ext used to
+ * serve. Windows leases take the session package's LockFileEx branch instead,
+ * so this check reports false there rather than exercising the addon.
+ */
 async function checkFlock() {
+  if (process.platform === 'win32') return false
   const { tryLockExclusive } = requireRuntime('@deepseek-ai/node-addon-system/flock')
   const file = join(scratch, 'flock.txt')
   writeFileSync(file, 'lease', { flag: 'wx', mode: 0o600 })
@@ -78,6 +83,7 @@ async function checkFlock() {
     closeSync(owner)
     closeSync(contender)
   }
+  return true
 }
 
 /** Resolve one system function through Koffi's packaged native module. */
@@ -134,5 +140,5 @@ try {
 // Natural event-loop drain includes node-pty's worker and console-list helper teardown.
 process.once('beforeExit', () => {
   console.log(JSON.stringify({ node: process.versions.node, platform: process.platform, arch: process.arch,
-    flock: true, koffi: true, sharp: true, html: true, pty: true }))
+    flock: process.platform !== 'win32', koffi: true, sharp: true, html: true, pty: true }))
 })
