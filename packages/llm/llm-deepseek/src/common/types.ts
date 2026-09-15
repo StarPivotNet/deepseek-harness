@@ -1,5 +1,5 @@
 /** Shared catalog and request-local dependencies for DeepSeek protocols. */
-import type { ModelModality, SystemPromptUpdate, ResolvedRetryPolicy, ImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
+import type { SystemPromptUpdate, ResolvedRetryPolicy, ImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
 import type { AttachmentStore, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type { CredentialRef } from '@deepseek-ai/dsh-credentials'
 import type { AnonymousUserId } from '@deepseek-ai/dsh-anonymous-user-id'
@@ -21,8 +21,8 @@ export interface DeepSeekCatalogModel {
   contextWindow?: number
   /** Per-request output cap for this model; omission falls back to the profile's {@link DeepSeekConnectionOptions.maxTokens}. */
   maxTokens?: number
-  /** Accepted request modalities; omission is text-only. */
-  inputModalities?: ModelModality[]
+  /** Accepted request modalities; omission is text-only. DeepSeek routes accept text and image. */
+  inputModalities?: Array<'text' | 'image'>
   /**
    * Total-pixel budget replacing the published token-grid projection for one
    * deterministic request preview, or the 512-by-512 `low` preset; omission

@@ -16,7 +16,7 @@
  * created later through the host Settings API.
  */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type { SessionFace } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ISessions, SessionFace } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
 import type { PermissionCatalog, PermissionSelection } from '@deepseek-ai/dsh-permission-presets/client'
 // Direct dependency: catalog settlements are fenced by the actual connection
@@ -119,9 +119,9 @@ export function apply(ctx: ClientContext): void {
   )
   const t = ctx.locale.bind(PERMISSION_ACCESS_NS)
   const sessionFor = (session: ClientSessionContext): SessionFace | undefined =>
-    sessions.binding(session.sessionId)?.session
+    (sessions as unknown as ISessions).binding(session.sessionId)?.session
   const submit = async (sessionId: SessionId, preset: string): Promise<boolean> => {
-    const live = sessions.binding(sessionId)?.session
+    const live = (sessions as unknown as ISessions).binding(sessionId)?.session
     if (live === undefined) throw new Error('this session is not materialized yet')
     const result = await live.command(`/permission ${preset}`)
     if (!result.ok) {

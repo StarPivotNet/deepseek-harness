@@ -125,7 +125,12 @@ function planReload(
       },
       refresh: () => entry.refresh(),
       reload: async () => {
-        await entry._dispose()
+        const fiber = entry.fiber
+        if (fiber !== undefined) {
+          delete (entry as { fiber?: typeof fiber }).fiber
+          await fiber.dispose()
+          while (fiber.inertia !== undefined) await fiber.inertia
+        }
         await entry.refresh()
       },
     }))

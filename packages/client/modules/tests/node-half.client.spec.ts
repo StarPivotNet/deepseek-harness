@@ -888,7 +888,7 @@ describe('client bundle activation', () => {
       },
     } as unknown as ServerResponse
 
-    await route.handler({
+    await (await route).handler({
       method: 'GET',
       url: '/plugins/%40fixture/encoded-scope/client.js?rev=probe',
     } as IncomingMessage, response)

@@ -1,6 +1,6 @@
 /** Content-block structure helpers. @module @deepseek-ai/dsh-llm/content */
 
-import type { ContentBlock } from './types.ts'
+import type { ContentBlock, ImageBlock, LlmImageRequestBudget } from './types.ts'
 import type { Message } from './message.ts'
 import type {
   AttachmentStore, FileAttachmentRef, ImageAttachmentRef, ImageMediaType, RequestImageAttachment,
@@ -229,6 +229,83 @@ export function projectFilesToText(
 /** Base64 length of raw image bytes, including padding. */
 function base64Length(bytes: number): number {
   return Math.ceil(bytes / 3) * 4
+}
+
+/** Visit every image block, including nested tool results. */
+function visitImageBlocks(content: readonly ContentBlock[], visit: (block: ImageBlock) => void): void {
+  for (const block of content) {
+    if (block.type === 'image') visit(block)
+    else if (block.type === 'tool-result') visitImageBlocks(block.content, visit)
+  }
+}
+
+/** Replace durable offloaded image occurrences with route-owned placeholder text. */
+function replaceOffloadedImages(
+  blocks: readonly ContentBlock[],
+  placeholder: (ref: ImageAttachmentRef) => string,
+): ContentBlock[] {
+  let next: ContentBlock[] | undefined
+  for (const [index, block] of blocks.entries()) {
+    if (block.type === 'image' && block.offloaded === true) {
+      next ??= blocks.slice(0, index)
+      next.push({ type: 'text', text: placeholder(block.attachment) })
+      continue
+    }
+    if (block.type === 'tool-result') {
+      const content = replaceOffloadedImages(block.content, placeholder)
+      if (content !== block.content) {
+        next ??= blocks.slice(0, index)
+        next.push({ ...block, content })
+        continue
+      }
+    }
+    next?.push(block)
+  }
+  return next ?? blocks as ContentBlock[]
+}
+
+/**
+ * Project the surface's offloaded occurrences into deterministic text for one
+ * request. The offloaded set is a durable surface fact, so every route sends
+ * the same set; only the placeholder text is route-owned.
+ * @param messages - derived request history.
+ * @param placeholder - build the model-visible replacement for one offloaded attachment.
+ * @returns the original list when nothing is offloaded, otherwise shallow message copies with placeholders.
+ */
+export function projectOffloadedImages(
+  messages: readonly Message[],
+  placeholder: (ref: ImageAttachmentRef) => string,
+): readonly Message[] {
+  return messages.map((message) => {
+    const content = replaceOffloadedImages(message.content, placeholder)
+    return content === message.content ? message : { ...message, content }
+  })
+}
+
+/**
+ * Number of oldest retained occurrences a route must still offload before a
+ * derived request fits its budget at the exact byte length the route sends;
+ * zero when the request fits. A route fails with `IMAGE_OFFLOAD_REQUIRED`
+ * carrying this count instead of offloading on its own.
+ * @param messages - derived request history carrying the surface's `offloaded` marks.
+ * @param budget - route representation, budgets, and removal quanta.
+ * @param versionBytes - exact request-version byte length of one retained occurrence.
+ * @returns how many more leading retained occurrences to offload.
+ */
+export function requiredImageOffload(
+  messages: readonly Message[],
+  budget: Pick<LlmImageRequestBudget, 'representation' | 'maxBytes' | 'maxImages' | 'byteQuantum' | 'countQuantum'>,
+  versionBytes: (block: ImageBlock) => number,
+): number {
+  const lengths: number[] = []
+  for (const message of messages) {
+    visitImageBlocks(message.content, (block) => {
+      if (block.offloaded === true) return
+      const bytes = versionBytes(block)
+      lengths.push(budget.representation === 'base64' ? base64Length(bytes) : bytes)
+    })
+  }
+  return offloadedImagePrefixCount(lengths, budget)
 }
 
 /** Byte accounting and quantized removal policy for one request representation. */

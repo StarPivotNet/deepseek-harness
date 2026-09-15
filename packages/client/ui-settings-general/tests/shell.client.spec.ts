@@ -47,8 +47,8 @@ const PRODUCT_SECTIONS: readonly string[] = [
   'skills',
   'agent-presets',
   'system-prompts',
-  'usage',
   'archived-sessions',
+  'usage',
 ]
 /** Onboarding steps the web-app roster registers, in coordinator order; both come from ui-settings-models. */
 const PRODUCT_ONBOARDING: readonly { id: string; order: number }[] = [

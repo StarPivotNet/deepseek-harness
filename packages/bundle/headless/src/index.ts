@@ -166,7 +166,7 @@ function streamReasoning(
 /** The Session facts that decide whether the runner may drive it directly. */
 interface AdoptableHeader {
   cwd?: string | undefined
-  origin?: 'subagent' | undefined
+  origin?: 'subagent' | 'automation' | undefined
   parentSession?: SessionId | undefined
   agentPreset?: string | undefined
 }
@@ -218,8 +218,8 @@ function assertAdoptable(header: AdoptableHeader, events: Iterable<SessionEvent>
       `session "${sessionId}" runs under agent preset "${preset}", which the one-shot runner does not compose`,
     )
   }
-  if (header.origin === 'subagent' || header.parentSession !== undefined) {
-    throw new Error(`session "${sessionId}" is a subagent or forked session and cannot be driven directly`)
+  if (header.origin === 'subagent' || header.origin === 'automation' || header.parentSession !== undefined) {
+    throw new Error(`session "${sessionId}" is a subagent, automation, or forked session and cannot be driven directly`)
   }
   if (header.cwd === undefined) {
     throw new Error(`session "${sessionId}" recorded no working directory, so it cannot be adopted`)

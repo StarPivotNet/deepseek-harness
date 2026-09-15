@@ -153,6 +153,7 @@ async function bench(script: Script, options: BenchOptions = {}): Promise<{
       cancel: () => {},
       runMaintenance: () => Promise.reject(new Error('not used')),
       send: () => {},
+      continueFromSurface: () => {},
       followup: (message: UserMessage) => {
         agent.inbox.append('next-turn', message)
         idle = Promise.resolve().then(() => script.afterPrompt(session, message, agent))
@@ -703,7 +704,7 @@ describe('headless runner', () => {
     })
     const result = await test.run()
     expect(result.code).toBe(1)
-    expect(result.err).toContain('is a subagent or forked session')
+    expect(result.err).toContain('is a subagent, automation, or forked session')
     await test.ctx.fiber.dispose()
   })
 
@@ -771,7 +772,7 @@ describe('headless runner', () => {
     })
     const result = await test.run()
     expect(result.code).toBe(1)
-    expect(result.err).toContain('is a subagent or forked session')
+    expect(result.err).toContain('is a subagent, automation, or forked session')
     await test.ctx.fiber.dispose()
   })
 
@@ -888,7 +889,7 @@ describe('headless runner', () => {
     })
     const result = await test.run()
     expect(result.code).toBe(1)
-    expect(result.err).toContain('is a subagent or forked session')
+    expect(result.err).toContain('is a subagent, automation, or forked session')
     await test.ctx.fiber.dispose()
   })
 

@@ -23,7 +23,9 @@ const PARENT_PATH_SEGMENT = /(?:^|[\\/])\.\.(?:[\\/]|$)/
 export function sessionCwd(exec: ToolExecution, requestedPath?: string): string | undefined {
   const cwd = exec.agent === undefined ? undefined : sessionWorkingDirectory(exec.agent.session)
   if (cwd === undefined) return cwd
-  if (!PARENT_PATH_SEGMENT.test(cwd) && (requestedPath === undefined || !PARENT_PATH_SEGMENT.test(requestedPath))) {
+  // Preserve ordinary spelling; canonicalize only when parent traversal would
+  // otherwise observe a symlink cwd through a different filesystem identity.
+  if (requestedPath === undefined || (!PARENT_PATH_SEGMENT.test(cwd) && !PARENT_PATH_SEGMENT.test(requestedPath))) {
     return cwd
   }
   return canonicalPath(cwd)

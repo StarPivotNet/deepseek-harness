@@ -147,6 +147,9 @@ export function apply(ctx: Context): void {
     insertWorkspaceBefore: async (workspaceId, beforeWorkspaceId) => {
       await workspaces.insertBefore(workspaceId, beforeWorkspaceId)
     },
+    insertSessionBefore: async (workspaceId, sessionId, beforeSessionId) => {
+      await workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
+    },
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
     createWorkspace: input => workspaces.create(input),
     markUnread: (sessionId) => { sessions.markUnread(sessionId) },

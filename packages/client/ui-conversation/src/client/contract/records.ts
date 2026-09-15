@@ -75,6 +75,8 @@ export interface AssistantMessageNode {
   usage?: unknown
   providerMetadata?: AssistantProviderMetadataView
   requestConfig?: AssistantRequestConfig
+  /** Provider/model that produced this settled assistant message, when recorded. */
+  provenance?: { provider: string; model: string }
   /** Timing derived from the recorded step/chunk/message event sequence. */
   timing?: AssistantTiming
   /** Prefix of an aborted turn, rendered with a 已停止 marker. A durable

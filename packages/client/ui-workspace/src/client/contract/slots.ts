@@ -149,6 +149,10 @@ export type WorkspaceBrowserInjected = {
    */
   insertWorkspaceBefore: (workspaceId: WorkspaceId, beforeWorkspaceId?: WorkspaceId) => Promise<void>
   /**
+   * Reorder a Session inside one Workspace account. Omitted anchor appends.
+   */
+  insertSessionBefore: (workspaceId: WorkspaceId, sessionId: SessionId, beforeSessionId?: SessionId) => Promise<void>
+  /**
    * Archive a Session into the registry-global set: hidden from grouping
    * surfaces, log and accounting slot retained. Archiving the current
    * session clears the selection into the New Session view state.

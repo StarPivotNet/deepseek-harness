@@ -41,6 +41,15 @@ async function createRuntime(): Promise<SlotTestRuntime> {
   Object.assign(new TestRemote(runtime.ctx), { directoryPicker })
   runtime.ctx.provide('remote.directoryPicker', directoryPicker as never)
   runtime.ctx.provide('remote.session', { openWorkspacePath: () => Promise.resolve({ rpcId: 'w', result: { ok: false, error: { code: 'x', message: 'no' } } }) } as never)
+  runtime.ctx.provide('settingsScope', {
+    bind: () => ({
+      getSnapshot: () => ({ value: undefined, revision: 0, writable: true, status: 'ready' }),
+      subscribe: () => () => {},
+      set: async () => {},
+      unset: async () => {},
+      mutate: async () => {},
+    }),
+  } as never)
   const locale = new LocaleRuntime(runtime.ctx)
   runtime.ctx.provide('locale', locale)
   runtime.slots.installLocale(locale)

@@ -11,7 +11,6 @@ import {
 import { createWebConnectionRpc, type RpcFetch, type RpcStreamOpen } from './rpc.ts'
 import { isLoopbackHostname } from '../loopback-hostname.ts'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import type { SettingsDescribeValue, SettingsNamespaceView } from '@deepseek-ai/dsh-settings/types'
 import type { ClientConnectionRpc, RpcResponse } from '../rpc.ts'
 import { resolveConnectionConfig } from '../recovery-config.ts'
 
@@ -200,7 +199,7 @@ export interface ConnectionApi {
      * @param _args - unused historical payload.
      * @returns wrapped settings descriptor.
      */
-    describe(_args?: object): Promise<RpcResponse<SettingsDescribeValue>>
+    describe(_args?: object): Promise<RpcResponse<unknown>>
     /**
      * Merge one namespace patch.
      * @param payload - namespace, patch object, and optional revision.
@@ -210,7 +209,7 @@ export interface ConnectionApi {
       ns: string
       patch: Record<string, JsonValue>
       expectedRevision?: number
-    }): Promise<RpcResponse<SettingsNamespaceView>>
+    }): Promise<RpcResponse<unknown>>
   }
 }
 

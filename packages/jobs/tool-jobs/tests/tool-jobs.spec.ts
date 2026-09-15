@@ -536,6 +536,8 @@ describe('completion notices across scoped mounts', () => {
       id: SessionId('sess-scoped'),
       ctx: agentScope.ctx,
       inject,
+      steer: inject,
+      status: 'running',
       session: { id: SessionId('sess-scoped'), header: { version: 0, id: SessionId('sess-scoped'), createdAt: 0 } },
     } as unknown as Agent
     const dispose = await ctx.agents.register(owner)

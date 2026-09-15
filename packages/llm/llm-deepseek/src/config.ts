@@ -144,7 +144,7 @@ function resolveModels(models: readonly DeepSeekCatalogModel[] | undefined): Dee
     if (inputModalities.length === 0) {
       throw new Error(`llm-deepseek: catalog model "${model.id}" inputModalities must not be empty`)
     }
-    if (inputModalities.some(modality => !MODEL_MODALITIES.includes(modality))) {
+    if (inputModalities.some(modality => modality !== 'text' && modality !== 'image')) {
       throw new Error(
         `llm-deepseek: catalog model "${model.id}" inputModalities must contain only "text" and "image"`,
       )
