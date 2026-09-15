@@ -80,14 +80,16 @@ export interface LocalSubprocessHandle extends SubprocessHandle {
 }
 
 /**
- * Liveness-poll cadence for tree-exit waits. The timer stays ref'd: an
- * awaited teardown must keep the event loop alive until the tree really
- * exits, or the parent can exit while claiming quiescence and orphan the
- * survivors it promised to reap.
+ * Liveness-poll cadence for tree-exit waits: 15ms at first so promptly-exiting
+ * groups settle within disposal grace, then doubling up to the max — a group
+ * can adopt an unbounded survivor (a `nohup`'d server the command left
+ * behind), and a flat 15ms cadence burns a whole core on process-table scans
+ * while waiting for it. The timers stay ref'd: an awaited teardown must keep
+ * the event loop alive until the tree really exits, or the parent can exit
+ * while claiming quiescence and orphan the survivors it promised to reap.
  */
-function sleepTick(): Promise<void> {
-  return sleepMs(15)
-}
+const TREE_EXIT_POLL_BASE_MS = 15
+const TREE_EXIT_POLL_MAX_MS = 500
 
 let spillCounter = 0
 let defaultSpillDir: string | undefined
@@ -442,7 +444,11 @@ function fallbackOwner(
          protects direct internal re-entry after signal() observed absence. */
       if (stopped) return
       observation ??= (async () => {
-        while (alive()) await sleepTick()
+        let pollMs = TREE_EXIT_POLL_BASE_MS
+        while (alive()) {
+          await sleepMs(pollMs)
+          pollMs = Math.min(TREE_EXIT_POLL_MAX_MS, pollMs * 2)
+        }
         stopped = true
       })()
       await observation

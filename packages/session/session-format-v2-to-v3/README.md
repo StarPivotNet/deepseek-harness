@@ -124,7 +124,7 @@ The content audit admits exactly `text`, `reasoning`, `image`, `file`, `tool-cal
 | Owner | Audited content |
 |---|---|
 | Five Message slots | `user/message.data.content`; `assistant/message.data.message.content`; `tool/result.data.message.content`; `agent/inbox/spliced.data.inserted[].content`; `session/title-llm-request.data.messages[].content` |
-| Queued team message | `team/message/queued.data.message.content`; the historical Team payload remains `version: 1` with `message.delivery` |
+| Queued team message | `team/message/queued.data.message.content`; Team payload version 1 requires `message.delivery`, while version 2 forbids it; both retain their payload version and fields |
 | Compaction output | `compaction/summary.data.summary` and optional `compaction/summary.data.rawOutput` |
 | PTC predecessor output | `tool/code-dispatch.data.content` |
 | Embedded assistant streams | In `assistant/message.data.stream[]` and `assistant/attempt.data.stream[]`, raw `type: 'chunk'` records: `chunk.block` for `block-end` and `chunk.blockType` for `block-start`, including starts with no completed block |

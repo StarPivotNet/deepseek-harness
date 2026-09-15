@@ -124,7 +124,7 @@ V2 `session-log-deepseek/delivery-accepted` 若携带 `data.sessionFormatVersion
 | 所有者 | 审计内容 |
 |---|---|
 | 五个 Message 位置 | `user/message.data.content`；`assistant/message.data.message.content`；`tool/result.data.message.content`；`agent/inbox/spliced.data.inserted[].content`；`session/title-llm-request.data.messages[].content` |
-| 排队的团队消息 | `team/message/queued.data.message.content`；历史 Team 载荷保持 `version: 1` 并带有 `message.delivery` |
+| 排队的团队消息 | `team/message/queued.data.message.content`；Team 载荷版本 1 要求 `message.delivery`，版本 2 则禁止该字段；两者均保留载荷版本和字段 |
 | 压缩输出 | `compaction/summary.data.summary` 和可选的 `compaction/summary.data.rawOutput` |
 | PTC 前代输出 | `tool/code-dispatch.data.content` |
 | 内嵌 assistant 流 | `assistant/message.data.stream[]` 和 `assistant/attempt.data.stream[]` 中的原始 `type: 'chunk'` 记录：`block-end` 的 `chunk.block` 和 `block-start` 的 `chunk.blockType`，包括尚无完整块的起始记录 |
