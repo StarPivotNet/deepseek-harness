@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-settings-llm-policy",
   "description": "General settings row for the product-wide model-request retry budget and stream-idle timeout",
-  "version": "0.1.5-rc.2.3",
+  "version": "0.1.6-alpha.1",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-git-branch",
   "description": "Hero Git branch chip: list, create, and switch a per-session worktree overlay",
-  "version": "0.1.5-rc.2.3",
+  "version": "0.1.6-alpha.1",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",

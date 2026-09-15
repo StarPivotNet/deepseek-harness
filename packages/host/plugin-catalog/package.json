@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-host-plugin-catalog",
   "description": "Serves the shipped StarPivot plugin catalog JSON on the Host webserver",
-  "version": "0.1.5-rc.2.3",
+  "version": "0.1.6-alpha.1",
   "publishConfig": {
     "access": "public"
   },
