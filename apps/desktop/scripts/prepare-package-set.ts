@@ -81,8 +81,11 @@ export function selectDesktopPackageClosure(
   return [...selected.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([, packed]) => packed)
 }
 
+/** GNU tar reads `D:\path` as a remote host; local reads need the escape on Windows. */
+const tarLocalArgs = process.platform === 'win32' ? ['--force-local'] : []
+
 function packedManifest(tarball: string): Record<string, unknown> {
-  const value: unknown = JSON.parse(capture('tar', ['-xOzf', tarball, 'package/package.json']))
+  const value: unknown = JSON.parse(capture('tar', [...tarLocalArgs, '-xOzf', tarball, 'package/package.json']))
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`desktop package set: ${tarball} has no package manifest`)
   }
