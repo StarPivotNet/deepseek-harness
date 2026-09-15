@@ -1,7 +1,7 @@
 /** Build one release target with matching Electron, Node.js, and dsh architecture. */
 
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { delimiter, join, resolve } from 'node:path'
 import {
@@ -281,19 +281,26 @@ function runPnpm(
 /**
  * Resolve a Node-runnable pnpm entry for nested commands. `npm_execpath` is
  * absent under `pnpm exec` and may name npm under an npx wrapper, so PATH
- * lookup is the fallback both cases can rely on.
+ * lookup is the fallback both cases can rely on. Candidates resolve through
+ * symlinks because `.bin/pnpm` links are not directly loadable by Node.
  * @param environment - Environment carrying `npm_execpath` and `PATH`.
  * @returns an absolute JS entry path, or undefined when nothing resolves.
  */
 function resolvePnpmEntry(environment: NodeJS.ProcessEnv): string | undefined {
+  const candidates: string[] = []
   const raw = environment.npm_execpath
-  if (raw !== undefined && raw !== '' && !/npm-cli\.js$/iu.test(raw)) return raw
+  if (raw !== undefined && raw !== '' && !/npm-cli\.js$/iu.test(raw)) candidates.push(raw)
   const pathDirs = (environment.PATH ?? '').split(delimiter).filter(dir => dir.length > 0)
   for (const dir of pathDirs) {
     for (const name of process.platform === 'win32' ? ['pnpm.cmd', 'pnpm.cjs'] : ['pnpm']) {
-      const candidate = join(dir, name)
-      if (existsSync(candidate)) return candidate
+      candidates.push(join(dir, name))
     }
+  }
+  for (const candidate of candidates) {
+    try {
+      const real = realpathSync.native(candidate)
+      if (real.endsWith('.cjs') || real.endsWith('.mjs') || real.endsWith('.js')) return real
+    } catch { /* candidate does not exist; try the next */ }
   }
   return undefined
 }
@@ -322,6 +329,11 @@ function runRepositoryScript(args: readonly string[], env: NodeJS.ProcessEnv): P
 
 async function main(): Promise<void> {
   const invocation = parseDesktopPackageInvocation(process.argv.slice(2))
+  // Every nested script (runPnpm, release/pack, the prepare chain) spawns
+  // `node ${npm_execpath}`; normalize it once to a directly loadable entry
+  // because pnpm exec advertises a `.bin` symlink and npx advertises npm.
+  const normalizedPnpmEntry = resolvePnpmEntry(process.env)
+  if (normalizedPnpmEntry !== undefined) process.env.npm_execpath = normalizedPnpmEntry
   const { target } = invocation
   const buildPaths = desktopTargetBuildPaths(target.name)
   const releaseRecordPath = join(buildPaths.artifacts, desktopBuildRecordFilename(target.name))
