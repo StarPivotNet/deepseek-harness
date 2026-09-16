@@ -492,12 +492,18 @@ function writeBuilderConfig(version: string, platform: DesktopPlatform, prepared
       'renderer/**/*',
       'assets/**/*',
       'package.json',
+      // The 0.1.6 main process resolves the dsh runtime inside the asar
+      // (`app.getAppPath()/dsh`) and spawns the bundled Electron as Node.
+      { from: prepared.dsh, to: 'dsh', filter: ['**/*'] },
+      // electron-builder drops a source directory's root node_modules; stage it explicitly.
+      { from: join(prepared.dsh, 'node_modules'), to: 'dsh/node_modules', filter: ['**/*'] },
+    ],
+    // Native payload files must stay real files on disk for addon loading.
+    asarUnpack: [
+      '**/*.{node,dylib,dll,so,exe}',
     ],
     extraResources: [
       { from: prepared.runtime, to: 'runtime' },
-      { from: prepared.dsh, to: 'dsh' },
-      // electron-builder drops a source directory's root node_modules; stage it explicitly.
-      { from: join(prepared.dsh, 'node_modules'), to: 'dsh/node_modules' },
     ],
     asar: true,
     artifactName: platform === 'darwin'

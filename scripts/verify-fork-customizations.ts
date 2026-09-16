@@ -71,6 +71,13 @@ const CHECKS: readonly CustomizationCheck[] = [
     },
   },
   {
+    label: 'desktop pack ships the dsh runtime inside the asar (0.1.6 layout)',
+    check: repoRoot => fileContains(
+      join(repoRoot, 'scripts', 'desktop', 'pack.ts'),
+      "{ from: prepared.dsh, to: 'dsh', filter: ['**/*'] }",
+    ),
+  },
+  {
     label: 'marketplace host can read the shipped catalog without a web server',
     check: repoRoot => fileContains(
       join(repoRoot, 'packages', 'client', 'ui-settings-plugin-marketplace', 'src', 'host', 'index.ts'),

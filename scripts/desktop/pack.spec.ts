@@ -171,7 +171,9 @@ describe('desktop builder targets', () => {
     const source = readFileSync(join(import.meta.dirname, 'pack.ts'), 'utf8')
     expect(source).toContain("'renderer/**/*'")
     expect(source).toContain("{ from: prepared.runtime, to: 'runtime' }")
-    expect(source).toContain("{ from: prepared.dsh, to: 'dsh' }")
-    expect(source).toContain("{ from: join(prepared.dsh, 'node_modules'), to: 'dsh/node_modules' }")
+    // The 0.1.6 main process reads the dsh runtime from inside the asar.
+    expect(source).toContain("{ from: prepared.dsh, to: 'dsh', filter: ['**/*'] }")
+    expect(source).toContain("{ from: join(prepared.dsh, 'node_modules'), to: 'dsh/node_modules', filter: ['**/*'] }")
+    expect(source).toContain("'**/*.{node,dylib,dll,so,exe}'")
   })
 })
