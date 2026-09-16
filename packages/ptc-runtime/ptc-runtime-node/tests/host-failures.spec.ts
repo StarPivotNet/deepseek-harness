@@ -494,6 +494,15 @@ describe('Node runtime host failures', () => {
     expect(env.DSH_TEST_RUNTIME_SECRET).toBeUndefined()
   })
 
+  it('passes the Electron-as-Node switch to the worker so the packaged binary stays a Node process', async () => {
+    const h = await setup()
+    onTestFinished(() => { vi.unstubAllEnvs() })
+    vi.stubEnv('ELECTRON_RUN_AS_NODE', '1')
+    h.onBoot(() => { h.emit({ type: 'done' }) })
+    expect((await h.start()).error).toBeUndefined()
+    expect(h.spawn.mock.calls[0]?.[0].env?.ELECTRON_RUN_AS_NODE).toBe('1')
+  })
+
   it('selects the private packaged bootstrap without leaking ambient environment', async () => {
     const h = await setup()
     h.onBoot(() => { h.emit({ type: 'done' }) })

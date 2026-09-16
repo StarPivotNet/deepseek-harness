@@ -480,6 +480,10 @@ async function main(): Promise<void> {
       { type: 'separator' },
       { role: 'quit' },
     ],
+  }, {
+    // macOS dispatches Cmd+C/V/X/Z through menu roles; a shell without an
+    // edit menu loses paste in every webContents input.
+    role: 'editMenu',
   }]))
 
   const createMainWindow = (): BrowserWindow => {

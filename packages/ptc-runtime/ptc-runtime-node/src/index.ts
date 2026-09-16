@@ -229,6 +229,10 @@ export class NodePtcRuntime extends PtcRuntime {
       const env: NodeJS.ProcessEnv = Object.fromEntries(Object.keys(process.env)
         .filter(key => !STARTUP_ENVIRONMENT_NAMES.has(key.toUpperCase()))
         .map(key => [key, undefined]))
+      // When the Host itself runs on the packaged Electron as Node, the worker
+      // executable is that same binary; without the mode switch it boots as a
+      // GUI app, loses the single-instance lock, and exits 0 before doing anything.
+      if (process.env.ELECTRON_RUN_AS_NODE !== undefined) env.ELECTRON_RUN_AS_NODE = process.env.ELECTRON_RUN_AS_NODE
       if (packaged) {
         env.DSH_PTC_RUNTIME_NODE = '1'
         env.NODE_OPTIONS = heapFlag
