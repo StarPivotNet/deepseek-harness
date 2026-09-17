@@ -13,7 +13,12 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
-function makeRepo(webAppPatch: string, catalogJson: string | null): string {
+function writeFile(path: string, contents: string): void {
+  mkdirSync(join(path, '..'), { recursive: true })
+  writeFileSync(path, contents)
+}
+
+function makeRepo(webAppPatch: string, catalogJson: string | null, extras: boolean = true): string {
   const repo = mkdtempSync(join(tmpdir(), 'dsh-fork-repo-'))
   dirs.push(repo)
   mkdirSync(join(repo, 'packages', 'bundle', 'web-app'), { recursive: true })
@@ -25,6 +30,30 @@ function makeRepo(webAppPatch: string, catalogJson: string | null): string {
   mkdirSync(join(repo, 'packages', 'host', 'plugin-catalog'), { recursive: true })
   if (catalogJson !== null) {
     writeFileSync(join(repo, 'packages', 'host', 'plugin-catalog', 'catalog.json'), catalogJson)
+  }
+  mkdirSync(join(repo, 'apps', 'desktop-host', 'config'), { recursive: true })
+  writeFileSync(join(repo, 'apps', 'desktop-host', 'config', 'desktop.cordis.patch.yml'), '# intact\n')
+  if (extras) {
+    writeFile(
+      join(repo, 'scripts', 'desktop', 'pack.ts'),
+      "{ from: prepared.dsh, to: 'dsh', filter: ['**/*'] }\n",
+    )
+    writeFile(
+      join(repo, 'packages', 'client', 'ui-settings-plugin-marketplace', 'src', 'host', 'index.ts'),
+      'export function readShippedCatalog() {}\n',
+    )
+    writeFile(
+      join(repo, 'packages', 'client', 'ui-chat', 'src', 'client', 'chat', 'MessageItem.tsx'),
+      'rewriteAt(data.seq, next)\n',
+    )
+    writeFile(
+      join(repo, 'packages', 'client', 'ui-chat', 'src', 'client', 'apply.ts'),
+      'rewriteAt: (seq, text) => {\n',
+    )
+    writeFile(
+      join(repo, 'packages', 'api', 'session-controller', 'src', 'commands.ts'),
+      'async rewrite(request: SessionRewriteRequest) {}\n',
+    )
   }
   return repo
 }
@@ -64,5 +93,11 @@ describe('verifyForkCustomizations', () => {
   it('fails when the catalog json loses the StarPivot title', () => {
     const failed = verifyForkCustomizations(makeRepo(INTACT_PATCH, JSON.stringify({ version: 1, title: 'Other', plugins: [] })))
     expect(failed.some(label => label.includes('catalog JSON'))).toBe(true)
+  })
+
+  it('fails when Chat loses same-session rewriteAt wiring', () => {
+    expect(verifyForkCustomizations(root).filter(label => label.includes('rewriteAt'))).toEqual([])
+    const failed = verifyForkCustomizations(makeRepo(INTACT_PATCH, INTACT_CATALOG, false))
+    expect(failed.some(label => label.includes('rewriteAt'))).toBe(true)
   })
 })

@@ -1,5 +1,5 @@
 /**
- * Scope-addressed conversation send, cancel, and history orchestration.
+ * Scope-addressed conversation send, rewrite, cancel, and history orchestration.
  *
  * Scope addressing rides the cordis Service tracker: property access through
  * `ctx.conversation` rebinds `this.ctx` to the caller's context, so methods
@@ -50,6 +50,14 @@ export interface IConversation {
    * @returns completion; business failures reject (and land in promptError).
    */
   send(text: string): Promise<void>
+  /**
+   * Rewrite a settled user prompt in this same session and start a new turn
+   * from the replacement. Failures also land in promptError.
+   * @param atSeq - current-surface `user/message` seq being edited.
+   * @param text - replacement text, sent verbatim as one text block.
+   * @returns completion; business failures reject.
+   */
+  rewrite(atSeq: number, text: string): Promise<void>
   /**
    * Apply one edit, remove, or Steer operation to a pending queue occurrence.
    * @param itemId - agent-owned inbox occurrence identity.
@@ -209,6 +217,18 @@ export class ConversationController extends Service implements IConversation {
     const session = this.scopedSession('send')
     const result = await session.prompt([{ type: 'text', text }], 'queue')
     if (!result.ok) throw new Error(`conversation.send failed: ${result.error.code}: ${result.error.message}`)
+  }
+
+  /**
+   * Rewrite a settled user prompt in the scoped session. Business failures
+   * also land in the session snapshot's promptError.
+   * @param atSeq - current-surface `user/message` seq being edited.
+   * @param text - replacement text, sent verbatim as one text block.
+   */
+  async rewrite(atSeq: number, text: string): Promise<void> {
+    const session = this.scopedSession('rewrite')
+    const result = await session.rewrite(atSeq, [{ type: 'text', text }])
+    if (!result.ok) throw new Error(`conversation.rewrite failed: ${result.error.code}: ${result.error.message}`)
   }
 
   /**

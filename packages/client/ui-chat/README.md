@@ -8,13 +8,14 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Use this package to render a browser chat from recorded Session conversations, including historical images, localized actions, and restored scroll position. Compact display folds completed-turn process rows while keeping the final answer and independently useful context visible; packed historical Assistant runs remain collapsed. Local transcript and steering submissions appear immediately, remain in their original surface, and disappear atomically when authoritative Session records arrive, while queued submissions stay outside Chat. The package does not assemble or modify model requests.
+Use this package to render a browser chat from recorded Session conversations, including historical images, localized actions, and restored scroll position. Compact display folds completed-turn process rows while keeping the final answer and independently useful context visible; packed historical Assistant runs remain collapsed. Local transcript and steering submissions appear immediately, remain in their original surface, and disappear atomically when authoritative Session records arrive, while queued submissions stay outside Chat. Settled user bubbles expose an in-place edit control that calls `session.rewrite` in this same Session; steering and pending bubbles stay copy-only. The package does not assemble or modify model requests.
 
 File-mention providers receive the viewed Session ID with the closing-turn owner, so links into inherited history can address the fork itself.
 
 ## Table of Contents
 
 - [Reference previews](#reference-previews)
+- [Same-session prompt rewrite](#same-session-prompt-rewrite)
 - [System prompt row](#system-prompt-row)
 - [Turn token usage](#turn-token-usage)
 - [Completed-turn footer](#completed-turn-footer)
@@ -30,6 +31,11 @@ File-mention providers receive the viewed Session ID with the closing-turn owner
 ## Reference previews
 
 Sent file references and skills confirmed by the message’s logged invocation open in the right Sidebar. File paths use the viewed Session; skill names resolve through its current input-trigger source. Both use the prose file-link dotted underline on hover or focus. Sessions, directories, and command labels remain non-navigating references.
+
+<a id="same-session-prompt-rewrite"></a>
+## Same-session prompt rewrite
+
+A settled user bubble shows clock, copy, and an edit control. Save replaces that prompt and every later surface node in this Session through `session.rewrite`, then starts a new turn without creating a child Session. Steering, pending, and echo bubbles stay copy-only. Branch remains only under completed assistant tails.
 
 <a id="system-prompt-row"></a>
 ## System prompt row

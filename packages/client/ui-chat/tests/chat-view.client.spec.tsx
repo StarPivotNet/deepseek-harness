@@ -264,6 +264,7 @@ function makeHarness(
     read: () => savedScroll,
   }
   const forkAt = vi.fn()
+  const rewriteAt = vi.fn()
   // Rows and the harness must observe the same chat-store instance.
   const chat = createChatStore().create()
   const transcriptView = createSnapshotStore<TranscriptViewMode>('compact')
@@ -404,6 +405,7 @@ function makeHarness(
     loadImage: vi.fn(() => Promise.reject(new Error('not used'))),
     chatScroll,
     forkAt,
+    rewriteAt,
     // Absent-service default; mention tests override with a real resolver.
     fileMentions: () => undefined,
     t,
@@ -430,7 +432,7 @@ function makeHarness(
     set, setSession: session.set, setChat: chatSource.set, ChatView, props,
     openFile, openSkill, loadOlder, loadThrough, openView,
     setOutline: (value: unknown) => { outlineValue = value },
-    chatScroll, forkAt, toolOwners,
+    chatScroll, forkAt, rewriteAt, toolOwners,
     setTranscriptView: (mode: TranscriptViewMode) => { transcriptView.set(mode) },
     setNodeRenderer: (renderer: React.ComponentProps<typeof ChatNodeSeat>['renderSlot']) => {
       nodeSlotOverride = renderer
@@ -1989,6 +1991,11 @@ describe('ChatView', () => {
     expect(buttons).toHaveLength(1)
     expect(buttons[0]!.getAttribute('aria-disabled')).toBeNull()
     fireEvent.click(buttons[0]!)
+    expect(h.forkAt.mock.calls).toEqual([[2]])
+    fireEvent.click(view.getByRole('button', { name: '编辑消息' }))
+    fireEvent.change(view.getByRole('textbox', { name: '编辑消息' }), { target: { value: 'rewritten question' } })
+    fireEvent.click(view.getByRole('button', { name: '保存并重新发送' }))
+    expect(h.rewriteAt).toHaveBeenCalledWith(1, 'rewritten question')
     expect(h.forkAt.mock.calls).toEqual([[2]])
   })
 

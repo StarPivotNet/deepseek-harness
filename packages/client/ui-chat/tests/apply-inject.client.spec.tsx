@@ -42,6 +42,7 @@ function sessionFakeFor() {
       value: { attachment: ATTACHMENT, data: Uint8Array.of(1) },
     })),
     prompt: vi.fn<ISession['prompt']>(() => Promise.resolve({ ok: true, value: { accepted: true } })),
+    rewrite: vi.fn<ISession['rewrite']>(() => Promise.resolve({ ok: true, value: { accepted: true } })),
     cancel: vi.fn<ISession['cancel']>(() => Promise.resolve({ ok: true, value: { accepted: true } })),
   } satisfies SessionBehaviorOverrides
 }
@@ -114,6 +115,16 @@ describe('Chat inject API', () => {
     injected.forkAt(18)
     await vi.waitFor(() => {
       expect(fork).toHaveBeenCalledWith({ sessionId: ROOT, atSeq: 18, increaseTitle: true })
+    })
+
+    injected.rewriteAt(9, 'rewritten prompt')
+    await vi.waitFor(() => {
+      expect(b.session.rewrite).toHaveBeenCalledWith(9, [{ type: 'text', text: 'rewritten prompt' }])
+    })
+    b.session.rewrite.mockRejectedValueOnce(new Error('rewrite failed'))
+    injected.rewriteAt(10, 'ignored')
+    await vi.waitFor(() => {
+      expect(b.session.rewrite).toHaveBeenCalledWith(10, [{ type: 'text', text: 'ignored' }])
     })
     await b.runtime.dispose()
   })

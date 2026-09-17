@@ -16,7 +16,7 @@ Readers needed to change an already-sent prompt and continue in this conversatio
 
 `atSeq` names the current-surface user prompt, including a previous rewrite. Unknown seq, a non-user prompt, a prompt off the current surface, or a still-running Agent after cancel returns `rewrite-unavailable`. Session-backed subagents reject with `agent-busy`. A text-only payload keeps already-admitted non-text blocks from the original prompt, matching queue text edit.
 
-Chat matches user-source replacement copies as user nodes and hides every node whose `anchorSeq` falls inside a rewrite's `replacedRange`. Compact plugin replacements stay compaction checkpoints, not user edits. User bubbles show clock, copy, and an edit control that opens an in-place editor; save calls `rewriteAt(seq, text)`. Steering and pending bubbles stay copy-only. Branch remains only under completed assistant tails.
+Chat matches user-source replacement copies as user nodes and hides every node whose `anchorSeq` falls inside a rewrite's `replacedRange`. Compact plugin replacements stay compaction checkpoints, not user edits. `ui-chat` injects `rewriteAt` from `session.rewrite`. User bubbles show clock, copy, and an edit control that opens an in-place editor; save calls `rewriteAt(seq, text)`. Steering and pending bubbles stay copy-only. Branch remains only under completed assistant tails. `verify-fork-customizations` asserts this Chat wiring so an upstream merge cannot drop the control again.
 
 ## Alternatives considered
 

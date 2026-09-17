@@ -111,9 +111,9 @@ export const zh = {
   'clock.ymd': '{y}年{m}月{d}日',
   'clock.am': '上午',
   'clock.pm': '下午',
-  'message.edit': '编辑',
-  'message.saveEdit': '保存',
-  'message.cancelEdit': '取消',
+  'message.edit': '编辑消息',
+  'message.saveEdit': '保存并重新发送',
+  'message.cancelEdit': '取消编辑',
 } satisfies Record<string, string>
 
 /** Chat dictionary key union. */
@@ -227,7 +227,7 @@ export const en = {
   'clock.ymd': '{y}-{m}-{d}',
   'clock.am': 'AM',
   'clock.pm': 'PM',
-  'message.edit': 'Edit',
-  'message.saveEdit': 'Save',
-  'message.cancelEdit': 'Cancel',
+  'message.edit': 'Edit message',
+  'message.saveEdit': 'Save and resend',
+  'message.cancelEdit': 'Cancel editing',
 } satisfies Record<ChatKey, string>

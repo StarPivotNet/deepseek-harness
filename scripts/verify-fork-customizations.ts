@@ -84,6 +84,21 @@ const CHECKS: readonly CustomizationCheck[] = [
       'readShippedCatalog',
     ),
   },
+  {
+    label: 'Chat user bubbles keep same-session rewriteAt wiring',
+    check: repoRoot => fileContains(
+      join(repoRoot, 'packages', 'client', 'ui-chat', 'src', 'client', 'chat', 'MessageItem.tsx'),
+      'rewriteAt(data.seq, next)',
+    )
+      && fileContains(
+        join(repoRoot, 'packages', 'client', 'ui-chat', 'src', 'client', 'apply.ts'),
+        'rewriteAt: (seq, text) => {',
+      )
+      && fileContains(
+        join(repoRoot, 'packages', 'api', 'session-controller', 'src', 'commands.ts'),
+        'async rewrite(request: SessionRewriteRequest)',
+      ),
+  },
 ]
 
 /**

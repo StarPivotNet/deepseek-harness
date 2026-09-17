@@ -27,12 +27,15 @@ async function bench(maxConcurrentFileUploads = 2) {
   const prompt = vi.fn((
     _content?: unknown, _mode?: unknown, _signal?: AbortSignal, _rpcId?: string,
   ) => Promise.resolve({ ok: true as const, value: { accepted: true as const } }))
+  const rewrite = vi.fn((
+    _atSeq?: unknown, _content?: unknown,
+  ) => Promise.resolve({ ok: true as const, value: { accepted: true as const } }))
   const updateQueue = vi.fn(() => Promise.resolve({ ok: true as const, value: { accepted: true as const } }))
   const cancel = vi.fn(() => Promise.resolve({ ok: true as const, value: { accepted: true as const } }))
   const loadOlder = vi.fn(() => Promise.resolve())
   await runtime.sessions.add({
     id: 's1',
-    session: { prompt, updateQueue, cancel, loadOlder },
+    session: { prompt, rewrite, updateQueue, cancel, loadOlder },
   })
   // config.input is required (the apply shares its hub with the inject
   // factories); the bench passes its own instance explicitly.
@@ -46,17 +49,19 @@ async function bench(maxConcurrentFileUploads = 2) {
   const root = runtime.ctx.get('conversation') as ConversationController
   const scoped = runtime.sessions.scope('s1')!.get('conversation') as ConversationController
   const shell = hub.shellFor(runtime.sessions.binding('s1')!)
-  return { runtime, fiber, root, scoped, hub, shell, prompt, updateQueue, cancel, loadOlder }
+  return { runtime, fiber, root, scoped, hub, shell, prompt, rewrite, updateQueue, cancel, loadOlder }
 }
 
 describe('ConversationController', () => {
   it('routes operations through the public Session binding', async () => {
     const b = await bench()
     await b.scoped.send('hello')
+    await b.scoped.rewrite(4, 'rewritten')
     await b.scoped.updateQueue('item-1' as never, { kind: 'remove' })
     await b.scoped.cancel()
     await b.scoped.loadOlder()
     expect(b.prompt).toHaveBeenCalledWith([{ type: 'text', text: 'hello' }], 'queue')
+    expect(b.rewrite).toHaveBeenCalledWith(4, [{ type: 'text', text: 'rewritten' }])
     expect(b.updateQueue).toHaveBeenCalledWith('item-1', { kind: 'remove' })
     expect(b.cancel).toHaveBeenCalledOnce()
     expect(b.loadOlder).toHaveBeenCalledOnce()
@@ -67,6 +72,8 @@ describe('ConversationController', () => {
     const b = await bench()
     b.prompt.mockResolvedValueOnce({ ok: false, error: new RemoteError('session/agent-busy', 'busy', { reason: 'busy' }) } as never)
     await expect(b.scoped.send('x')).rejects.toThrow('conversation.send failed: session/agent-busy: busy')
+    b.rewrite.mockResolvedValueOnce({ ok: false, error: new RemoteError('session/rewrite-unavailable', 'closed', { sessionId: 's1' as never }) } as never)
+    await expect(b.scoped.rewrite(1, 'x')).rejects.toThrow('conversation.rewrite failed: session/rewrite-unavailable: closed')
     b.cancel.mockResolvedValueOnce({ ok: false, error: new RemoteError('gateway/internal', 'nope', {}) } as never)
     await expect(b.scoped.cancel()).rejects.toThrow('conversation.cancel failed: gateway/internal: nope')
     b.updateQueue.mockResolvedValueOnce({

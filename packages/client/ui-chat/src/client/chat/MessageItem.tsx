@@ -1,5 +1,5 @@
-import { Fragment, memo, useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
+import { Fragment, memo, useCallback, useEffect, useMemo, useState } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
 import type { PendingSubmission } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { MessageImageSource } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { fileExtension, FileTypeIcon, fileSizeText, JsonBlock, projectUserText, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -158,6 +158,7 @@ function TurnMaxTokensItem({ t }: {
 function UserStyleBubble({
   content, renderMessageImages, actions, pending = false, echo = false, referenceLabels = [], skillNames = [],
   previewAttachments, references, t,
+  editing = false, draft, onDraftChange, onSaveEdit, onCancelEdit,
 }: {
   content: readonly unknown[]
   renderMessageImages: ChatNodeOwnerProps['renderMessageImages']
@@ -175,12 +176,29 @@ function UserStyleBubble({
   previewAttachments?: readonly PresentedAttachment[]
   references?: Pick<ChatNodeOwnerProps, 'openFile' | 'openSkill'>
   t: ChatViewSlotProps['t']
+  /** Replace the bubble body with an in-place editor. */
+  editing?: boolean
+  draft?: string
+  onDraftChange?: (text: string) => void
+  onSaveEdit?: () => void
+  onCancelEdit?: () => void
 }): ReactNode {
   const { text, attachments: contentAttachments, rest } = contentParts(content)
   const attachments = previewAttachments ?? contentAttachments
   const compactImages = attachments.length > 1
   const truncated = (total: number): string => t('json.truncated', { total })
-  const showBubble = text !== '' || rest.length > 0
+  const showBubble = !editing && (text !== '' || rest.length > 0)
+  const onEditorKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onCancelEdit?.()
+      return
+    }
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.nativeEvent.isComposing) {
+      event.preventDefault()
+      onSaveEdit?.()
+    }
+  }
   return (
     <div
       className={css.userRow}
@@ -228,6 +246,16 @@ function UserStyleBubble({
               )
             })}
           </div>
+        )}
+        {editing && (
+          <textarea
+            className={css.editor}
+            aria-label={t('message.edit')}
+            value={draft}
+            onChange={event => onDraftChange?.(event.currentTarget.value)}
+            onKeyDown={onEditorKeyDown}
+            autoFocus
+          />
         )}
         {showBubble && <div className={css.bubble}>
           {projectUserText(text, referenceLabels, skillNames, 'skill', references)}
@@ -339,9 +367,27 @@ export function PendingSubmissionBubble({ submission, renderMessageImages, t }: 
 
 /** User and admitted-steering keyed Chat renderer. */
 export const UserMessageNodeView = memo(function UserMessageNodeView({
-  node, renderMessageImages, openFile, openSkill, t,
+  node, renderMessageImages, openFile, openSkill, rewriteAt, t,
 }: ChatNodeViewProps<'user' | 'steering'>) {
   const data = node.data
+  const editable = node.kind === 'user' && rewriteAt !== undefined
+  const originalText = contentParts(data.content).text
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(originalText)
+  const beginEdit = useCallback(() => {
+    setDraft(originalText)
+    setEditing(true)
+  }, [originalText])
+  const cancelEdit = useCallback(() => {
+    setDraft(originalText)
+    setEditing(false)
+  }, [originalText])
+  const saveEdit = useCallback(() => {
+    const next = draft.trim()
+    if (next === '' || rewriteAt === undefined) return
+    setEditing(false)
+    rewriteAt(data.seq, next)
+  }, [data.seq, draft, rewriteAt])
   return (
     <UserStyleBubble
       content={data.content}
@@ -350,12 +396,21 @@ export const UserMessageNodeView = memo(function UserMessageNodeView({
       {...data.referenceLabels === undefined ? {} : { referenceLabels: data.referenceLabels }}
       {...data.skillNames === undefined ? {} : { skillNames: data.skillNames }}
       t={t}
+      editing={editing}
+      draft={draft}
+      onDraftChange={setDraft}
+      onSaveEdit={saveEdit}
+      onCancelEdit={cancelEdit}
       actions={text => (
         <MessageIconActions
           text={text}
           time={data.time}
           clock="start"
           className={css.actions}
+          onEdit={editing || !editable ? undefined : beginEdit}
+          onSaveEdit={editing ? saveEdit : undefined}
+          onCancelEdit={editing ? cancelEdit : undefined}
+          saveDisabled={draft.trim() === ''}
           t={t}
         />
       )}

@@ -166,6 +166,11 @@ export function apply(ctx: Context): void {
                 // Fork or child-title failure leaves the source view unchanged.
               })
           },
+          rewriteAt: (seq, text) => {
+            void session.rewrite(seq, [{ type: 'text', text }]).catch(() => {
+              // Rewrite failure lands in promptError; the source view stays selected.
+            })
+          },
         }
       },
     }, ChatView)

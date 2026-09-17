@@ -85,6 +85,11 @@ export interface ChatNodeOwnerProps {
   inspectCall: (callId: ToolCallId) => void
   forkAt: (seq: number) => void
   /**
+   * Rewrite the settled user prompt at `seq` in this same session.
+   * Omission hides the edit action.
+   */
+  rewriteAt?: ((seq: number, text: string) => void) | undefined
+  /**
    * Session-authorized image loader, down-threaded from the Chat view so a
    * chat-node renderer can render the attachment presentation slot directly
    * with only the durable references plus this loader, instead of receiving a
@@ -152,6 +157,8 @@ export interface ChatViewInjected {
     read: () => ChatScrollPosition | null
   }
   forkAt: (seq: number) => void
+  /** Rewrite the settled user prompt at `seq` in this same session. */
+  rewriteAt: (seq: number, text: string) => void
   fileMentions: (owner: TurnTailOwnerProps) => MarkdownFileMentions | undefined
 }
 

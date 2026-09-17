@@ -8,13 +8,14 @@ kind: "package-reference"
 
 ## 概述
 
-使用本包可在浏览器中渲染已记录的 Session 对话，包括历史图片、本地化操作和滚动位置恢复。紧凑显示会收起已完成轮次的过程行，同时保持最终答案和独立有用的上下文可见；已打包的历史 Assistant 连续消息保持收起。本地 transcript（文本记录）与 steering（中途引导）提交会立即显示并保留在原区域，在权威会话记录到达时原子地消失，而排队中的提交始终不进入 Chat。本包不组装或修改模型请求。
+使用本包可在浏览器中渲染已记录的 Session 对话，包括历史图片、本地化操作和滚动位置恢复。紧凑显示会收起已完成轮次的过程行，同时保持最终答案和独立有用的上下文可见；已打包的历史 Assistant 连续消息保持收起。本地 transcript（文本记录）与 steering（中途引导）提交会立即显示并保留在原区域，在权威会话记录到达时原子地消失，而排队中的提交始终不进入 Chat。已定稿的用户气泡提供就地编辑控件，保存后在同一 Session 内调用 `session.rewrite`；steering 与待处理气泡仍只有复制。本包不组装或修改模型请求。
 
 文件提及提供方同时接收当前查看的会话 ID 与收尾轮次的属主信息，因此继承历史中的链接可以指向 fork 自身。
 
 ## 目录
 
 - [引用预览](#reference-previews)
+- [同一会话内改写 prompt](#same-session-prompt-rewrite)
 - [系统提示词行](#system-prompt-row)
 - [轮次 token 用量](#turn-token-usage)
 - [已完成轮次的页脚](#completed-turn-footer)
@@ -30,6 +31,11 @@ kind: "package-reference"
 ## 引用预览
 
 已发送的文件引用及消息日志确认调用的 skill 可在右侧栏打开预览。文件路径使用当前查看的 Session；skill 名称由该 Session 当前的输入触发源解析。两者悬停或聚焦时均使用正文文件链接的虚线下划线。会话、目录和命令标签仍只作为引用展示。
+
+<a id="same-session-prompt-rewrite"></a>
+## 同一会话内改写 prompt
+
+已定稿的用户气泡显示时钟、复制和编辑控件。保存会通过 `session.rewrite` 替换该 prompt 及其后全部 surface 节点，并在同一 Session 开启新一轮，不创建子会话。steering、待处理和回显气泡仍只有复制。分支仍只存在于已完成 assistant 尾部。
 
 <a id="system-prompt-row"></a>
 ## 系统提示词行

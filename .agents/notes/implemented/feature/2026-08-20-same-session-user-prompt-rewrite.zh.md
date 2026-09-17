@@ -16,7 +16,7 @@ Status: implemented
 
 `atSeq` 指定当前 surface 上的 user prompt，包括先前的改写结果。未知 seq、非 user prompt、当前 surface 上不存在该 prompt，或取消后 Agent 仍在运行，均返回 `rewrite-unavailable`。会话支撑的 subagent 拒绝并返回 `agent-busy`。纯文本载荷会保留原 prompt 中已准入的非文本块，与队列文本编辑一致。
 
-Chat 把 user-source 的替换副本匹配为 user 节点，并隐藏 `anchorSeq` 落在改写 `replacedRange` 内的全部节点。compact 插件的替换仍是 compaction checkpoint，不是用户编辑。user 气泡显示时钟、复制和编辑控件，点击后打开就地编辑器；保存调用 `rewriteAt(seq, text)`。steering 与待处理气泡仍只有复制。分支仍只存在于已完成 assistant 尾部。
+Chat 把 user-source 的替换副本匹配为 user 节点，并隐藏 `anchorSeq` 落在改写 `replacedRange` 内的全部节点。compact 插件的替换仍是 compaction checkpoint，不是用户编辑。`ui-chat` 从 `session.rewrite` 注入 `rewriteAt`。user 气泡显示时钟、复制和编辑控件，点击后打开就地编辑器；保存调用 `rewriteAt(seq, text)`。steering 与待处理气泡仍只有复制。分支仍只存在于已完成 assistant 尾部。`verify-fork-customizations` 断言这条 Chat 接线，避免上游合入再次丢掉该控件。
 
 ## 曾考虑的替代方案
 
@@ -38,4 +38,4 @@ Host proxy 测试固定当前 surface 改写、缺失 seq 返回 `rewrite-unavai
 
 ## 相关
 
-未绑定的编辑存根已在[移除 user 消息的编辑存根](../simplification/2026-07-31-drop-user-message-edit-stub.md)中移除。user 气泡仍不承载分支，见[User 与 steering 气泡去掉分支操作](../simplification/2026-08-06-user-bubbles-drop-the-branch-action.md)。队列文本编辑仍是待处理 inbox 操作，见[编辑混合内容排队消息的文本](2026-08-19-queued-mixed-content-text-edit.md)。
+未绑定的编辑存根已在[移除 user 消息的编辑存根](../simplification/2026-07-31-drop-user-message-edit-stub.md)中移除。user 气泡仍不承载分支，见[User 与 steering 气泡去掉分支操作](../simplification/2026-08-06-user-bubbles-drop-the-branch-action.md)。队列文本编辑仍是待处理 inbox 操作，见[编辑混合内容排队消息的文本](2026-08-19-queued-mixed-content-text-edit.zh.md)。
