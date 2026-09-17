@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-skill-session-control",
   "description": "Bundled skill that teaches the model to search, stop, message, rename, archive, and regroup sessions through session_control_* tools",
-  "version": "0.1.6-alpha.3",
+  "version": "0.1.6-alpha.3.1",
   "publishConfig": {
     "access": "public"
   },
