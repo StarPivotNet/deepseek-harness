@@ -26,7 +26,6 @@
  * @module dsh-llm-pi-ai/adapter
  */
 
-import { createModels, getSupportedThinkingLevels } from '@earendil-works/pi-ai'
 import type {
   Api,
   AuthContext,
@@ -41,13 +40,11 @@ import type {
 import {
   attributionHeaders,
   contentHasImage,
-  contentHasVideo,
   LlmAdapter,
   LlmError,
   ReasoningEffortId,
 } from '@deepseek-ai/dsh-llm'
 import type {
-  ContentBlock,
   GenerateOptions,
   ImageAttachmentAccess,
   LlmModelInfo,
@@ -58,12 +55,11 @@ import type {
   ResolvedRetryPolicy,
   StreamChunk,
 } from '@deepseek-ai/dsh-llm'
-import type { AttachmentStore, ImageAttachmentRef, VideoAttachmentRef } from '@deepseek-ai/dsh-attachment'
+import type { AttachmentStore, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import { idleWatchdog, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import type { ResolvedPiAiProviderProfile } from './config.ts'
 import { toPiContext } from './context.ts'
-import { acquireFetchPipeline, rewriteOpenAiVideoUrls } from './openai-fetch-pipeline.ts'
-import { repairSseJsonResponse } from './sse-json-repair.ts'
+import { createModels, getSupportedThinkingLevels } from './models.ts'
 import { toStreamChunks } from './stream.ts'
 
 /** One resolution's frozen view: the profiles and the collection built from them. */
@@ -308,7 +304,6 @@ export class PiAiAdapter extends LlmAdapter {
     // Only a cap the deployment configured is a request default; the
     // catalog's `maxTokens` sizes the model and stops there.
     const configuredMaxTokens = profile.configuredMaxTokens.get(model)
-    const configuredSystemPrompt = profile.configuredSystemPrompts.get(model)
     return {
       provider,
       id: model,
@@ -316,7 +311,6 @@ export class PiAiAdapter extends LlmAdapter {
       inputModalities: [...resolvedModel.input],
       context: { contextWindow: resolvedModel.contextWindow },
       ...configuredMaxTokens === undefined ? {} : { defaultMaxTokens: configuredMaxTokens },
-      ...configuredSystemPrompt === undefined ? {} : { systemPrompt: configuredSystemPrompt },
       ...reasoningInfo(resolvedModel, defaultLevel),
     }
   }
@@ -365,21 +359,10 @@ export class PiAiAdapter extends LlmAdapter {
       if (containsImage && !model.input.includes('image')) {
         throw new LlmError(`pi-ai model "${model.id}" does not support image input`, 'UNSUPPORTED_CONTENT')
       }
-      const containsVideo = options.messages.some(message => contentHasVideo(message.content))
-      if (containsVideo && !(model.input as readonly string[]).includes('video')) {
-        throw new LlmError(`pi-ai model "${model.id}" does not support video input`, 'UNSUPPORTED_CONTENT')
-      }
-      const attachments = (containsImage || containsVideo) ? this.config.resolveAttachments?.() : undefined
+      const attachments = containsImage ? this.config.resolveAttachments?.() : undefined
       if (containsImage && attachments === undefined) {
         throw new LlmError('pi-ai image input requires the durable attachment service', 'UNSUPPORTED_CONTENT')
       }
-      if (containsVideo && attachments === undefined) {
-        throw new LlmError('pi-ai video input requires the durable attachment service', 'UNSUPPORTED_CONTENT')
-      }
-      const videos = containsVideo && attachments !== undefined
-        ? await loadRequestVideos(options, attachments, profile.maxRequestVideoBytes)
-        : new Map<string, string>()
-      using _pipeline = fetchPipelineGuard(videos)
       const onReplayDegrade = (reason: string): void => {
         this.config.onReplayDegrade?.({ provider: options.provider, model: options.model, reason })
       }
@@ -439,42 +422,4 @@ export class PiAiAdapter extends LlmAdapter {
       consumer.abort('pi-ai stream consumer stopped')
     }
   }
-}
-
-function collectVideoRefs(blocks: readonly ContentBlock[], refs: Map<string, VideoAttachmentRef>): void {
-  for (const block of blocks) {
-    if (block.type === 'video') refs.set(String(block.attachment.attachmentId), block.attachment)
-    else if (block.type === 'tool-result') collectVideoRefs(block.content, refs)
-  }
-}
-
-async function loadRequestVideos(
-  options: GenerateOptions,
-  attachments: AttachmentStore,
-  maxRequestVideoBytes: number,
-): Promise<Map<string, string>> {
-  const refs = new Map<string, VideoAttachmentRef>()
-  for (const message of options.messages) collectVideoRefs(message.content, refs)
-  const videos = new Map<string, string>()
-  let total = 0
-  for (const [id, ref] of refs) {
-    const stored = await attachments.readVideoRequest(ref, options.signal)
-    total += stored.data.length
-    if (total > maxRequestVideoBytes) {
-      throw new LlmError(
-        `video request payload ${total} bytes exceeds this route's maxRequestVideoBytes ${maxRequestVideoBytes}`,
-        'UNSUPPORTED_CONTENT',
-      )
-    }
-    videos.set(id, stored.data)
-  }
-  return videos
-}
-
-function fetchPipelineGuard(videos: ReadonlyMap<string, string>): { [Symbol.dispose](): void } {
-  const release = acquireFetchPipeline({
-    onRequest: (init, url) => rewriteOpenAiVideoUrls(init, url, videos),
-    onResponse: response => repairSseJsonResponse(response),
-  })
-  return { [Symbol.dispose]: release }
 }

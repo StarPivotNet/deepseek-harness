@@ -255,6 +255,8 @@
 .rail .iconButton {
   width: 36px;
   height: 36px;
+  /* Rail hovers share the shell rail's 12px rounding. */
+  border-radius: 12px;
   color: var(--dsw-alias-label-primary);
 }
 
@@ -264,6 +266,9 @@
   padding: 0;
   margin: 0 0 12px;
   gap: 0;
+  /* The collapsed search frame clips its button's hover, so it must carry the
+     rail's 12px rounding itself. */
+  border-radius: 12px;
   border-color: transparent;
   background: transparent;
 }
@@ -271,6 +276,7 @@
 .rail .searchButton {
   width: 36px;
   height: 36px;
+  border-radius: 12px;
   color: var(--dsw-alias-label-primary);
 }
 
@@ -319,10 +325,15 @@
   pointer-events: none;
 }
 
-/* Wide-only content fades back in on expand remount (mirrors the shell;
-   matched to the AppFrame 300ms column slide). */
+/* macOS desktop: the sidebar is translucent over window vibrancy, so the
+   opaque fill gradient would paint a solid smear instead of a fade. */
+:global([data-platform='darwin']) .fade {
+  display: none;
+}
+
+/* Wide-only content fades back in on expand remount (mirrors the shell). */
 .wide {
-  animation: wide-in 300ms var(--ds-ease-in-out);
+  animation: wide-in 200ms var(--ds-ease-in-out);
 }
 
 @keyframes wide-in {
@@ -351,104 +362,10 @@
   scrollbar-gutter: stable;
 }
 
-.flatList > .activitySection + .activitySection,
-.groupSection > .activitySection + .activitySection {
-  margin-top: 8px;
-}
-
-.activityHeading {
-  margin: 0;
-  height: 24px;
-  padding: 0 12px 0 8px;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 24px;
-}
-
-.activityToggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  height: 24px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.activityChevron {
-  flex: none;
-  color: var(--dsw-alias-label-tertiary);
-  transition: transform var(--ds-transition-duration-fast) var(--ds-ease-in-out);
-}
-
-.activityChevronOpen {
-  transform: rotate(90deg);
-}
-
-.activityLabel {
-  min-width: 0;
-}
-
-.activityBody {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows var(--ds-transition-duration) var(--ds-ease-in-out);
-}
-
-.activityBodyCollapsed {
-  grid-template-rows: 0fr;
-  pointer-events: none;
-}
-
-.activityBodyInner {
-  overflow: hidden;
-  min-height: 0;
-}
-
-.activityBodyInner > * + * {
+.flatList > * + *,
+.searchTree > [role='treeitem'] + [role='treeitem'],
+.groupSection > * + * {
   margin-top: 2px;
-}
-
-.activityCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  color: var(--dsw-alias-label-primary-foreground);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 16px;
-}
-
-.activityCount_unread {
-  background: var(--dsw-alias-state-success-primary);
-}
-
-.activityCount_running {
-  background: var(--dsw-alias-state-business-primary);
-}
-
-.activityCount_abnormal {
-  background: var(--dsw-alias-state-error-primary);
-}
-
-.activitySection > * + *,
-.searchTree > [role='treeitem'] + [role='treeitem'] {
-  margin-top: 2px;
-}
-
-.activitySection > .sessionOverflowRow {
-  margin-top: 0;
 }
 
 .searchStatus,
@@ -469,15 +386,7 @@
 }
 
 .groupSection + .groupSection {
-  margin-top: 8px;
-}
-
-.hiddenSection {
-  margin-top: 8px;
-}
-
-.hiddenSection > .groupSection {
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .listTopDropIndicator,
@@ -528,20 +437,12 @@
   bottom: -8px;
 }
 
-.sessionOverflowRow {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 28px;
-}
-
 .sessionOverflowButton {
-  flex: 1 1 auto;
-  min-width: 0;
+  width: 100%;
   height: 28px;
   border: none;
   border-radius: 8px;
-  padding: 0 12px 0 28px;
+  padding: 0 12px 0 calc(28px + var(--dsh-workspace-indent, 0px));
   background: transparent;
   cursor: pointer;
   text-align: left;
@@ -549,15 +450,7 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
-.sessionOverflowCollapse {
-  flex: 0 0 auto;
-  width: auto;
-  margin-left: auto;
-  padding: 0 12px;
-  text-align: right;
-}
-
-.groupSection > .sessionOverflowRow {
+.groupSection > .sessionOverflowButton {
   margin-top: 0;
 }
 

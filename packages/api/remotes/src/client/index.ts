@@ -4,9 +4,12 @@ import type { Context } from '@deepseek-ai/cordis'
 import agentPresetsRemote from '@deepseek-ai/dsh-agent-presets/remote'
 import commandsRemote from '@deepseek-ai/dsh-commands/remote'
 import settingsControllerRemote from '@deepseek-ai/dsh-api-settings-controller/remote'
+import officeToPdfRemote from '@deepseek-ai/dsh-office-to-pdf/remote'
 import goalsRemote from '@deepseek-ai/dsh-goal/remote'
 import llmRemote from '@deepseek-ai/dsh-llm/remote'
 import dynamicRemote from '@deepseek-ai/dsh-cordis-host-runner/remote'
+import pluginManagerRemote from '@deepseek-ai/dsh-plugin-manager/remote'
+import automationRemote from '@deepseek-ai/dsh-automation/remote'
 import pluginInventoryRemote from '@deepseek-ai/dsh-host-plugin-inventory/remote'
 import messageFeedbackRemote from '@deepseek-ai/dsh-message-feedback/remote'
 import permissionPresetsRemote from '@deepseek-ai/dsh-permission-presets/remote'
@@ -16,19 +19,23 @@ import sessionReferencesRemote from '@deepseek-ai/dsh-session-reference/remote'
 import subagentsRemote from '@deepseek-ai/dsh-subagent/remote'
 import sessionRemote from '@deepseek-ai/dsh-api-session-controller/remote'
 import workspaceRemote from '@deepseek-ai/dsh-api-workspace-controller/remote'
-import automationRemote from '@deepseek-ai/dsh-automation/remote'
 import terminalRemote from '@deepseek-ai/dsh-api-terminal-controller/remote'
 import workspaceFilesRemote from '@deepseek-ai/dsh-api-workspace-files/remote'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
-import { installConnectionApi } from './connection-api.ts'
 
 export type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
+export type {
+  BundleInfo, BundleRowInfo, ChangeResult, InstallBundleOptions, InstallSpecKind, ManagementError, PackageResult, PluginChange,
+  PluginEntryId, PluginInfo, PluginInspectProblem, PluginInstallCancellation, PluginInstallFailureKind, PluginInstallLogChunk,
+  PluginInstallProgress, PluginInstallRequestId, PluginSpecInspection, ReadOnlyReason,
+} from '@deepseek-ai/dsh-plugin-manager/types'
+export type {} from '@deepseek-ai/dsh-plugin-manager/remote'
 export type { PluginInventorySnapshot } from '@deepseek-ai/dsh-host-plugin-inventory/types'
 export type {} from '@deepseek-ai/dsh-agent-presets/remote'
 export type {} from '@deepseek-ai/dsh-commands/remote'
 export type {} from '@deepseek-ai/dsh-api-settings-controller/remote'
 export type {} from '@deepseek-ai/dsh-goal/remote'
+export type {} from '@deepseek-ai/dsh-office-to-pdf/remote'
 export type {} from '@deepseek-ai/dsh-llm/remote'
 export type {} from '@deepseek-ai/dsh-host-plugin-inventory/remote'
 export type {} from '@deepseek-ai/dsh-message-feedback/remote'
@@ -41,7 +48,6 @@ export type * from '@deepseek-ai/dsh-subagent/client'
 export type {} from '@deepseek-ai/dsh-api-session-controller/remote'
 export type * from '@deepseek-ai/dsh-api-session-controller/types'
 export type {} from '@deepseek-ai/dsh-api-workspace-controller/remote'
-export type {} from '@deepseek-ai/dsh-automation/remote'
 export type * from '@deepseek-ai/dsh-api-workspace-controller/types'
 export type {} from '@deepseek-ai/dsh-api-workspace-files/remote'
 export type * from '@deepseek-ai/dsh-api-workspace-files/types'
@@ -116,10 +122,6 @@ export type {
   DynamicCordisUndefineReceipt,
   RequestRunOutcome,
 } from '@deepseek-ai/dsh-cordis-host-runner/types'
-// The JSON vocabulary those payloads are built from, re-exported for the same
-// reason: a Client contribution names what it sends without importing a Host
-// package, and this assembly is where both planes legitimately meet.
-export type { JsonValue } from '@deepseek-ai/dsh-util-values'
 // Credential state vocabulary for the credentials namespace (values never ride it).
 export type { CredentialInfo } from '@deepseek-ai/dsh-credentials/types'
 // Redacted namespace vocabulary for the settings namespace (secrets never ride
@@ -166,8 +168,10 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
   try {
     for (const contribution of [
       agentPresetsRemote, commandsRemote, settingsControllerRemote, goalsRemote, llmRemote, dynamicRemote,
-      pluginInventoryRemote, messageFeedbackRemote, sessionFeedbackRemote, fileUploadsRemote, sessionReferencesRemote,
-      permissionPresetsRemote, subagentsRemote, sessionRemote, workspaceRemote, workspaceFilesRemote, automationRemote, terminalRemote,
+      pluginInventoryRemote, pluginManagerRemote, messageFeedbackRemote, sessionFeedbackRemote,
+      fileUploadsRemote, sessionReferencesRemote, permissionPresetsRemote, subagentsRemote,
+      sessionRemote, workspaceRemote, workspaceFilesRemote, automationRemote, terminalRemote,
+      officeToPdfRemote,
     ]) {
       disposers.push(await ctx.remote.$mount(contribution))
     }
@@ -175,23 +179,9 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
     for (const dispose of disposers.reverse()) await dispose()
     throw error
   }
-  const connection = ctx.get('connection') as ConnectionHandle | undefined
-  let uninstallApi: (() => void) | undefined
-  // Namespace services live on cousin fibers created by $mount. This assembly
-  // only injects `remote`, so `ctx.remote.llm` here throws "without inject".
-  // Read them from a child that declares the namespaces after they exist.
-  if (connection !== undefined) {
-    await ctx.inject(['remote.llm', 'remote.settings'], (scope) => {
-      uninstallApi = installConnectionApi(connection, scope.remote)
-    })
-  }
   // Unwound in reverse mount order, so a namespace never outlives one mounted
   // after it.
   return async () => {
-    uninstallApi?.()
     for (const dispose of disposers.reverse()) await dispose()
   }
 }
-
-export type IApiClient = ClientRemote
-export type { SkillCatalogEntry, UsageOverviewValue, UsageDay, UsageModelShare } from '@deepseek-ai/dsh-api-session-controller/client'

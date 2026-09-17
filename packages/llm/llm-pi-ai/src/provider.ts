@@ -19,13 +19,12 @@
  * @module dsh-llm-pi-ai/provider
  */
 
-import { createProvider } from '@earendil-works/pi-ai'
 import type { Api, ApiKeyAuth, Model, Provider, ProviderStreams } from '@earendil-works/pi-ai'
 import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messages.lazy'
 import { openAICompletionsApi } from '@earendil-works/pi-ai/api/openai-completions.lazy'
 import { openAIResponsesApi } from '@earendil-works/pi-ai/api/openai-responses.lazy'
-import { catalogProvider, PiAiCatalogError, shippedApi } from './catalog.ts'
-import type { DshModel } from './catalog.ts'
+import { catalogProvider, PiAiCatalogError } from './catalog.ts'
+import { createProvider } from './models.ts'
 
 /**
  * Wire protocols a configured route may name, mapped to pi-ai's lazily loaded
@@ -95,13 +94,13 @@ export interface ProviderSpec {
   api?: string
   /** Endpoint override already applied to {@link models}; kept for provider-level display. */
   baseURL?: string
-  /** The route's materialized models, in configuration order, carrying the harness modality superset on `input`. */
-  models: readonly DshModel[]
+  /** The route's materialized models, in configuration order. */
+  models: readonly Model<Api>[]
   /**
-   * Whether the profile names a credential on the route or on any model.
-   * Configuration carries the reference, never the secret. Only that decides
-   * whether {@link routeAuth} adds the harness's own api-key method to a
-   * catalog provider that offers none; the key itself still arrives per
+   * Whether the profile names a credential, which it does through `apiKeyEnv`
+   * alone: configuration carries the reference, never the secret. Only that
+   * decides whether {@link routeAuth} adds the harness's own api-key method to
+   * a catalog provider that offers none; the key itself still arrives per
    * request, never at construction.
    */
   namesCredential: boolean
@@ -142,7 +141,7 @@ function routeAuth(spec: ProviderSpec, catalog: Provider | undefined): Provider[
  * Catalog-owned dynamic refresh is dropped: this route's catalog is the
  * settings document, and a background refresh would contradict it.
  */
-function reuseCatalogProvider(base: Provider, spec: ProviderSpec, models: readonly Model<Api>[]): Provider {
+function reuseCatalogProvider(base: Provider, spec: ProviderSpec): Provider {
   // Provider-level `baseUrl` is display metadata: pi-ai routes every request
   // through `Model.baseUrl`, which model resolution has already overridden.
   const baseUrl = spec.baseURL ?? base.baseUrl
@@ -151,7 +150,7 @@ function reuseCatalogProvider(base: Provider, spec: ProviderSpec, models: readon
     name: spec.displayName,
     ...baseUrl === undefined ? {} : { baseUrl },
     auth: routeAuth(spec, base),
-    getModels: () => models,
+    getModels: () => spec.models,
     // Delegated rather than copied: the catalog provider stays the receiver, so
     // an implementation holding state on itself keeps working.
     stream: (model, context, options) => base.stream(model, context, options),
@@ -166,52 +165,28 @@ function reuseCatalogProvider(base: Provider, spec: ProviderSpec, models: readon
  * @throws Error when the route names a wire protocol this build cannot serve.
  */
 export function buildProvider(spec: ProviderSpec): Provider {
-  // The single documented crossing where harness models enter pi-ai's typed
-  // APIs: a materialized model's `input` may name the harness-owned `video`
-  // modality, which pi-ai's vocabulary does not have. The string is inert
-  // upstream — pi-ai never sees a video content block; a video rides through
-  // pi-ai as a text marker and the harness fetch pipeline injects the
-  // provider's `video_url` wire form — so the cast erases only the superset
-  // the harness added, never a fact pi-ai would act on.
-  const models = spec.models as readonly Model<Api>[]
   const catalog = catalogProvider(spec.provider)
-  const spoken = [...new Set(spec.models.map(model => model.api))]
-  // A catalog route keeping every model's catalog protocol reuses that
-  // provider. An explicit route protocol, or any model naming a different
-  // one, is a wire-format change only the protocol table can serve.
-  if (catalog !== undefined && spec.api === undefined
-    && spoken.every(api => catalog.getModels().some(model => model.api === api))) {
-    return reuseCatalogProvider(catalog, spec, models)
-  }
+  // A catalog route keeping its catalog protocol reuses the catalog provider;
+  // an explicit protocol means the deployment is repointing the route at a
+  // different wire format, which only the protocol table can serve.
+  if (catalog !== undefined && spec.api === undefined) return reuseCatalogProvider(catalog, spec)
 
-  const needed = spoken.length > 0
-    ? spoken
-    : [spec.api ?? shippedApi(spec.provider)]
-  const streams: Partial<Record<string, ProviderStreams>> = {}
-  for (const api of needed) {
-    if (api === undefined) {
-      throw new PiAiCatalogError(
-        `llm-pi-ai: provider "${spec.provider}" names no api, which this build cannot serve;`
-        + ` supported protocols are ${supportedProtocols().join(', ')}`,
-      )
-    }
-    const factory = PROTOCOLS[api]
-    if (factory === undefined) {
-      throw new PiAiCatalogError(
-        `llm-pi-ai: provider "${spec.provider}" names api "${api}", which this build cannot serve;`
-        + ` supported protocols are ${supportedProtocols().join(', ')}`,
-      )
-    }
-    streams[api] = factory()
+  // Every model on this path carries the route's protocol: model resolution
+  // requires one for a route the catalog cannot default, and an explicit one
+  // replaces each catalog model's own. So the route has a single API.
+  const factory = spec.api === undefined ? undefined : PROTOCOLS[spec.api]
+  if (factory === undefined) {
+    throw new PiAiCatalogError(
+      `llm-pi-ai: provider "${spec.provider}" names api "${spec.api}", which this build cannot serve;`
+      + ` supported protocols are ${supportedProtocols().join(', ')}`,
+    )
   }
-  const only = needed.length === 1 ? needed[0] : undefined
-  const onlyStreams = only === undefined ? undefined : streams[only]
   return createProvider({
     id: spec.provider,
     name: spec.displayName,
     ...spec.baseURL === undefined ? {} : { baseUrl: spec.baseURL },
     auth: routeAuth(spec, catalog),
-    models,
-    api: onlyStreams ?? streams,
+    models: spec.models,
+    api: factory(),
   })
 }

@@ -1,6 +1,5 @@
-// merge-port: ISessions rewrite and workspace hide extras.
 import { Context } from '@deepseek-ai/cordis'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { SessionSeq } from '@deepseek-ai/dsh-session/types'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { createAssistantMessage, LlmAttemptId } from '@deepseek-ai/dsh-llm'
@@ -25,7 +24,6 @@ afterEach(() => { vi.unstubAllGlobals() })
 function sessionSnapshot(): SessionSnapshot {
   return {
     sessionId: SESSION_ID,
-    queue: [],
     pendingSubmissions: [],
     running: false,
     subagent: null,
@@ -58,7 +56,6 @@ function fakeSession(): SessionFace {
     loadOlder: () => Promise.reject(new Error('unused fake Session operation')),
     loadThrough: () => Promise.reject(new Error('unused fake Session operation')),
     command: () => Promise.reject(new Error('unused fake Session operation')),
-    rewrite: () => Promise.reject(new Error('unused fake Session operation')),
   }
 }
 
@@ -73,22 +70,27 @@ function fakeSessions(ctx: Context): { sessions: ISessions; binding: SessionBind
   const list = createSnapshotStore<SessionListState>({
     ids: [],
     byId: {},
-    current: undefined,
     phase: 'ready',
     subagentsByParent: {},
     jobsBySession: {},
-    currentAddress: undefined,
   })
-  const sessions = {
+  const reference = {
+    sessionId: SESSION_ID,
+    binding,
+    ready: Promise.resolve(binding),
+    release: () => {},
+    [Symbol.dispose]() {},
+  }
+  const sessions: ISessions = {
     list,
     searchResultLimit: 50,
     create: () => Promise.reject(new Error('unused fake Sessions operation')),
-    open: () => {},
-    openSubagent: () => {},
+    retain: () => reference,
+    using: async (_target, _options, operation) => await operation(reference),
+    retainInfo: () => createSnapshotStore({ referenceCount: 1, retainedBy: {} }),
     subagentAddress: () => undefined,
     setSubagentCatalogOpen: () => {},
     refreshSubagents: () => Promise.reject(new Error('unused fake Sessions operation')),
-    clear: () => {},
     refresh: () => Promise.reject(new Error('unused fake Sessions operation')),
     search: () => Promise.reject(new Error('unused fake Sessions operation')),
     fork: () => Promise.reject(new Error('unused fake Sessions operation')),
@@ -96,9 +98,7 @@ function fakeSessions(ctx: Context): { sessions: ISessions; binding: SessionBind
     scopeOf: candidate => candidate === binding.ctx ? SESSION_ID : undefined,
     sessionOf: candidate => candidate === binding.ctx ? binding.session : undefined,
     binding: id => id === SESSION_ID ? binding : undefined,
-    rewrite: () => Promise.reject(new Error('unused fake Sessions operation')),
-    markUnread: () => {},
-  } satisfies ISessions
+  }
   return { sessions, binding }
 }
 
@@ -132,6 +132,7 @@ async function bootRegistries(): Promise<{
   views: ConversationViewRegistry
 }> {
   const ctx = new Context()
+  onTestFinished(async () => { await ctx.fiber.dispose() })
   const { sessions, binding } = fakeSessions(ctx)
   const uiConversation = new UiConversation(ctx, sessions)
   return {

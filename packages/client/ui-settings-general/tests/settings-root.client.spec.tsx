@@ -4,9 +4,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useEffect, useState } from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
+import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
+import { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SettingsRootComponentProps } from '../src/client/shell-contract.ts'
 import { SettingsRoot } from '../src/client/SettingsRoot.tsx'
-import { en } from '../src/client/locales.ts'
+import { en, zh } from '../src/client/locales.ts'
+import type { DesktopUpdateView } from '../src/client/desktop-update-bridge.ts'
 
 // Every fixture carries the resource hook the resources plugin merges into GlobalStandardProps.
 const useResource = (() => ({ status: 'none' as const, value: undefined, failure: undefined, reload: () => {} })) as GlobalStandardProps['useResource']
@@ -28,19 +31,18 @@ const SEAT_CONTENT: Record<string, string> = {
   'settings.close': 'Close',
 }
 
-type AttentionSnapshot = Parameters<Parameters<SettingsRootComponentProps['useSessionPendingInteraction']>[0]>[0]
+type AttentionSnapshot = Parameters<Parameters<SettingsRootComponentProps['useSessionStatus']>[0]>[0]
 type ConnectionSnapshot = Parameters<Parameters<SettingsRootComponentProps['useConnectionState']>[0]>[0]
 const noAttention: AttentionSnapshot = new Map()
-const useSessionPendingInteraction: SettingsRootComponentProps['useSessionPendingInteraction'] = selector => selector(noAttention)
+const useSessionStatus: SettingsRootComponentProps['useSessionStatus'] = selector => selector(noAttention)
 
 function mount({
   wide = true,
+  dictionary = en,
   connectionState = 'connected',
+  desktopUpdate = { failed: false, opening: false },
   onboardingActive = true,
-  themePreference = 'system',
-  fontSize = 14,
-  localePreference = 'en' as string | undefined,
-  extraLocales = [] as Array<{ id: string; label: string }>,
+  mainView = true,
   rows = [
     { id: 'general', order: 0, label: 'General' },
     { id: 'models', order: 10, label: 'Models' },
@@ -52,12 +54,11 @@ function mount({
   ],
 }: {
   wide?: boolean
+  dictionary?: typeof en | typeof zh
   connectionState?: ConnectionSnapshot
+  desktopUpdate?: DesktopUpdateView
   onboardingActive?: boolean
-  themePreference?: 'light' | 'dark' | 'system'
-  fontSize?: number
-  localePreference?: string | undefined
-  extraLocales?: Array<{ id: string; label: string }>
+  mainView?: boolean
   rows?: Row[]
   steps?: Step[]
 } = {}) {
@@ -68,59 +69,38 @@ function mount({
   const listeners = new Set<() => void>()
   const connectionListeners = new Set<() => void>()
   const reconnect = vi.fn()
-  const setLocale = vi.fn()
-  const clearLocale = vi.fn()
-  const setTheme = vi.fn()
-  const setFontSize = vi.fn()
   const renderSlot = vi.fn(
-    ((key: string, owner?: { part?: 'account' | 'settings' }, opts?: { only?: string }) => {
+    ((key: string, _owner: unknown, opts?: { only?: string }) => {
       if (key === 'settings.section') return <div data-testid={`section-${opts?.only ?? 'all'}`} />
-      if (key === 'settings.trigger' && owner?.part === 'account') return null
       return SEAT_CONTENT[key]
     }) as SettingsRootComponentProps['renderSlot'],
   )
-  const useSessions = ((select: (state: unknown) => unknown) => select(onboardingActive
-    ? { phase: 'ready', current: undefined, byId: {} }
-    : {
-      phase: 'ready',
-      current: 'active-session',
-      byId: { 'active-session': { blank: false } },
-    })) as never
+  const activeId = SessionId('active-session')
+  const sessions: SessionListState = {
+    ids: [activeId],
+    byId: {
+      [activeId]: {
+        id: activeId,
+        displayTitle: 'Active',
+        blank: onboardingActive,
+        running: false,
+        retainedBy: mainView ? { mainView: 1 } : {},
+        updatedAt: 0,
+      },
+    },
+    phase: 'ready', subagentsByParent: {}, jobsBySession: {},
+  }
   const unusedHook = (() => { throw new Error('unused by SettingsRoot') }) as never
   const props: SettingsRootComponentProps = {
-    useSessions,
-    useSessionPendingInteraction,
-    usePanelInfo, useResource,
+    useSessions: select => select(sessions),
+    useSessionStatus,
+    usePanelInfo, useSessionRetainInfo: () => undefined, useResource,
     useWorkspaces: unusedHook,
     wide,
     reconnect,
-    setLocale,
-    clearLocale,
-    setTheme,
-    setFontSize,
-    useLocale: select => select({
-      active: localePreference === undefined ? 'en' : localePreference,
-      preference: localePreference,
-      locales: [{ id: 'en', label: 'English' }, { id: 'zh', label: '中文' }, ...extraLocales],
-      revision: 1,
-    }),
-    useTheme: select => select({
-      preference: themePreference,
-      fontSize,
-      active: { id: 'light', colorScheme: 'light', tokens: {} },
-      themes: [],
-      revision: 1,
-    }),
-    t: (key, params) => {
-      if (key === 'hostStart.meta') return `Started ${String(params?.['time'])} · launched ${String(params?.['count'])} times`
-      const translated = makeTranslate(en)(key, params)
-      return translated
-    },
-    useHostStart: select => select({
-      status: 'ready',
-      startCount: 3,
-      startedAt: '2026-08-29T00:17:56.000Z',
-    }),
+    openDesktopUpdate: () => {},
+    useDesktopUpdate: select => select(desktopUpdate),
+    t: makeTranslate(dictionary),
     useConnectionState: (select) => {
       const [, force] = useState(0)
       useEffect(() => {
@@ -155,7 +135,11 @@ function mount({
       for (const fn of [...connectionListeners]) fn()
     })
   }
-  return { view, renderSlot, bump, listeners, reconnect, setLocale, clearLocale, setTheme, setFontSize, setConnectionState }
+  const setDesktopUpdate = (next: DesktopUpdateView) => {
+    desktopUpdate = next
+    view.rerender(<SettingsRoot {...props} />)
+  }
+  return { view, renderSlot, bump, listeners, reconnect, setConnectionState, setDesktopUpdate }
 }
 
 function openPanel() {
@@ -166,17 +150,34 @@ function openPanel() {
 }
 
 describe('SettingsRoot trigger', () => {
-  it('renders the trigger seat content as the accessible name (no aria-label of its own)', () => {
-    const { renderSlot } = mount()
-    const trigger = screen.getByRole('button', { name: 'Settings' })
-    expect(trigger.hasAttribute('aria-label')).toBe(false)
-    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: true, part: 'settings' })
-    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: true, part: 'account' })
+  it('shows installation instead of expected backend reconnection and restores connection feedback after failure', () => {
+    const presentation = { phase: 'installing' as const, version: '1.0.1' }
+    const f = mount({ dictionary: zh, connectionState: 'connecting',
+      desktopUpdate: { failed: false, opening: false, presentation } })
+    expect(screen.getByRole('button', { name: '正在准备重启…' })).toBeTruthy()
+    expect(screen.queryByText('重新连接中')).toBeNull()
+    f.setDesktopUpdate({ failed: false, opening: false,
+      presentation: { phase: 'error', version: presentation.version, failure: 'install' } })
+    expect(screen.queryByRole('button', { name: '重试更新' })).toBeNull()
+    expect(screen.getByText('重新连接中')).toBeTruthy()
+  })
+  it.each([
+    { column: 'expanded English', wide: true, dictionary: en, name: 'Settings' },
+    { column: 'collapsed English', wide: false, dictionary: en, name: 'Settings' },
+    { column: 'expanded Chinese', wide: true, dictionary: zh, name: '设置' },
+    { column: 'collapsed Chinese', wide: false, dictionary: zh, name: '设置' },
+  ])('uses the locale name and accepts keyboard-style activation for the $column trigger', ({
+    wide, dictionary, name,
+  }) => {
+    const { renderSlot } = mount({ wide, dictionary })
+    const trigger = screen.getByRole('button', { name })
+    expect(trigger.getAttribute('aria-label')).toBe(name)
+    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', wide ? { wide, part: 'settings' } : { wide })
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
     trigger.focus()
     fireEvent.click(trigger, { detail: 0 })
     expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Settings', expanded: true })).toBeTruthy()
+    expect(screen.getByRole('button', { name, expanded: true })).toBeTruthy()
   })
 
   it('shows outage, retry progress, and a two-second recovery confirmation', () => {
@@ -213,23 +214,23 @@ describe('SettingsRoot trigger', () => {
 
   it('keeps the attempt label steady through the hold and confirms for the full window', () => {
     vi.useFakeTimers()
-    const mounted = mount()
+    const mounted = mount({ dictionary: zh })
     mounted.setConnectionState('connecting')
-    const attempt = screen.getByRole('button', { name: 'Reconnecting, reconnect now' })
-    expect(attempt.textContent).toContain('Reconnecting...')
+    const attempt = screen.getByRole('button', { name: '连接中断，正在重试，点击立即重连' })
+    expect(attempt.textContent).toContain('重新连接中')
     fireEvent.click(attempt)
     expect(mounted.reconnect).toHaveBeenCalledOnce()
-    expect(attempt.textContent).toContain('Reconnecting...')
+    expect(attempt.textContent).toContain('重新连接中')
     // An attempt that resolves mid-hold keeps its label until the hold ends.
     act(() => { vi.advanceTimersByTime(100) })
     mounted.setConnectionState('connected')
-    expect(screen.getByRole('button', { name: 'Reconnecting, reconnect now' }).textContent)
-      .toContain('Reconnecting...')
+    expect(screen.getByRole('button', { name: '连接中断，正在重试，点击立即重连' }).textContent)
+      .toContain('重新连接中')
     act(() => { vi.advanceTimersByTime(700) })
-    expect(screen.getByRole('status', { name: 'Connected' })).toBeTruthy()
+    expect(screen.getByRole('status', { name: '连接成功' })).toBeTruthy()
     // The full two-second confirmation follows the delayed appearance.
     act(() => { vi.advanceTimersByTime(1_999) })
-    expect(screen.getByRole('status', { name: 'Connected' })).toBeTruthy()
+    expect(screen.getByRole('status', { name: '连接成功' })).toBeTruthy()
     act(() => { vi.advanceTimersByTime(1) })
     act(() => { vi.advanceTimersByTime(150) })
     expect(screen.queryByRole('status')).toBeNull()
@@ -250,73 +251,6 @@ describe('SettingsRoot trigger', () => {
   it('keeps the reconnect indicator out of the collapsed rail', () => {
     mount({ wide: false, connectionState: 'disconnected' })
     expect(screen.queryByRole('button', { name: 'Disconnected, reconnect now' })).toBeNull()
-  })
-
-  it('opens the account menu from the chip without opening settings, then applies submenu choices', () => {
-    const mounted = mount()
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-    expect(screen.queryByRole('dialog')).toBeNull()
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Interface language' }).parentElement as HTMLElement)
-    fireEvent.click(screen.getByRole('menuitem', { name: 'System default' }))
-    expect(mounted.clearLocale).toHaveBeenCalledOnce()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Interface language' }).parentElement as HTMLElement)
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Simplified Chinese' }))
-    expect(mounted.setLocale).toHaveBeenCalledWith('zh')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Appearance' }).parentElement as HTMLElement)
-    expect(screen.getByRole('menuitem', { name: 'System default' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Dark theme' }))
-    expect(mounted.setTheme).toHaveBeenCalledWith('dark')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Interface scale' }).parentElement as HTMLElement)
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Zoom in⌘ +' }))
-    expect(mounted.setFontSize).toHaveBeenCalledWith(15)
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Zoom out⌘ -' }))
-    expect(mounted.setFontSize).toHaveBeenCalledWith(13)
-    expect(screen.getByRole('menuitem', { name: 'Actual size⌘ 0' })).toHaveProperty('disabled', true)
-    expect(screen.queryByRole('dialog')).toBeNull()
-  })
-
-  it('checks System default when no explicit locale preference is stored', () => {
-    mount({ localePreference: undefined })
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Interface language' }).parentElement as HTMLElement)
-    expect(screen.getByRole('menuitem', { name: 'System default' })).toBeTruthy()
-  })
-
-  it('keeps the account menu off the collapsed rail', () => {
-    mount({ wide: false })
-    expect(screen.queryByRole('button', { name: 'Account menu' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Settings' })).toBeTruthy()
-  })
-
-  it('closes the account menu on outside pointerdown and renders theme icons for each preference', () => {
-    mount({ themePreference: 'dark' })
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-    expect(screen.getByRole('menu')).toBeTruthy()
-    fireEvent.pointerDown(document.body)
-    expect(screen.queryByRole('menu')).toBeNull()
-
-    cleanup()
-    const mounted = mount({ themePreference: 'light', fontSize: 16 })
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-    expect(screen.getByRole('menuitem', { name: 'Appearance' })).toBeTruthy()
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Interface scale' }).parentElement as HTMLElement)
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Actual size⌘ 0' }))
-    expect(mounted.setFontSize).toHaveBeenCalledWith(14)
-    expect(screen.queryByRole('dialog')).toBeNull()
-
-    cleanup()
-    mount({ localePreference: undefined, extraLocales: [{ id: 'ja', label: '日本語' }], fontSize: 12 })
-    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }))
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Interface language' }).parentElement as HTMLElement)
-    expect(screen.getByRole('menuitem', { name: '日本語' })).toBeTruthy()
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Interface scale' }).parentElement as HTMLElement)
-    expect(screen.getByRole('menuitem', { name: 'Zoom out⌘ -' })).toHaveProperty('disabled', true)
   })
 })
 
@@ -345,12 +279,6 @@ describe('SettingsPanel chrome seats', () => {
     openPanel()
     expect(screen.getByText('Open configuration file')).toBeTruthy()
     expect(renderSlot).toHaveBeenCalledWith('settings.action', {})
-  })
-
-  it('renders Host start time and start count in the content header', () => {
-    mount()
-    openPanel()
-    expect(screen.getByText(/Started /).textContent).toMatch(/launched 3 times/)
   })
 })
 
@@ -407,26 +335,22 @@ describe('SettingsPanel navigation', () => {
       rows: [
         { id: 'general', order: 0, label: 'General' },
         { id: 'models', order: 10, label: 'Models' },
-        { id: 'subagents', order: 12, label: 'Subagents' },
         { id: 'agent-presets', order: 20, label: 'Agent presets' },
-        { id: 'plugins', order: 15, label: 'Plugins' },
-        { id: 'skills', order: 17, label: 'Skills' },
-        { id: 'usage', order: 35, label: 'Usage' },
-        { id: 'system-prompts', order: 40, label: 'System prompts' },
-        { id: 'archived-sessions', order: 45, label: 'Archived sessions' },
+        { id: 'plugins', order: 30, label: 'Plugins' },
+        { id: 'archived-sessions', order: 40, label: 'Archived sessions' },
         { id: 'contributed', order: 50, label: 'Contributed' },
       ],
     })
     openPanel()
     // Glyphs carry no id of their own, so the drawn paths are what tells them apart.
-    const glyphs = ['General', 'Models', 'Subagents', 'Agent presets', 'Plugins', 'Skills', 'Usage', 'System prompts', 'Archived sessions', 'Contributed']
+    const glyphs = ['General', 'Models', 'Agent presets', 'Plugins', 'Archived sessions', 'Contributed']
       .map(name => screen.getByRole('button', { name }).querySelector('svg')?.innerHTML)
 
     expect(glyphs.every(glyph => glyph !== undefined && glyph !== '')).toBe(true)
-    // The ids the shell names get their own glyph; every other section —
+    // The four ids the shell names get their own glyph; every other section —
     // including one this package never heard of — shares the gear.
-    expect(new Set(glyphs.slice(0, 9)).size).toBe(9)
-    expect(glyphs[9]).toBe(glyphs[0])
+    expect(new Set(glyphs.slice(0, 5)).size).toBe(5)
+    expect(glyphs[5]).toBe(glyphs[0])
   })
 
   it('switches the rendered section on nav click', () => {
@@ -462,6 +386,12 @@ describe('SettingsPanel navigation', () => {
     const inactive = mount({ onboardingActive: false }).renderSlot.mock.calls
       .filter(call => call[0] === 'settings.onboarding')
     expect(inactive).toHaveLength(0)
+  })
+
+  it('keeps onboarding active before a main Session is retained', () => {
+    const { renderSlot } = mount({ mainView: false })
+
+    expect(renderSlot.mock.calls.some(call => call[0] === 'settings.onboarding')).toBe(true)
   })
 
   it('paints no takeover chrome of its own around the mounted step', () => {

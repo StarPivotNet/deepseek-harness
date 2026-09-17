@@ -7,33 +7,22 @@
     - button "模型":
       - img
       - text: 模型
-    - button "子代理":
+    - button "内置插件":
       - img
-      - text: 子代理
-    - button "插件":
-      - img
-      - text: 插件
-    - button "Skills":
-      - img
-      - text: Skills
+      - text: 内置插件
     - button "Agent 预设":
       - img
       - text: Agent 预设
     - button "已归档会话":
       - img
       - text: 已归档会话
-    - button "系统提示词":
-      - img
-      - text: 系统提示词
   - button "打开配置文件"
   - button "关闭":
     - img
     - text: 关闭
   - heading "模型" [level=2]
   - paragraph: 填入各提供方的 API 密钥即可使用其模型。
-  - list:
-    - listitem:
-      - group: FAC fac
+  - list
   - text: 提供方
   - combobox "提供方":
     - option "amazon-bedrock"

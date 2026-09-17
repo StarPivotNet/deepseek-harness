@@ -5,7 +5,7 @@
  */
 
 import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { FileAttachmentRef, ImageAttachmentRef, VideoAttachmentRef } from '@deepseek-ai/dsh-attachment'
+import type { FileAttachmentRef, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type { ToolCallId, ProviderRequestId, ReasoningEffortId } from './brand.ts'
 import type { Message } from './message.ts'
 
@@ -88,18 +88,6 @@ export interface ImageBlock {
 }
 
 /**
- * A durable stored-video reference, valid in user or tool-result content.
- * Assistant output is text-only across current adapters, so no adapter emits
- * the block; adapters that cannot carry video project it to text before the
- * request leaves the harness.
- */
-export interface VideoBlock {
-  type: 'video'
-  /** Immutable stored bytes and container metadata owned by the attachment service. */
-  attachment: VideoAttachmentRef
-}
-
-/**
  * A durable verbatim file reference, valid in user content. Files never reach
  * a provider natively: request assembly projects every occurrence to
  * deterministic handle text (name, byte size, and the read-only saved path),
@@ -138,7 +126,6 @@ export interface ContentBlockMap {
   'text': TextBlock
   'reasoning': ReasoningBlock
   'image': ImageBlock
-  'video': VideoBlock
   'file': FileBlock
   'tool-call': ToolCallBlock
   'tool-result': ToolResultBlock
@@ -231,7 +218,6 @@ export interface LlmProviderInfo {
 export interface ModelModalityMap {
   text: 'text'
   image: 'image'
-  video: 'video'
 }
 
 /** Any declared provider model modality. */
@@ -323,18 +309,8 @@ export interface LlmDiscoveredModel {
   contextWindow?: number
   /** Maximum output tokens, when disclosed. */
   maxTokens?: number
-  /**
-   * Selectable reasoning efforts the listing disclosed, keyed by the
-   * adapter-owned level id a selector would offer. A value is the wire
-   * spelling dispatch should send; `off` may be `null` meaning "supported,
-   * send nothing". Absence means the listing did not describe reasoning.
-   */
-  reasoningEfforts?: Readonly<Record<string, string | null>>
-  /**
-   * Whether the endpoint accepts a reasoning-effort parameter for this
-   * model. Absence means the listing did not say.
-   */
-  supportsReasoningEffort?: boolean
+  /** Accepted input types when disclosed by the catalog or endpoint; absent means unknown. */
+  inputModalities?: readonly ModelModality[]
 }
 
 /** One adapter-discovered model; catalog membership is advisory, not request validation. */
@@ -414,13 +390,6 @@ export interface LlmResolvedModelInfo extends LlmModelInfo {
   defaultMaxTokens?: number
   /** Adapter-owned selectable reasoning levels when exposed. */
   reasoning?: LlmModelReasoningInfo
-  /**
-   * Optional complete system-prompt template for this exact model. When
-   * present and non-empty, agent-loop replaces every assembled system
-   * section with this text after `{{variable}}` interpolation. Absence
-   * keeps the ordinary section assembly.
-   */
-  systemPrompt?: string
   /** Declared mid-conversation system prompt handling; absent means only a leading system message is read. */
   systemPromptUpdate?: SystemPromptUpdate
 }

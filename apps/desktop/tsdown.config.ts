@@ -14,7 +14,7 @@ export default defineConfig([
     // must be inlined, and electron stays external as the host-provided builtin.
     deps: { neverBundle: ['electron'], alwaysBundle: ['electron-updater', 'semver'] },
   },
-  ...(['preload', 'preload-app'] as const).map(name => ({
+  ...(['preload-app', 'preload-mandatory', 'preload-update-dialog'] as const).map(name => ({
     // Sandboxed Electron preloads run as CommonJS even though the application package is ESM.
     entry: { [name]: `lib/types/${name}.js` },
     outDir: 'lib',

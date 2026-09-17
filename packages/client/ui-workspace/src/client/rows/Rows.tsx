@@ -1,20 +1,20 @@
 /**
  * Workspace browser tree row components (figma Cell set 14:3080): pure presentational —
  * all data and callbacks arrive via props. Hover swaps (folder->chevron,
- * time->ellipsis, action buttons) are CSS-only. Workspace Rename/Delete and
- * session Rename/Fork/Archive/Pin keep the trailing ellipsis dropdown. A
- * separate pointer-placed context menu uses the text-only task list. Hover
- * cards are suppressed while either menu is open.
+ * time->ellipsis, action buttons) are CSS-only, and a session row's clipped
+ * title is scrolled programmatically while the row is hovered. Row ... menus are
+ * visual-only except workspace Rename/Delete and session Rename/Fork/Archive; the
+ * session and workspace hover cards are suppressed while a menu is open.
  */
-import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
   HoverCard, IconAlarmClockOutline16, IconArchiveOutline20, IconBranchOutline16,
   IconEditOutline16, IconEllipsisOutline16, IconFolderClose16, IconFolderOpen16,
   IconPlusOutline16, IconTrashOutline16, IconTriangleRightFill14, Menu, relativeTime,
-  StateDot, writeClipboard,
+  StateDot,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { MenuEntry, StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import { abbreviateHomePath } from '@deepseek-ai/dsh-util-workspace-path'
 import type { WorkspaceBrowserProps } from '../contract/slots.ts'
 import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
@@ -28,73 +28,28 @@ function displayTitle(node: SessionNode, t: RowTranslate): string {
   return node.blank ? t('session.new') : node.title
 }
 
-/** Cursor-sized portal rect so a right-click menu opens at the pointer. */
-function pointerAnchorRect(event: MouseEvent): DOMRect {
-  return new DOMRect(event.clientX, event.clientY, 0, 0)
-}
-
-type SessionRowMenuActions = {
-  onRename: (id: SessionNode['id'], currentTitle: string) => void
-  onFork: (id: SessionNode['id']) => void
-  onArchive: (id: SessionNode['id']) => void
-}
-
-type SessionContextMenuActions = SessionRowMenuActions & {
-  onPin?: ((id: SessionNode['id']) => void) | undefined
-  onUnpin?: ((id: SessionNode['id']) => void) | undefined
-  onMarkUnread: (id: SessionNode['id']) => void
-  onSplit: (id: SessionNode['id']) => void
-  onRevealPath: (path: string) => void
-  onCopy: (text: string) => void
-}
-
-/** Dispatch one Session ellipsis-menu id. Unknown ids leave without a fallback. */
-function selectSessionMenu(
-  id: string,
-  sessionId: SessionNode['id'],
-  currentTitle: string,
-  actions: SessionRowMenuActions & {
-    onPin?: ((id: SessionNode['id']) => void) | undefined
-    onUnpin?: ((id: SessionNode['id']) => void) | undefined
-  },
-): void {
-  if (id === 'pin') actions.onPin?.(sessionId)
-  if (id === 'unpin') actions.onUnpin?.(sessionId)
-  if (id === 'rename') actions.onRename(sessionId, currentTitle)
-  if (id === 'fork') actions.onFork(sessionId)
-  if (id === 'archive') actions.onArchive(sessionId)
-}
-
-/** Dispatch one Session context-menu id. Unknown or disabled ids leave. */
-function selectSessionContextMenu(
-  id: string,
-  node: SessionNode,
-  actions: SessionContextMenuActions,
-): void {
-  if (id === 'pin') actions.onPin?.(node.id)
-  if (id === 'unpin') actions.onUnpin?.(node.id)
-  if (id === 'rename') actions.onRename(node.id, node.title)
-  if (id === 'archive') actions.onArchive(node.id)
-  if (id === 'unread') actions.onMarkUnread(node.id)
-  if (id === 'split') actions.onSplit(node.id)
-  if (id === 'reveal' && node.cwd !== undefined) actions.onRevealPath(node.cwd)
-  if (id === 'copyPath' && node.cwd !== undefined) actions.onCopy(node.cwd)
-  if (id === 'copyTaskPath' && node.cwd !== undefined) actions.onCopy(node.cwd)
-  if (id === 'copyLogPath') actions.onCopy(sessionLogPath(node))
-  if (id === 'copySessionId') actions.onCopy(node.id)
-}
-
-/** Browser-local guess of the JSONL session log under ~/.dsh/sessions. */
-function sessionLogPath(node: SessionNode): string {
-  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
-  const home = env?.HOME ?? env?.USERPROFILE ?? ''
-  const root = home === '' ? '.dsh/sessions' : home + '/.dsh/sessions'
-  let project = '_no-cwd'
-  if (node.cwd !== undefined && node.cwd !== '') {
-    const slug = node.cwd.replace(/[/\\:]+/g, '-').replace(/^-+/, '')
-    project = '--' + (slug === '' ? 'root' : slug) + '--'
+/**
+ * Reveal a title wider than its one-line cell while its row is hovered: the
+ * title clips its own text, so the far edge (a fork's incremented title, for
+ * example) is reachable by scrolling the element to its end. Leaving returns it
+ * to the start in one step, because the resting ellipsis and the narrowed cell
+ * would otherwise meet the text while it travelled back. A title that fits has
+ * no scroll range to move, and the stylesheet decides whether either move
+ * glides or jumps.
+ * @param title - the row's clipping title element.
+ * @param revealed - whether the pointer is on the row.
+ */
+function revealClippedTitle(title: HTMLSpanElement | null, revealed: boolean): void {
+  /* v8 ignore next -- defensive: the title span renders unconditionally. */
+  if (title === null) return
+  if (revealed) {
+    title.scrollLeft = title.scrollWidth - title.clientWidth
+    return
   }
-  return root + '/' + project + '/' + node.id + '/session.jsonl'
+  // jsdom implements no scrollTo; the lane's direct assignment is instant there
+  // anyway, so both paths land on the same resting position.
+  if (typeof title.scrollTo === 'function') title.scrollTo({ left: 0, behavior: 'instant' })
+  else title.scrollLeft = 0
 }
 
 /** Localized compact relative time ("刚刚"/"5分钟" in zh, "now"/"5min" in en). */
@@ -121,11 +76,10 @@ function createdLabel(createdAt: number, t: RowTranslate): string {
   return t('hover.created', { time: `${date} ${pad2(d.getHours())}:${pad2(d.getMinutes())}` })
 }
 
-/** Hover-card body: workspace title, primary and additional folders, creation time. */
-function WorkspaceHoverContent({ label, cwd, folders, createdAt, t }: {
+/** Hover-card body: workspace title, display directory path, absolute creation time. */
+function WorkspaceHoverContent({ label, cwd, createdAt, t }: {
   label: string
   cwd: string | undefined
-  folders: readonly string[]
   createdAt: number
   t: RowTranslate
 }) {
@@ -133,9 +87,6 @@ function WorkspaceHoverContent({ label, cwd, folders, createdAt, t }: {
     <div className={css.hoverContent}>
       <div className={css.hoverTitle}>{label}</div>
       <div className={css.hoverPath}>{cwd}</div>
-      {folders.map(folder => (
-        <div className={css.hoverPath} key={folder}>{folder}</div>
-      ))}
       <div className={css.hoverTime}>{createdLabel(createdAt, t)}</div>
     </div>
   )
@@ -170,36 +121,13 @@ function rowHalf(e: { clientY: number; currentTarget: HTMLElement }): 'before' |
   return e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
 }
 
-/** Real-Workspace row menu actions; Hidden rows supply `show` instead of `hide`. */
-export type WorkspaceRowActions = {
-  rename?: () => void
-  addFolder?: () => void
-  removeFolder?: (path: string) => void
-  hide?: () => void
-  show?: () => void
-  delete: () => void
-}
-
-/** Dispatch one Workspace row-menu id. Unknown ids leave without a fallback. */
-function selectWorkspaceMenu(id: string, actions: WorkspaceRowActions): void {
-  if (id.startsWith('remove:')) {
-    actions.removeFolder?.(id.slice('remove:'.length))
-    return
-  }
-  if (id === 'rename') actions.rename?.()
-  else if (id === 'addFolder') actions.addFolder?.()
-  else if (id === 'hide') actions.hide?.()
-  else if (id === 'show') actions.show?.()
-  else actions.delete()
-}
-
 /**
  * Project (workspace) header row: folder + title;
- * hover reveals the chevron and create button, a right-click on a real
- * Workspace opens a separate context menu at the pointer, and dwelling on a real
+ * hover reveals the chevron and create button, and dwelling on a real
  * Workspace shows its hover card (the ungrouped bucket has none).
  * `containsCurrent` arrives on the node (derivation fact, no renderer scan).
  * @param props.group - derived group node.
+ * @param props.containsCurrentDescendant - highlight an ancestor even when its subtree is collapsed.
  * @param props.onToggle - expand/collapse the group.
  * @param props.onCreate - start a frontend Session inside this Workspace.
  * @param props.drag - optional workspace-row drag wiring.
@@ -207,12 +135,13 @@ function selectWorkspaceMenu(id: string, actions: WorkspaceRowActions): void {
  * @param props.t - the browser root's locale seat.
  * @returns the row element.
  */
-export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home, t }: {
+export function ProjectRowItem({ group, containsCurrentDescendant = false, onToggle, onCreate, actions, drag, home, t }: {
   group: GroupNode
+  containsCurrentDescendant?: boolean
   onToggle: () => void
   onCreate: () => void
   /** Real-Workspace actions; absent for the ungrouped bucket (no menu shown). */
-  actions?: WorkspaceRowActions | undefined
+  actions?: { rename: () => void; delete: () => void } | undefined
   /** Present only for real Workspace rows in the grouped view. */
   drag?: WorkspaceRowDragProps | undefined
   /** Host account home; POSIX home-rooted hover paths display as `~`. */
@@ -222,42 +151,18 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home,
   const row = group
   // The ungrouped bucket has no workspace title: its label is dictionary copy.
   const label = row.workspaceId === undefined ? t('group.ungrouped') : row.label
-  const active = group.expanded && group.containsCurrent
+  const active = containsCurrentDescendant || (group.expanded && group.containsCurrent)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [contextMenu, setContextMenu] = useState<DOMRect | null>(null)
-  const hidden = actions?.show !== undefined
-  const workspaceMenuItems = hidden
-    ? [
-      { id: 'show', label: t('menu.showWorkspace'), icon: <IconFolderOpen16 /> },
-      { id: 'delete', label: t('delete.workspace'), icon: <IconTrashOutline16 />, danger: true },
-    ]
-    : [
-      { id: 'hide', label: t('menu.hideWorkspace'), icon: <IconFolderClose16 /> },
-      { id: 'rename', label: t('rename'), icon: <IconEditOutline16 /> },
-      { id: 'addFolder', label: t('menu.addFolder'), icon: <IconPlusOutline16 /> },
-      ...row.folders.length === 0
-        ? []
-        : [{
-          id: 'removeFolder',
-          label: t('menu.removeFolder'),
-          icon: <IconFolderClose16 />,
-          submenu: row.folders.map(folder => ({ id: `remove:${folder}`, label: folder })),
-        }],
-      { id: 'delete', label: t('delete.workspace'), icon: <IconTrashOutline16 />, danger: true },
-    ]
+  const workspaceMenuItems = [
+    { id: 'rename', label: t('rename'), icon: <IconEditOutline16 /> },
+    { id: 'delete', label: t('delete.workspace'), icon: <IconTrashOutline16 />, danger: true },
+  ]
   const ownRow = (
     <div
-      className={clsx(css.projectRow, (menuOpen || contextMenu !== null) && css.menuOpen)}
+      className={clsx(css.projectRow, menuOpen && css.menuOpen)}
       role="treeitem"
       aria-expanded={row.expanded}
       onClick={onToggle}
-      onContextMenu={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        if (actions === undefined) return
-        setMenuOpen(false)
-        setContextMenu(pointerAnchorRect(event))
-      }}
       draggable={drag !== undefined}
       onDragStart={drag === undefined
         ? undefined
@@ -275,27 +180,8 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home,
         <IconTriangleRightFill14 className={clsx(css.arrow, row.expanded && css.arrowOpen)} />
       </span>
       <span className={css.projectText}>
-        <span className={css.title}>
-          {label}
-          {row.folders.length > 0 && (
-            <span className={css.folderCount}>{t('folders.extra', { n: row.folders.length })}</span>
-          )}
-        </span>
+        <span className={css.title}>{label}</span>
       </span>
-      {actions !== undefined && (
-        <Menu
-          open={contextMenu !== null}
-          onClose={() => { setContextMenu(null) }}
-          items={workspaceMenuItems}
-          onSelect={(id) => {
-            setContextMenu(null)
-            selectWorkspaceMenu(id, actions)
-          }}
-          portal
-          getAnchorRect={() => contextMenu}
-          anchor={<span />}
-        />
-      )}
       <span className={css.rowActions}>
         {actions !== undefined && (
           <Menu
@@ -304,7 +190,12 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home,
             items={workspaceMenuItems}
             onSelect={(id) => {
               setMenuOpen(false)
-              selectWorkspaceMenu(id, actions)
+              // Unknown ids leave before the dispatch: a future menu row must
+              // not inherit the destructive branch as an else fallback.
+              /* v8 ignore next -- Menu can emit only the rename and delete rows supplied above. */
+              if (id !== 'rename' && id !== 'delete') return
+              if (id === 'rename') actions.rename()
+              else actions.delete()
             }}
             portal
             closeOnPointerLeave
@@ -313,11 +204,7 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home,
                 type="button"
                 className={css.iconButton}
                 aria-label={t('actions.workspace.aria', { name: label })}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setContextMenu(null)
-                  setMenuOpen(v => !v)
-                }}
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v) }}
               >
                 <IconEllipsisOutline16 />
               </button>
@@ -343,11 +230,10 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, drag, home,
       content={<WorkspaceHoverContent
         label={row.label}
         cwd={row.cwd === undefined ? undefined : abbreviateHomePath(row.cwd, home)}
-        folders={row.folders}
         createdAt={row.createdAt}
         t={t}
       />}
-      disabled={menuOpen || contextMenu !== null}
+      disabled={menuOpen}
       copyText={row.cwd}
       copyLabel={t('copy')}
       copiedLabel={t('hover.copied')}
@@ -370,7 +256,7 @@ interface SessionStatus {
  * outranks completion reminders.
  */
 function sessionStatuses(
-  node: Pick<SessionNode, 'pendingInteraction' | 'running' | 'interrupted' | 'runningSubagentCount' | 'completed'>,
+  node: Pick<SessionNode, 'pendingInteraction' | 'running' | 'runningSubagentCount' | 'completed'>,
   t: RowTranslate,
 ): readonly [SessionStatus, ...SessionStatus[]] {
   const subagents: SessionStatus | undefined = node.runningSubagentCount === 0
@@ -404,7 +290,6 @@ function sessionStatuses(
     const primary: SessionStatus = { state: 'ongoing', label: t('status.running') }
     return subagents === undefined ? [primary] : [primary, subagents]
   }
-  if (node.interrupted) return [{ state: 'error', label: t('status.abnormal') }]
   if (subagents !== undefined) return [subagents]
   if (node.completed) return [{ state: 'done', label: t('status.completed') }]
   return [{ state: 'done', label: t('status.idle') }]
@@ -504,8 +389,7 @@ export function SearchResultItem({ result, currentId, onOpen, t }: {
 
 /**
  * One top-level 34px session row: status dot (pending user interaction outranks
- * own or descendant activity), title, relative time, the trailing ellipsis
- * menu, and a separate right-click context menu on a non-blank row.
+ * own or descendant activity), title, relative time, and the row actions menu.
  * @param props.node - derived session node.
  * @param props.currentId - selected session id (row highlight).
  * @param props.now - epoch ms for relative-time formatting.
@@ -513,17 +397,14 @@ export function SearchResultItem({ result, currentId, onOpen, t }: {
  * @param props.onRename - open the session rename dialog (id + current title).
  * @param props.onFork - fork a session at its last completed turn.
  * @param props.onArchive - archive a session by id.
- * @param props.onRevealRow - scroll this row into view after search navigation, then acknowledge it.
- * @param props.onRevealPath - reveal a filesystem path in the Host operating system.
- * @param props.drag - optional draggable-row wiring.
+ * @param props.onReveal - scroll this row into view after search navigation, then acknowledge it.
+ * @param props.drag - optional row-drag target wiring; blank rows cannot start a drag.
  * @param props.flat - omit the empty status slot in the hierarchy-free flat list.
  * @param props.t - the browser root's locale seat.
  * @returns the session row.
  */
 export function SessionNodeItem({
-  node, currentId, now, onOpen, onRename, onFork, onArchive,
-  onPin, onUnpin, onMarkUnread = () => {}, onSplit = () => {}, onRevealPath = () => {},
-  onRevealRow, drag, flat = false, t,
+  node, currentId, now, onOpen, onRename, onFork, onArchive, onReveal, drag, flat = false, t,
 }: {
   node: SessionNode
   currentId: string | undefined
@@ -535,19 +416,9 @@ export function SessionNodeItem({
   onFork: (id: SessionNode['id']) => void
   /** Archive this session (row menu action; commits without a dialog). */
   onArchive: (id: SessionNode['id']) => void
-  /** Pin this session under the Pinned heading (row menu action). */
-  onPin?: (id: SessionNode['id']) => void
-  /** Remove this session from the Pinned heading (row menu action). */
-  onUnpin?: (id: SessionNode['id']) => void
-  /** Restore the Completed reminder for this session. */
-  onMarkUnread?: (id: SessionNode['id']) => void
-  /** Open this session and show it beside the current conversation. */
-  onSplit?: (id: SessionNode['id']) => void
-  /** Reveal a filesystem path in the Host operating system. */
-  onRevealPath?: (path: string) => void
   /** Scroll this row into view after search navigation, then acknowledge it. */
-  onRevealRow?: (() => void) | undefined
-  /** Present only on draggable rows (workspace-group sessions outside search). */
+  onReveal?: (() => void) | undefined
+  /** Present on reorderable-list rows so every row can remain a drop target. */
   drag?: RowDragProps | undefined
   /** The row is rendered without a parent Workspace header. */
   flat?: boolean | undefined
@@ -559,76 +430,47 @@ export function SessionNodeItem({
   const statuses = sessionStatuses(node, t)
   const primaryStatus = statuses[0]
   const showStatus = primaryStatus.state !== 'done' || row.completed
+  const draggable = drag !== undefined && !row.blank
   const [menuOpen, setMenuOpen] = useState(false)
-  const [contextMenu, setContextMenu] = useState<DOMRect | null>(null)
   const rowRef = useRef<HTMLDivElement>(null)
+  const titleRef = useRef<HTMLSpanElement>(null)
   useEffect(() => {
-    if (onRevealRow === undefined) return
+    if (onReveal === undefined) return
     rowRef.current?.scrollIntoView({ block: 'nearest' })
-    onRevealRow()
-  }, [onRevealRow])
+    onReveal()
+  }, [onReveal])
   // Archive hides the row through the registry-global archive set and never
   // touches the session log, so it is not styled as destructive and needs no
   // confirmation dialog.
   const sessionMenuItems = [
-    ...(onPin !== undefined && onUnpin !== undefined
-      ? [{
-        id: node.pinned === true ? 'unpin' : 'pin',
-        label: node.pinned === true ? t('menu.unpin') : t('menu.pin'),
-      }]
-      : []),
     { id: 'rename', label: t('rename'), icon: <IconEditOutline16 /> },
     { id: 'fork', label: t('menu.fork'), icon: <IconBranchOutline16 /> },
     // 20-native glyph in the menu's 16px icon slot (Menu.module.css .itemIcon).
     { id: 'archive', label: t('menu.archiveSession'), icon: <IconArchiveOutline20 size={16} /> },
-  ]
-  const hasPath = node.cwd !== undefined && node.cwd !== ''
-  const sessionContextItems: MenuEntry[] = [
-    ...(onPin !== undefined && onUnpin !== undefined
-      ? [{
-        id: node.pinned === true ? 'unpin' : 'pin',
-        label: node.pinned === true ? t('menu.unpin') : t('menu.pin'),
-      }]
-      : []),
-    { id: 'rename', label: t('menu.renameTask') },
-    { id: 'archive', label: t('menu.archiveTask') },
-    { id: 'unread', label: t('menu.markUnread') },
-    { id: 'split', label: t('menu.openSplit') },
-    { type: 'separator', id: 'paths' },
-    { id: 'reveal', label: t('menu.revealInFinder'), disabled: !hasPath },
-    { id: 'copyPath', label: t('menu.copyPath'), disabled: !hasPath },
-    { id: 'copyTaskPath', label: t('menu.copyTaskPath'), disabled: !hasPath },
-    { id: 'copyLogPath', label: t('menu.copyLogPath') },
-    { id: 'copySessionId', label: t('menu.copySessionId') },
   ]
   // Figma session cell: pad 8, status slot 16, then a 4px title gap.
   const ownRow = (
     <div
       ref={rowRef}
       className={clsx(
-        css.sessionRow, selected && css.selected, (menuOpen || contextMenu !== null) && css.menuOpen,
+        css.sessionRow, selected && css.selected, menuOpen && css.menuOpen,
         flat && !showStatus && css.flatSessionRowWithoutStatus,
         drag?.marker === 'before' && css.dropBefore, drag?.marker === 'after' && css.dropAfter,
       )}
       role="treeitem"
       aria-selected={selected}
       onClick={() => { onOpen(node.id) }}
-      onContextMenu={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        if (row.blank) return
-        setMenuOpen(false)
-        setContextMenu(pointerAnchorRect(event))
-      }}
-      draggable={drag !== undefined}
-      onDragStart={drag === undefined
+      onPointerEnter={() => { revealClippedTitle(titleRef.current, true) }}
+      onPointerLeave={() => { revealClippedTitle(titleRef.current, false) }}
+      draggable={draggable}
+      onDragStart={drag === undefined || row.blank
         ? undefined
         : (e) => {
           e.dataTransfer.effectAllowed = 'move'
           e.dataTransfer.setData('text/plain', node.id)
           drag.start()
         }}
-      onDragEnd={drag?.end}
+      onDragEnd={drag === undefined || row.blank ? undefined : drag.end}
       onDragOver={drag === undefined
         ? undefined
         : (e) => {
@@ -653,30 +495,13 @@ export function SessionNodeItem({
           {showStatus && <SessionStatusDots statuses={statuses} />}
         </span>
       )}
-      <span className={css.title}>{title}</span>
+      <span ref={titleRef} className={css.title}>{title}</span>
       {row.hasActiveSchedule && <ActiveScheduleIndicator t={t} />}
       {/* A blank New Session row is a provisional placeholder: nothing has
           happened in it yet, so a "now" timestamp and the row verbs
           (rename/fork/archive) would all act on content that does not
           exist — both trailing cells stay off until the first prompt. */}
       {!row.blank && <span className={css.time}>{timeLabel(row.updatedAt, now, t)}</span>}
-      {!row.blank && (
-        <Menu
-          open={contextMenu !== null}
-          onClose={() => { setContextMenu(null) }}
-          items={sessionContextItems}
-          onSelect={(id) => {
-            setContextMenu(null)
-            selectSessionContextMenu(id, node, {
-              onRename, onFork, onArchive, onPin, onUnpin, onMarkUnread, onSplit, onRevealPath,
-              onCopy: (text) => { void writeClipboard(text) },
-            })
-          }}
-          portal
-          getAnchorRect={() => contextMenu}
-          anchor={<span />}
-        />
-      )}
       {!row.blank && (
         <span className={css.rowActions}>
           <Menu
@@ -685,7 +510,9 @@ export function SessionNodeItem({
             items={sessionMenuItems}
             onSelect={(id) => {
               setMenuOpen(false)
-              selectSessionMenu(id, node.id, row.title, { onRename, onFork, onArchive, onPin, onUnpin })
+              if (id === 'rename') onRename(node.id, row.title)
+              if (id === 'fork') onFork(node.id)
+              if (id === 'archive') onArchive(node.id)
             }}
             portal
             closeOnPointerLeave
@@ -694,11 +521,7 @@ export function SessionNodeItem({
                 type="button"
                 className={css.iconButton}
                 aria-label={t('actions.session.aria', { name: title })}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setContextMenu(null)
-                  setMenuOpen(v => !v)
-                }}
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v) }}
               >
                 <IconEllipsisOutline16 />
               </button>
@@ -712,7 +535,7 @@ export function SessionNodeItem({
     <HoverCard
       anchor={ownRow}
       content={<SessionHoverContent node={node} now={now} t={t} />}
-      disabled={menuOpen || contextMenu !== null || drag?.active === true}
+      disabled={menuOpen || drag?.active === true}
       copyText={row.blank ? undefined : row.title}
       copyLabel={t('copy')}
       copiedLabel={t('hover.copied')}

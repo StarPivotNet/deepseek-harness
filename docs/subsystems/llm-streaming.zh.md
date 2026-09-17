@@ -578,13 +578,6 @@ interface LlmResolvedModelInfo extends LlmModelInfo {
   defaultMaxTokens?: number
   /** Adapter-owned selectable reasoning levels when exposed. */
   reasoning?: LlmModelReasoningInfo
-  /**
-   * Optional complete system-prompt template for this exact model. When
-   * present and non-empty, agent-loop replaces every assembled system
-   * section with this text after `{{variable}}` interpolation. Absence
-   * keeps the ordinary section assembly.
-   */
-  systemPrompt?: string
   /** Declared mid-conversation system prompt handling; absent means only a leading system message is read. */
   systemPromptUpdate?: SystemPromptUpdate
 }
@@ -717,18 +710,8 @@ interface LlmDiscoveredModel {
   contextWindow?: number
   /** Maximum output tokens, when disclosed. */
   maxTokens?: number
-  /**
-   * Selectable reasoning efforts the listing disclosed, keyed by the
-   * adapter-owned level id a selector would offer. A value is the wire
-   * spelling dispatch should send; `off` may be `null` meaning "supported,
-   * send nothing". Absence means the listing did not describe reasoning.
-   */
-  reasoningEfforts?: Readonly<Record<string, string | null>>
-  /**
-   * Whether the endpoint accepts a reasoning-effort parameter for this
-   * model. Absence means the listing did not say.
-   */
-  supportsReasoningEffort?: boolean
+  /** Accepted input types when disclosed by the catalog or endpoint; absent means unknown. */
+  inputModalities?: readonly ModelModality[]
 }
 ```
 
@@ -851,7 +834,7 @@ declare abstract class LlmAdapter {
    * @param model - exact model id passed to {@link GenerateOptions.model}.
    * @param _signal - cancellation for this exact-model lookup; asynchronous
    *   implementations must settle promptly after it aborts.
-   * @returns provider/model identity plus any context, call-default, reasoning, and system-prompt metadata.
+   * @returns provider/model identity plus any context, call-default, and reasoning metadata.
    */
   resolveModel(
     provider: string,

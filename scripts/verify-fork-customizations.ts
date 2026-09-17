@@ -66,16 +66,24 @@ const CHECKS: readonly CustomizationCheck[] = [
     label: 'Desktop keeps the marketplace rows active (Discover reads the shipped file)',
     check: (repoRoot) => {
       const patch = join(repoRoot, 'apps', 'desktop-host', 'config', 'desktop.cordis.patch.yml')
-      return !fileContains(patch, '- id: plugin-marketplace\n  disabled: true')
+      const webApp = join(repoRoot, 'packages', 'bundle', 'web-app', 'cordis.patch.yml')
+      // Official 0.1.6-alpha.2 Desktop boots the web profile directly and no
+      // longer ships a desktop.cordis.patch.yml that could disable marketplace
+      // rows. The web-app composition must keep both marketplace halves.
+      return fileContains(webApp, "name: '@deepseek-ai/dsh-client-ui-settings-plugin-marketplace'")
+        && fileContains(webApp, "name: '@deepseek-ai/dsh-client-ui-settings-plugin-marketplace/host'")
+        && !fileContains(patch, '- id: plugin-marketplace\n  disabled: true')
         && !fileContains(patch, '- id: ui-settings-plugin-marketplace\n  disabled: true')
     },
   },
   {
     label: 'desktop pack ships the dsh runtime inside the asar (0.1.6 layout)',
-    check: repoRoot => fileContains(
-      join(repoRoot, 'scripts', 'desktop', 'pack.ts'),
-      "{ from: prepared.dsh, to: 'dsh', filter: ['**/*'] }",
-    ),
+    check: (repoRoot) => {
+      const pack = join(repoRoot, 'scripts', 'desktop', 'pack.ts')
+      const builder = join(repoRoot, 'apps', 'desktop', 'scripts', 'electron-builder-config.mjs')
+      return fileContains(pack, "{ from: prepared.dsh, to: 'dsh', filter: ['**/*'] }")
+        || fileContains(builder, "to: 'dsh'")
+    },
   },
   {
     label: 'marketplace host can read the shipped catalog without a web server',

@@ -68,7 +68,8 @@
     "react-dom": "^18.2.0",
     "picomatch": "^4.0.4",
     "clsx": "^2.0.0",
-    "@deepseek-ai/dsh-util-crypto": "workspace:^"
+    "@deepseek-ai/dsh-util-crypto": "workspace:^",
+    "zod": "^4.4.3"
   },
   "files": [
     "lib/index.js",

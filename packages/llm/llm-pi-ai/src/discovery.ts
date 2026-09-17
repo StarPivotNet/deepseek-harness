@@ -4,9 +4,9 @@
  *
  * A route the installed pi-ai catalog ships is answered **from that catalog**,
  * with no network call at all: pi-ai's registry is the authoritative list for
- * its own providers, and it carries the capacities and thinking levels a
- * listing endpoint would not disclose. Only a route the catalog does not
- * describe — a gateway, a self-hosted server — is interrogated over the wire.
+ * its own providers, and it carries the capacities a listing endpoint would
+ * not disclose. Only a route the catalog does not describe — a gateway, a
+ * self-hosted server — is interrogated over the wire.
  *
  * Neither path is a catalog refresh. Nothing here is stored: the request
  * carries a draft the user is still editing, and the reply is candidate
@@ -22,12 +22,10 @@
  * @module dsh-llm-pi-ai/discovery
  */
 
-import { getSupportedThinkingLevels } from '@earendil-works/pi-ai'
-import type { Api, Model } from '@earendil-works/pi-ai'
 import { INVALID_CREDENTIAL_CODE, LlmError, normalizeApiKey } from '@deepseek-ai/dsh-llm'
 import type { LlmDiscoveredModel, LlmModelDiscoveryOperation } from '@deepseek-ai/dsh-llm'
 import { attributionHeaders } from '@deepseek-ai/dsh-llm'
-import { catalogModels, shippedBaseUrl, THINKING_LEVELS } from './catalog.ts'
+import { catalogModels } from './catalog.ts'
 
 /**
  * Protocols whose model listing this module can read. OpenAI protocols use
@@ -87,19 +85,6 @@ interface ListingEntry {
   maxTokens?: unknown
   limit?: ListingLimit | null
   top_provider?: ListingTopProvider | null
-  /** FAC and similar gateways advertise selectable efforts on the listing. */
-  reasoningEfforts?: unknown
-  reasoning_efforts?: unknown
-  supportsReasoningEffort?: unknown
-  supports_reasoning_effort?: unknown
-}
-
-/** One effort row a gateway may nest under `reasoningEfforts`. */
-interface ListingEffort {
-  value?: unknown
-  id?: unknown
-  name?: unknown
-  label?: unknown
 }
 
 /** A positive integer field of a listing entry, or `undefined` when absent or unusable. */
@@ -116,84 +101,6 @@ function label(...candidates: readonly unknown[]): string | undefined {
     if (typeof candidate === 'string' && candidate.length > 0) return candidate
   }
   return undefined
-}
-
-/** Whether a listing field is an explicit boolean, otherwise `undefined`. */
-function flag(...candidates: readonly unknown[]): boolean | undefined {
-  for (const candidate of candidates) {
-    if (typeof candidate === 'boolean') return candidate
-  }
-  return undefined
-}
-
-/**
- * Map one listing effort token onto a pi-ai level id. Known ids pass through;
- * common display names fold onto the same id so a gateway that writes
- * "High" still adopts as `high`. Anything else is dropped rather than
- * invented into the profile's closed key set.
- * @param raw - a listing token, already known to be a non-empty string.
- * @returns the canonical level, or `undefined` when this build cannot name it.
- */
-function listingEffortLevel(raw: string): string | undefined {
-  const token = raw.trim()
-  if ((THINKING_LEVELS as readonly string[]).includes(token)) return token
-  const folded = token.toLowerCase()
-  return (THINKING_LEVELS as readonly string[]).includes(folded) ? folded : undefined
-}
-
-/**
- * Read one listing's advertised efforts into the profile dict adoption writes.
- * A string is both the selector id and the wire spelling. An object may
- * rename the wire value (`value`/`id` is the spelling; `name`/`label` is
- * accepted only when it is itself a known level and no spelling is given).
- * Unknown tokens and empty lists are dropped so a listing that does not
- * describe reasoning stays silent.
- * @param raw - `reasoningEfforts` or `reasoning_efforts` from the listing.
- * @returns the dict, or `undefined` when nothing usable was disclosed.
- */
-function listingEfforts(raw: unknown): Record<string, string | null> | undefined {
-  if (!Array.isArray(raw)) return undefined
-  const efforts: Record<string, string | null> = {}
-  for (const item of raw) {
-    if (typeof item === 'string') {
-      const level = listingEffortLevel(item)
-      if (level !== undefined) efforts[level] = level
-      continue
-    }
-    const entry = item as ListingEffort | null
-    const wire = label(entry?.value, entry?.id)
-    const named = label(entry?.name, entry?.label)
-    const level = (wire === undefined ? undefined : listingEffortLevel(wire))
-      ?? (named === undefined ? undefined : listingEffortLevel(named))
-    if (level === undefined) continue
-    efforts[level] = wire ?? (level === 'off' ? null : level)
-  }
-  return Object.keys(efforts).length === 0 ? undefined : efforts
-}
-
-/**
- * Reasoning fields a catalog model already carries, rewritten as the
- * declaration a surface would store. A model that does not reason stays
- * silent — the same answer as a listing that disclosed nothing.
- * @param model - an installed catalog descriptor.
- * @returns the discovery reasoning fields, or nothing.
- */
-function catalogReasoning(
-  model: Model<Api>,
-): Pick<LlmDiscoveredModel, 'reasoningEfforts' | 'supportsReasoningEffort'> {
-  if (!model.reasoning) return {}
-  const efforts: Record<string, string | null> = {}
-  for (const level of getSupportedThinkingLevels(model)) {
-    const wire = model.thinkingLevelMap?.[level]
-    efforts[level] = wire === undefined ? (level === 'off' ? null : level) : wire
-  }
-  const listed = model.compat !== undefined && 'supportsReasoningEffort' in model.compat
-    ? model.compat.supportsReasoningEffort
-    : undefined
-  return {
-    reasoningEfforts: efforts,
-    ...typeof listed === 'boolean' ? { supportsReasoningEffort: listed } : {},
-  }
 }
 
 /**
@@ -312,18 +219,11 @@ function readListing(body: unknown): LlmDiscoveredModel[] {
       entry?.limit?.output,
       entry?.top_provider?.max_completion_tokens,
     )
-    const efforts = listingEfforts(entry?.reasoningEfforts ?? entry?.reasoning_efforts)
-    const supportsReasoningEffort = flag(
-      entry?.supportsReasoningEffort,
-      entry?.supports_reasoning_effort,
-    )
     models.push({
       id,
       name,
       ...contextWindow === undefined ? {} : { contextWindow },
       ...maxTokens === undefined ? {} : { maxTokens },
-      ...efforts === undefined ? {} : { reasoningEfforts: efforts },
-      ...supportsReasoningEffort === undefined ? {} : { supportsReasoningEffort },
     })
   }
   return models
@@ -380,14 +280,11 @@ export async function discoverModels(
         name: model.name,
         contextWindow: model.contextWindow,
         maxTokens: model.maxTokens,
-        ...catalogReasoning(model),
+        inputModalities: [...model.input],
       }))
     }
   }
-  const baseURL = request.baseURL !== undefined && request.baseURL.length > 0
-    ? request.baseURL
-    : shippedBaseUrl(request.provider ?? '')
-  if (baseURL === undefined) {
+  if (request.baseURL === undefined || request.baseURL.length === 0) {
     throw new LlmError(
       `pi-ai ships no catalog for provider "${request.provider ?? ''}", so its models can only come from its`
       + " endpoint; set a baseURL, or enter this provider's models by hand",
@@ -407,14 +304,12 @@ export async function discoverModels(
       'DISCOVERY_UNSUPPORTED',
     )
   }
-  const url = listingUrl(baseURL, api)
+  const url = listingUrl(request.baseURL, api)
   // A key typed into the form wins: it may replace the stored key that is
   // failing. The stored profile is asked past the catalog and protocol checks,
   // and its credential resolver remains lazy so a typed key cannot fail over a
   // stored credential it supersedes. A route may still authenticate through a
-  // deployment-owned Authorization header when neither key exists. A probe
-  // carrying no key stays unauthenticated, which is how a route that relies on
-  // the provider's own ambient discovery is meant to be asked.
+  // deployment-owned Authorization header when neither key exists.
   const stored = storedProfile?.()
   const supplied = request.apiKey ?? await stored?.resolveApiKey()
   const apiKey = supplied === undefined ? undefined : usableProbeKey(supplied)

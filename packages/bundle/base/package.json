@@ -34,7 +34,7 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/cordis-plugin-hmr": "workspace:^",
+    "@deepseek-ai/dsh-hmr": "workspace:^",
     "@deepseek-ai/cordis-plugin-timer": "workspace:^",
     "@deepseek-ai/dsh-agent": "workspace:^",
     "@deepseek-ai/dsh-agent-default-model": "workspace:^",
@@ -125,7 +125,8 @@
     "@deepseek-ai/dsh-session-history-gate": "workspace:^",
     "@deepseek-ai/dsh-skill-session-control": "workspace:^",
     "@deepseek-ai/dsh-tool-session-control": "workspace:^",
-    "@deepseek-ai/dsh-user-system-prompts": "workspace:^"
+    "@deepseek-ai/dsh-user-system-prompts": "workspace:^",
+    "@deepseek-ai/dsh-plugin-manager": "workspace:^"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^"

@@ -23,14 +23,14 @@ export interface SessionListEntry {
   interrupted?: boolean
   /** Empty-log bit mirrored from the summary; lists hide blank sessions (filtering stays with the consumer). */
   blank: boolean
+  /** Manager-owned completion reminder for the sidebar Completed section. */
+  completed: boolean
   parentSessionId?: SessionId
   /** Coarse durable origin for navigation filtering; not a continuation capability. */
   origin?: 'subagent' | 'automation'
   cwd?: string
   /** Current host-computed projection values for list consumers. */
   projectionValues?: Readonly<Partial<SessionProjectionMap>>
-  /** Finished running while not selected and not yet opened — the sidebar's green "done" reminder (clears on select or the next run). */
-  completed: boolean
   /** Lineage indent depth: root = 0; the UI just multiplies by the indent width. */
   depth: number
 }
@@ -40,7 +40,6 @@ export interface SessionListEntry {
  * follows the established input order; this projection never re-sorts a
  * hydrated list from mutable timestamps.
  * @param summaries - the host's session.list items.
- * @param completed - sessions with a pending completion reminder (manager-owned live fact; absent = false).
  * @returns display rows in render order.
  */
 export function flattenLineage(

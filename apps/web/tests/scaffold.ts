@@ -38,6 +38,7 @@ import Group from '@deepseek-ai/cordis-plugin-group'
 import {
   captureExpectedWorkspaceSnapshot,
   captureWorkspaceSnapshot,
+  type CaptureWorkspaceSnapshotOptions,
   assertSessionFixtureVersion,
   formatSystemPromptSnapshot,
   formatToolSchemasSnapshot,
@@ -56,16 +57,7 @@ import {
   writesCurrentSessionFixtures,
   type NormalizeContext,
 } from '@deepseek-ai/dsh-session-snapshot'
-import {
-  auditStartupEntries,
-  composeEntries,
-  createProfileResolutionGeneration,
-  healProfilesModuleFallback,
-  loadOverlayPatches,
-  PluginPackages,
-  type Profile,
-  type ProfileResolutionMode,
-} from '@deepseek-ai/dsh-app-boot'
+import type { Profile, ProfileContext, ProfileResolutionMode } from '@deepseek-ai/dsh-app-boot'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import { LlmAdapter } from '@deepseek-ai/dsh-llm'
 import type {
@@ -91,7 +83,22 @@ import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-agent'
 import { provideCmdline } from '@deepseek-ai/dsh-cmdline'
-import { REPO_ROOT, requireDist } from './support.ts'
+import { REPO_ROOT, requireBuilt, requireDist } from './support.ts'
+
+type AppBoot = typeof import('@deepseek-ai/dsh-app-boot')
+let builtAppBoot: AppBoot | undefined
+
+/**
+ * The launcher's own module, as built: the manager and HMR plugins the profile
+ * loads reload the tree through this copy's registry of the root Include, so
+ * the scaffold mounts through the same copy rather than the source import.
+ * Resolved on the first launch, which needs the build anyway, so the fixture
+ * helpers this module also exports load without one.
+ */
+function appBoot(): AppBoot {
+  builtAppBoot ??= requireBuilt('@deepseek-ai/dsh-app-boot') as AppBoot
+  return builtAppBoot
+}
 
 // Host-side web e2e cannot import a browser package: doing so would pull that
 // package's complete TS project into this graph. Mirrored from
@@ -130,13 +137,16 @@ export function webSnapshotMode(): WebSnapshotMode {
  * Compare a session-driven Web scenario's complete workspace with its committed independent expected state.
  * @param scenarioDir - Absolute recorded-session scenario directory.
  * @param workspaceRoot - Absolute cwd used by the controlled session.
+ * @param options - Root entries the scenario owns outside the expected state, such as a `.git` directory it initialized.
  */
-export async function assertFinalWorkspaceSnapshot(scenarioDir: string, workspaceRoot: string): Promise<void> {
+export async function assertFinalWorkspaceSnapshot(
+  scenarioDir: string, workspaceRoot: string, options: CaptureWorkspaceSnapshotOptions = {},
+): Promise<void> {
   const manifestPath = join(scenarioDir, 'snapshot.yml')
   const manifest = parseSnapshotManifest(await readFile(manifestPath, 'utf8'), manifestPath)
   expect(manifest.workspace?.final, `${manifest.scenario ?? scenarioDir}: mutating Web scenario declares workspace.final`)
     .toBe(true)
-  const actual = await captureWorkspaceSnapshot(workspaceRoot)
+  const actual = await captureWorkspaceSnapshot(workspaceRoot, options)
   const expected = await captureExpectedWorkspaceSnapshot(join(scenarioDir, 'workspace.expected'))
   expect(actual, `${manifest.scenario ?? scenarioDir}: complete final workspace`).toEqual(expected)
 }
@@ -185,10 +195,6 @@ export function recordedSessionFixturePath(path: string, version: number): strin
 /** The shipped composition under test: the dsh-base and dsh-web-app bundle patches over the empty profile root. */
 const BASE_PATCH_PATH = join(REPO_ROOT, 'packages/bundle/base/cordis.patch.yml')
 const WEB_PATCH_PATH = join(REPO_ROOT, 'packages/bundle/web-app/cordis.patch.yml')
-// The shipped Web bundle mounts ui-update, which polls GitHub on Host apply.
-// Keep that network off the default e2e composition; settings-chrome re-enables
-// the row with an invalid repo so its General Settings golden can pin it.
-const DISABLE_PRODUCT_UPDATE_PATH = join(REPO_ROOT, 'apps/web/tests/product-update.disable.yml')
 /** The installation anchor whose dependency surface the profile module fallback mirrors. */
 const INSTALL_ANCHOR = join(REPO_ROOT, 'apps/cli/package.json')
 
@@ -313,6 +319,21 @@ export interface LaunchOptions {
    */
   extraInstallAnchors?: string[]
   /**
+   * Manage the scaffold profile the way the launcher does: a `profileContext`
+   * over the profile directory, whose manifest lists the shipped web bundles
+   * and each package directory here as an installed dependency (`file:` in the
+   * manifest, a symlink under the profile's `node_modules`); `enabled` also
+   * lists a bundle in `dsh.profile.bundles`. The plugin manager mounts on such
+   * a profile, and the root Include is mounted from the profile's own layers.
+   * The base bundle's `hmr` row turns on with the profile context, so
+   * configuration changes apply live; `hmr: false` disables that row through
+   * an overlay, leaving changes for the next start.
+   */
+  profile?: {
+    hmr?: boolean
+    packages: { dir: string; enabled?: boolean }[]
+  }
+  /**
    * Replay fixture (session.jsonl) served by the inserted dsh-llm-replay row
    * in replay/refresh modes; ignored in record mode (the real adapter
    * answers). Omit for scenarios issuing no model calls — a stray stream then
@@ -361,12 +382,6 @@ export interface LaunchOptions {
    * insertion is needed.
    */
   toolsMode?: 'native' | 'ptc' | 'both'
-  /**
-   * Insert the opt-in model-facing Cordis tool provider into the shipped tree.
-   * Record and replay use the same tool surface, so captured request headers
-   * remain reconstructable without making the tools a product default.
-   */
-  cordisTools?: boolean
   /**
    * Keep the shipped DeepSeek adapter mounted while masking the process
    * environment's DEEPSEEK_API_KEY for this scaffold lifetime. This is the
@@ -436,6 +451,10 @@ async function cleanupScaffoldWorld(ctx: Context, workspaceCwd: string, persiste
  */
 export async function launchWebScaffold(options: LaunchOptions = {}): Promise<WebScaffold> {
   requireDist()
+  const {
+    auditStartupEntries, composeEntries, createProfileResolutionGeneration, healProfilesModuleFallback, initProfile,
+    mountRootInclude, readProfileManifest, readProfilePatches, loadOverlayPatches, PluginPackages,
+  } = appBoot()
   const mode = webSnapshotMode()
   const replayFixture = options.replayFixture === undefined
     ? undefined
@@ -519,21 +538,18 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
   // drifting).
   const basePatches = loadOverlayPatches('web e2e scaffold', BASE_PATCH_PATH)
   const surfacePatches = loadOverlayPatches('web e2e scaffold', WEB_PATCH_PATH)
-  const disableProductUpdatePatches = loadOverlayPatches('web e2e scaffold', DISABLE_PRODUCT_UPDATE_PATH)
   const extraOverlayPatches = options.extraOverlayPath === undefined
     ? []
     : loadOverlayPatches('web e2e scaffold', options.extraOverlayPath)
-  const composedRows = composeEntries([
-    basePatches, surfacePatches, disableProductUpdatePatches, extraOverlayPatches,
-  ])
+  const composedRows = composeEntries([basePatches, surfacePatches, extraOverlayPatches])
   const webRuntimeConfig = composedRows.find(row => row.id === 'web-runtime')?.config as {
     surfaceContext?: boolean
   } | undefined
   const surfaceContext = webRuntimeConfig?.surfaceContext !== false
-  const patches: PatchOptions[] = [
-    ...basePatches,
-    ...surfacePatches,
-    ...disableProductUpdatePatches,
+  // The scaffold's own overrides, above every bundle layer like `--patch` overlays.
+  const overlayPatches: PatchOptions[] = [
+    // Without HMR the profile applies configuration changes at its next start.
+    ...options.profile?.hmr === false ? [{ id: 'hmr', disabled: true }] : [],
     { id: 'session-log-deepseek', config: { enabled: false } },
     // The historical Messages fixture retains its recorded route during replay;
     // live configuration uses the shared DeepSeek route. Explicit overlays win.
@@ -640,13 +656,6 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       // be able to change a golden, whatever roots a scenario asks for.
       : [{ id: 'agent-presets', config: { ...options.agentPresets, includeUserRoot: false } }],
     ...options.toolsMode === undefined ? [] : [{ id: 'tools', config: { mode: options.toolsMode } }],
-    // The shipped Web bundle already owns both runners and the Cordis UI. This
-    // scenario adds only the model-facing tools that exercise those services.
-    ...options.cordisTools === true
-      ? [{ insert: [
-        { id: 'tool-cordis', name: '@deepseek-ai/dsh-tool-cordis' },
-      ] }]
-      : [],
     ...options.deepSeekSearch === undefined
       ? []
       : [{
@@ -661,6 +670,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
         config: messages ? {} : { protocol: 'chat-completions' } },
     ],
   ]
+  const patches: PatchOptions[] = [...basePatches, ...surfacePatches, ...overlayPatches]
 
   // Sessions inherit the gateway's process.cwd() default; run the boot from
   // the temp workspace so tool cwd, session cwd, and fixtures agree.
@@ -703,7 +713,6 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       layers: extraLayers,
       patchPath: join(profileDir, 'cordis.patch.yml'),
       patches: [],
-      patchReload: 'startup',
     }
     const profileResolutionMode = options.profileResolutionMode ?? 'runtime'
     const resolutionOptions = { installAnchor: INSTALL_ANCHOR, home: harnessHome, profile }
@@ -714,6 +723,34 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     const rootConfig = join(profileDir, 'cordis.yml')
     await writeFile(rootConfig, '[]\n')
     ctx.baseUrl = pathToFileURL(profileDir).href + '/'
+    let profileContext: ProfileContext | undefined
+    if (options.profile !== undefined) {
+      // A real profile: the shipped web bundles plus each fixture package,
+      // installed the way `dsh plugin add` leaves them.
+      const dependencies: Record<string, string> = {}
+      const bundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']
+      for (const entry of options.profile.packages) {
+        const manifest = JSON.parse(await readFile(join(entry.dir, 'package.json'), 'utf8')) as { name: string }
+        dependencies[manifest.name] = `file:${entry.dir}`
+        if (entry.enabled === true) bundles.push(manifest.name)
+        const link = join(profileDir, 'node_modules', manifest.name)
+        await mkdir(dirname(link), { recursive: true })
+        await symlink(entry.dir, link, 'junction')
+      }
+      initProfile(profileDir, bundles)
+      const manifest = readProfileManifest('dsh', profileDir)
+      manifest.dependencies = dependencies
+      await writeFile(join(profileDir, 'package.json'), JSON.stringify(manifest, null, 2) + '\n')
+      profileContext = {
+        name: 'scaffold', dir: profileDir, patchPath: profile.patchPath, installAnchor: INSTALL_ANCHOR,
+        cwd: workspaceCwd, home: harnessHome, startedBundles: bundles,
+        overlays: overlayPatches, telemetryDisabledEnv: undefined,
+      }
+      // HMR gates file-driven reloads on application readiness, which the
+      // launcher commits after boot; this direct harness is ready at once.
+      ctx.provide('appReady', { onReady: (listener) => { listener(); return () => {} } })
+      ctx.provide('profileContext', profileContext)
+    }
     // This direct Loader harness supplies the same root-path capability as app-boot.
     ctx.provide('dshHomePath', dshHomePath)
     // A host with no command line still provides one: the web bundle's startup
@@ -731,16 +768,23 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       behavior: profileResolutionMode === 'dual' ? 'verify' : 'enforce',
     })
     await ctx.plugin(Loader)
-    ctx.loader.builtins.include = Include
-    // `cordis:group` beside it, exactly as `boot()` registers it: a group row is
-    // how a preset gives one `isolate` realm to a provider and its consumers,
-    // and a preset resolving package names from its own directory cannot reach
-    // `@deepseek-ai/cordis-plugin-group` by name.
-    ctx.loader.builtins.group = Group
-    await ctx.loader.create({
-      name: 'cordis:include',
-      config: { path: pathToFileURL(rootConfig).href, patches },
-    })
+    if (profileContext === undefined) {
+      ctx.loader.builtins.include = Include
+      // `cordis:group` beside it, exactly as `boot()` registers it: a group row is
+      // how a preset gives one `isolate` realm to a provider and its consumers,
+      // and a preset resolving package names from its own directory cannot reach
+      // `@deepseek-ai/cordis-plugin-group` by name.
+      ctx.loader.builtins.group = Group
+      await ctx.loader.create({
+        name: 'cordis:include',
+        config: { path: pathToFileURL(rootConfig).href, patches },
+      })
+    } else {
+      // The launcher's own mount, so the manager's reloads find the root Include
+      // and compose the same layers the profile files name; bare names still
+      // resolve through the resolution generation above, as in the direct mount.
+      await mountRootInclude(ctx, rootConfig, readProfilePatches('dsh', profileContext))
+    }
     await ctx.loader.await()
     await auditStartupEntries(ctx, 'web e2e scaffold')
     if (options.welcomeNoticePending !== true) {
@@ -1447,13 +1491,13 @@ function normalizeAria(snapshot: string, workspaceCwd: string, age: boolean): st
     // Seeded compaction prices realized file paths, whose length differs
     // between local worktrees and CI scratch directories.
     .replace(/(Compacted \d+ history items \(~)\d+( tokens\))/g, '$1{{tokens}}$2')
-    // Message clocks and session summaries cross calendar/locale boundaries;
-    // collapse every format so goldens stay stable across midnight and year changes.
+    // Session summaries and Message IconActions clocks cross calendar
+    // boundaries; collapse every shape so goldens stay stable across them.
     .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g, '{{timestamp}}')
-    .replace(/\d{4}年\d{1,2}月\d{1,2}日 \d{1,2}:\d{2}(?:\s*(?:上午|下午|[AP]M))?/gi, '{{clock}}')
-    .replace(/\d{1,2}月\d{1,2}日 \d{1,2}:\d{2}(?:\s*(?:上午|下午|[AP]M))?/gi, '{{clock}}')
-    .replace(/(?<!\d)\d{1,2}:\d{2}:\d{2}(?:\.\d+)?(?:\s*(?:上午|下午|[AP]M))?(?!\d)/gi, '{{clock}}')
-    .replace(/(?<!\d)\d{1,2}:\d{2}(?:\s*(?:上午|下午|[AP]M))?(?!\d)/gi, '{{clock}}')
+    .replace(/\d{4}年\d{1,2}月\d{1,2}日 \d{2}:\d{2}/g, '{{clock}}')
+    .replace(/\d{1,2}月\d{1,2}日 \d{2}:\d{2}/g, '{{clock}}')
+    .replace(/(?<!\d)\d{1,2}:\d{2}:\d{2}(?:\.\d+)?(?:\s*[AP]M)?(?!\d)/gi, '{{clock}}')
+    .replace(/(?<!\d)\d{2}:\d{2}(?!\d)/g, '{{clock}}')
 }
 
 /**

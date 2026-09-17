@@ -34,14 +34,12 @@
   "dependencies": {
     "@deepseek-ai/dsh-atomic-write": "workspace:^",
     "@deepseek-ai/dsh-package-manifest": "workspace:^",
-    "chokidar": "4.0.3",
     "js-yaml": "^4.2.0",
     "node-addon-require-builtin": "^0.1.6",
     "resolve.exports": "^2.0.3"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis-plugin-group": "workspace:^",
-    "@deepseek-ai/cordis-plugin-hmr": "workspace:^",
     "@deepseek-ai/cordis-plugin-include": "workspace:^",
     "@deepseek-ai/cordis-plugin-loader": "workspace:^",
     "@deepseek-ai/dsh-launch-environment": "workspace:^",
@@ -50,14 +48,8 @@
     "@deepseek-ai/cordis": "workspace:^",
     "@deepseek-ai/dsh-agent": "workspace:^"
   },
-  "peerDependenciesMeta": {
-    "@deepseek-ai/cordis-plugin-hmr": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@deepseek-ai/cordis-plugin-group": "workspace:^",
-    "@deepseek-ai/cordis-plugin-hmr": "workspace:^",
     "@deepseek-ai/cordis-plugin-include": "workspace:^",
     "@deepseek-ai/cordis-plugin-loader": "workspace:^",
     "@deepseek-ai/cordis-plugin-timer": "workspace:^",

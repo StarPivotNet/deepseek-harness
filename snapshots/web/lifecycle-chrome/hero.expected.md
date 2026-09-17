@@ -4,6 +4,8 @@
 - button "New session":
   - img
   - text: New Session
+- navigation "Global panels":
+  - button "Plugins"
 - text: Workspaces
 - button "Search sessions":
   - img
@@ -19,6 +21,9 @@
   - treeitem "New Session" [selected]
 - button "Settings":
   - text: Settings
+- banner:
+  - button "Open right sidebar":
+    - img
 - text: Into the Unknown Preview
 - button "Choose workspace":
   - img

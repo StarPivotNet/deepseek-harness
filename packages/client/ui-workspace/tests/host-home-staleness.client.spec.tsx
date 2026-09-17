@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import type { WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
-import { SlotTestRuntime, TestRemote, usePinnedBrowserLanguages } from '@deepseek-ai/dsh-client-test-runtime'
+import { SlotTestRuntime, usePinnedBrowserLanguages } from '@deepseek-ai/dsh-client-test-runtime'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { apply, inject } from '@deepseek-ai/dsh-client-ui-workspace/client'
 
@@ -31,19 +31,8 @@ async function bench() {
   runtime.ctx.provide('layout', { selectPanel: vi.fn() })
   runtime.releaseWorkspaceSource()
   const directoryPicker = {}
-  const remote = new TestRemote(runtime.ctx)
-  Object.assign(remote, { directoryPicker })
-  runtime.ctx.provide('remote.directoryPicker', directoryPicker as never)
-  runtime.ctx.provide('remote.session', { openWorkspacePath: () => Promise.resolve({ rpcId: 'w', result: { ok: false, error: { code: 'x', message: 'no' } } }) } as never)
-  runtime.ctx.provide('settingsScope', {
-    bind: () => ({
-      getSnapshot: () => ({ value: undefined, revision: 0, writable: true, status: 'ready' }),
-      subscribe: () => () => {},
-      set: async () => {},
-      unset: async () => {},
-      mutate: async () => {},
-    }),
-  } as never)
+  const { remote } = runtime
+  remote.provideNamespaces({ directoryPicker })
   const locale = new LocaleRuntime(runtime.ctx)
   runtime.ctx.provide('locale', locale)
   runtime.slots.installLocale(locale)
@@ -76,7 +65,7 @@ function closeHoverCard(): void {
 }
 
 describe('Host home in the assembled browsing region', () => {
-  it.skip('abbreviates the path once a home learned after first render reaches the rows', async () => {
+  it('abbreviates the path once a home learned after first render reaches the rows', async () => {
     // First render precedes the ready frame: the shell mounts while the carrier
     // is still handshaking, so the Host reports no home yet.
     const { runtime, remote } = await bench()

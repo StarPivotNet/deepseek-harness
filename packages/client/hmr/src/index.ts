@@ -1,44 +1,30 @@
 /**
- * HMR plugin, node half: the host end of the dev reload chain. One interval
+ * Host transport for Web client graph changes and rebuilt bundles. One interval
  * stat-polls every graph row's client bundle (polling by design: network mounts
  * deliver no inotify events), reports changes through
  * `clientModules.rebuilt(id)`, and serves the `/plugins/events` SSE channel
- * broadcasting graph/rebuilt/reload frames to the browser half (src/client/).
- * The web bundle mounts this row unconditionally. Automatic rebuilt
- * broadcasts stay off until the Host `client-hmr.autoReload` setting is
- * true and a rebuild watcher rewrites client bundles; the poll still
- * tracks hashes so a manual reload can re-hash every watched row.
+ * broadcasting graph/rebuilt frames to the browser half (src/client/).
+ * The Web composition mounts this transport for live graph updates;
+ * a development rebuild watcher also supplies bundle changes.
  */
 import { statSync } from 'node:fs'
 import type { ServerResponse } from 'node:http'
 import type { Context } from '@deepseek-ai/cordis'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
-import type {} from '@deepseek-ai/dsh-settings/types'
 import z from '@deepseek-ai/schemastery'
 // Type imports carry the clientModules/webServer Context merges.
 import type { ClientArtifactBaseline } from '@deepseek-ai/dsh-client-modules'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type { PluginsEventFrame } from './events.ts'
-import { EVENTS_ENDPOINT, RELOAD_ENDPOINT } from './events.ts'
-import {
-  CLIENT_HMR_SETTINGS_NAMESPACE, ClientHmrSettingsSchema, DEFAULT_AUTO_RELOAD,
-  type ClientHmrSettings,
-} from './hmr-settings.ts'
+import { EVENTS_ENDPOINT } from './events.ts'
 
 export type { PluginsEventFrame } from './events.ts'
-export { EVENTS_ENDPOINT, RELOAD_ENDPOINT } from './events.ts'
-export {
-  AUTO_RELOAD_FIELD, CLIENT_HMR_SETTINGS_NAMESPACE, ClientHmrSettingsSchema,
-  DEFAULT_AUTO_RELOAD, type ClientHmrSettings,
-} from './hmr-settings.ts'
+export { EVENTS_ENDPOINT } from './events.ts'
 
 /** Cordis plugin name. */
 export const name = 'client-hmr'
 
-/** Required services: the web plugin table and the route registry. */
+/** Required services: the client graph and Web route registry. */
 export const inject = ['clientModules', 'webServer']
-
-const HMR_NAMESPACE = settingsNamespace(CLIENT_HMR_SETTINGS_NAMESPACE)
 
 /** Plugin config, validated by the same-named schemastery schema. */
 export interface Config {
@@ -74,27 +60,13 @@ function sameBundleStat(left: WatchedBundleStat, right: WatchedBundleStat): bool
 }
 
 /**
- * Mount the dev chain: bundle watches, optional rebuilt broadcasts, the SSE
- * channel, and POST /plugins/reload.
+ * Mount bundle watches and graph/rebuilt SSE delivery.
  * @param ctx - host plugin context carrying clientModules and webServer.
  * @param config - validated {@link Config}.
- * @returns nothing; watches, routes, and settings registration live on the fiber.
  */
 export function apply(ctx: Context, config: Config): void {
   // schemastery's .default() guarantees the field is set after validation.
   const pollIntervalMs = config.pollIntervalMs as number
-  let autoReload = DEFAULT_AUTO_RELOAD
-  const adoptAutoReload = (): void => {
-    const section = ctx.get('settings')?.get(HMR_NAMESPACE) as ClientHmrSettings | undefined
-    autoReload = section?.autoReload ?? DEFAULT_AUTO_RELOAD
-  }
-  ctx.inject(['settings'], (settingsCtx) => {
-    settingsCtx.settings.register(HMR_NAMESPACE, ClientHmrSettingsSchema)
-    adoptAutoReload()
-    settingsCtx.on('settings/updated', (ns) => {
-      if (ns === HMR_NAMESPACE) adoptAutoReload()
-    })
-  })
 
   // --- bundle watch: one HMR-owned stat poll ------------------------------
   const watched = new Map<string, WatchedBundle>()
@@ -102,7 +74,7 @@ export function apply(ctx: Context, config: Config): void {
   const rehash = (id: string, watch: WatchedBundle, current: WatchedBundleStat): void => {
     try {
       // rebuilt() replaces the opaque startup rev on its first call; later
-      // calls stay silent when the content hash is unchanged.
+      // calls stay silent until the completed-build entry stamp changes.
       ctx.clientModules.rebuilt(id)
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code
@@ -129,7 +101,7 @@ export function apply(ctx: Context, config: Config): void {
       return
     }
     // The module host captured its baseline before reading the bytes in the
-    // startup batch. Only a mismatch crosses into the content-hash path.
+    // startup batch. Only a mismatch crosses into generation publication.
     if (!sameBundleStat(current, watch)) rehash(id, watch, current)
   }
 
@@ -144,8 +116,9 @@ export function apply(ctx: Context, config: Config): void {
         continue
       }
       if (!watch.dirty && sameBundleStat(current, watch)) continue
-      // Stat-before-hash preserves a detectable older baseline for writes that
-      // land during hashing. Repeated stat changes heal a torn read.
+      // Stat-before-publication preserves a detectable older baseline for
+      // writes that land during the read. The preset stamps the entry after
+      // sibling chunks, so a completed build supplies the final stat change.
       rehash(id, watch, current)
     }
   }
@@ -170,7 +143,7 @@ export function apply(ctx: Context, config: Config): void {
   ctx.effect(() => {
     // Initial sync covers rows already in the graph; the subscription covers
     // rows arriving later (boot-window activations, including this plugin's
-    // own row — no self-exemption, a modules/hmr rebuild rides the same chain).
+    // own row; bootstrap revisions also reach page diagnostics).
     syncWatches()
     const unsubscribe = ctx.clientModules.onGraphChanged(syncWatches)
     const timer = setInterval(pollWatches, pollIntervalMs)
@@ -185,6 +158,11 @@ export function apply(ctx: Context, config: Config): void {
   // --- /plugins/events SSE channel ----------------------------------------
   const connections = new Set<ServerResponse>()
 
+  const publishGraph = (): void => {
+    const line = sseData({ type: 'graph', graph: ctx.clientModules.graph() })
+    for (const res of connections) res.write(line)
+  }
+
   const connect = (res: ServerResponse): void => {
     res.writeHead(200, {
       'content-type': 'text/event-stream',
@@ -194,8 +172,8 @@ export function apply(ctx: Context, config: Config): void {
     // Comment line on open so clients/proxies see a live channel even when
     // no rebuild ever happens; EventSource frame parsing skips it naturally.
     res.write(': connected\n\n')
-    res.write(sseData({ type: 'graph', graph: ctx.clientModules.graph() }))
     connections.add(res)
+    res.write(sseData({ type: 'graph', graph: ctx.clientModules.graph() }))
     res.on('close', () => { connections.delete(res) })
   }
 
@@ -214,46 +192,14 @@ export function apply(ctx: Context, config: Config): void {
         connect(res)
       },
     })
-    const broadcast = (frame: PluginsEventFrame): void => {
-      const line = sseData(frame)
-      for (const res of connections) res.write(line)
-    }
+    const unsubscribeGraph = ctx.clientModules.onGraphChanged(publishGraph)
     const unsubscribe = ctx.clientModules.onRebuilt((id, rev) => {
-      if (!autoReload) return
-      broadcast({ type: 'rebuilt', id, rev })
-    })
-    const disposeReload = ctx.webServer.register({
-      kind: 'exact',
-      path: RELOAD_ENDPOINT,
-      handler: (req, res) => {
-        if (req.method !== 'POST') {
-          res.writeHead(405)
-          res.end()
-          return
-        }
-        const revs: { id: string; rev: string }[] = []
-        for (const [id, watch] of watched) {
-          let current: { mtimeMs: number; size: number }
-          try {
-            current = statSync(watch.path)
-          } catch (error) {
-            watch.dirty = true
-            if ((error as NodeJS.ErrnoException).code !== 'ENOENT') ctx.logger.warn(error)
-            continue
-          }
-          rehash(id, watch, current)
-          const rev = ctx.clientModules.graph().entries.find(entry => entry.id === id)?.rev
-          if (rev === undefined) continue
-          revs.push({ id, rev })
-        }
-        for (const { id, rev } of revs) broadcast({ type: 'reload', id, rev })
-        res.writeHead(200, { 'content-type': 'application/json' })
-        res.end(JSON.stringify({ ok: true, reloaded: revs.length }))
-      },
+      const line = sseData({ type: 'rebuilt', id, rev })
+      for (const res of connections) res.write(line)
     })
     return () => {
+      unsubscribeGraph()
       unsubscribe()
-      disposeReload()
       disposeRoute()
       for (const res of connections) res.destroy()
       connections.clear()

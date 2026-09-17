@@ -34,8 +34,7 @@ import { HarnessError, INVALID_CREDENTIAL_CODE } from './error.ts'
 import { normalizeLlmFailure } from './adapter-failure.ts'
 import { normalizeApiKey } from './api-key.ts'
 import {
-  contentHasFile, contentHasImage, contentHasVideo, fileHandleText, projectFilesToText,
-  projectImagesForTextModel, projectVideosForTextModel,
+  contentHasFile, contentHasImage, fileHandleText, projectFilesToText, projectImagesForTextModel,
 } from './content.ts'
 import type { FileAttachmentRef } from '@deepseek-ai/dsh-attachment'
 
@@ -175,8 +174,6 @@ export interface PreparedLlmCall {
   readonly inputModalities?: readonly ModelModality[]
   /** Exact model system prompt update mode captured with the adapter dispatch generation. */
   readonly systemPromptUpdate?: SystemPromptUpdate
-  /** Complete system-prompt template captured with the adapter dispatch generation. */
-  readonly systemPrompt?: string
   /** Config fields materialized by the captured adapter rather than proposed by the caller. */
   readonly adapterDefaults: LlmCallConfigAdapterDefaults
   /**
@@ -253,7 +250,7 @@ export abstract class LlmAdapter {
    * @param model - exact model id passed to {@link GenerateOptions.model}.
    * @param _signal - cancellation for this exact-model lookup; asynchronous
    *   implementations must settle promptly after it aborts.
-   * @returns provider/model identity plus any context, call-default, reasoning, and system-prompt metadata.
+   * @returns provider/model identity plus any context, call-default, and reasoning metadata.
    */
   resolveModel(
     provider: string,
@@ -330,34 +327,6 @@ export interface DirectoryRegistrationHandle {
    * has been disposed.
    */
   replace(entries: readonly LlmConfigurableProvider[]): void
-}
-
-/**
- * Keep only a usable reasoning declaration from one discovered model.
- * Unknown keys, empty level ids, and empty wire spellings are dropped rather
- * than invented: a listing that does not describe reasoning stays silent, and
- * a surface adopting the result still owes any field the adapter requires.
- * @param model - one adapter-returned discovery row.
- * @returns the reasoning fields to copy, or nothing.
- */
-function normalizeDiscoveredReasoning(
-  model: LlmDiscoveredModel,
-): Pick<LlmDiscoveredModel, 'reasoningEfforts' | 'supportsReasoningEffort'> {
-  const efforts = model.reasoningEfforts
-  const cleaned: Record<string, string | null> = {}
-  if (efforts !== undefined) {
-    for (const [level, wire] of Object.entries(efforts)) {
-      if (level.length === 0) continue
-      if (wire === null) cleaned[level] = null
-      else if (typeof wire === 'string' && wire.length > 0) cleaned[level] = wire
-    }
-  }
-  return {
-    ...Object.keys(cleaned).length === 0 ? {} : { reasoningEfforts: cleaned },
-    ...model.supportsReasoningEffort === undefined
-      ? {}
-      : { supportsReasoningEffort: model.supportsReasoningEffort === true },
-  }
 }
 
 /**
@@ -645,7 +614,7 @@ export class LlmRuntime extends TypertRemoteService {
         ...model.name === undefined ? {} : { name: model.name },
         ...model.contextWindow === undefined ? {} : { contextWindow: model.contextWindow },
         ...model.maxTokens === undefined ? {} : { maxTokens: model.maxTokens },
-        ...normalizeDiscoveredReasoning(model),
+        ...model.inputModalities === undefined ? {} : { inputModalities: [...model.inputModalities] },
       })
     }
     return models
@@ -825,13 +794,6 @@ export class LlmRuntime extends TypertRemoteService {
         'INVALID_MODEL_MAX_TOKENS',
       )
     }
-    const systemPrompt = resolved.systemPrompt
-    if (systemPrompt !== undefined && typeof systemPrompt !== 'string') {
-      throw new LlmError(
-        `adapter returned invalid systemPrompt for provider "${provider}" model "${model}"`,
-        'INVALID_MODEL_SYSTEM_PROMPT',
-      )
-    }
     const info: LlmResolvedModelInfo = {
       provider,
       id: model,
@@ -840,7 +802,6 @@ export class LlmRuntime extends TypertRemoteService {
       ...inputModalities === undefined ? {} : { inputModalities },
       ...context === undefined ? {} : { context: { contextWindow: context.contextWindow } },
       ...defaultMaxTokens === undefined ? {} : { defaultMaxTokens },
-      ...systemPrompt === undefined || systemPrompt.length === 0 ? {} : { systemPrompt },
       ...resolved.systemPromptUpdate === undefined ? {} : { systemPromptUpdate: resolved.systemPromptUpdate },
     }
     const reasoning = resolved.reasoning
@@ -983,9 +944,6 @@ export class LlmRuntime extends TypertRemoteService {
         ? {}
         : { inputModalities: Object.freeze([...modelInfo.inputModalities]) },
       ...modelInfo.systemPromptUpdate === undefined ? {} : { systemPromptUpdate: modelInfo.systemPromptUpdate },
-      ...modelInfo.systemPrompt === undefined || modelInfo.systemPrompt.length === 0
-        ? {}
-        : { systemPrompt: modelInfo.systemPrompt },
       stream: (options: GenerateOptions): AsyncIterable<StreamChunk> => {
         if (dispatched) {
           throw new LlmError('a prepared LLM call can only be dispatched once', 'INVALID_PREPARED_CALL')
@@ -1091,10 +1049,16 @@ export class LlmRuntime extends TypertRemoteService {
       if (projectedMessages.some(message => contentHasFile(message.content))) {
         projectedMessages = projectFilesToText(projectedMessages, ref => this.fileReadPath(ref))
       }
-      const optionsForModalities = projectedMessages === resolvedOptions.messages
+      if (modelInfo.inputModalities !== undefined
+        && !modelInfo.inputModalities.includes('image')
+        && projectedMessages.some(message => contentHasImage(message.content))) {
+        projectedMessages = projectImagesForTextModel(projectedMessages)
+      }
+      const projectedOptions = projectedMessages === resolvedOptions.messages
         ? resolvedOptions
-        : withProjectedMessages(resolvedOptions, projectedMessages)
-      const projectedOptions = projectForModelInput(optionsForModalities, modelInfo.inputModalities)
+        : Object.isFrozen(resolvedOptions)
+          ? deepFreeze({ ...resolvedOptions, messages: projectedMessages as Message[] })
+          : { ...resolvedOptions, messages: projectedMessages as Message[] }
       const stream = dispatch(this.forAdapter(projectedOptions, adapter))
       iterator = stream[Symbol.asyncIterator]()
     } catch (error: unknown) {
@@ -1158,39 +1122,6 @@ export class LlmRuntime extends TypertRemoteService {
       () => this.adapterStream(options, prepared),
     )
   }
-}
-
-/** One message-list projection step, preserving the deep-frozen state of a loop-built request. */
-function withProjectedMessages(options: GenerateOptions, messages: readonly Message[]): GenerateOptions {
-  return Object.isFrozen(options)
-    ? deepFreeze({ ...options, messages: messages as Message[] })
-    : { ...options, messages: messages as Message[] }
-}
-
-/**
- * Replace request content the resolved route cannot carry with deterministic
- * text placeholders: images for a route whose modalities omit `image`, videos
- * for one that omits `video`. Explicit omissions are negative capability, so
- * the projection is request-local — durable history keeps its blocks.
- * @param options - fully assembled request.
- * @param inputModalities - exact-route modalities; absent leaves content untouched.
- * @returns the original options, or shallow copies with projected message lists.
- */
-function projectForModelInput(
-  options: GenerateOptions,
-  inputModalities: readonly ModelModality[] | undefined,
-): GenerateOptions {
-  if (inputModalities === undefined) return options
-  let projected = options
-  if (!inputModalities.includes('image')
-    && projected.messages.some(message => contentHasImage(message.content))) {
-    projected = withProjectedMessages(projected, projectImagesForTextModel(projected.messages))
-  }
-  if (!inputModalities.includes('video')
-    && projected.messages.some(message => contentHasVideo(message.content))) {
-    projected = withProjectedMessages(projected, projectVideosForTextModel(projected.messages))
-  }
-  return projected
 }
 
 /** Convert one adapter throw into the stream protocol's terminal outcome. */

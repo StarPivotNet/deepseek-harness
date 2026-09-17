@@ -6,7 +6,7 @@ This guide assumes you started the Web UI through the [root README](../../../REA
 
 ## Configure DeepSeek
 
-Open **Settings → Models**. FAC sits above DeepSeek. Each card exposes one API-key field that every model on that provider inherits unless a model names its own; enter the key and save it. FAC defaults to `https://new.fastaicode.top/v1`.
+Open **Settings → Models**. The DeepSeek card exposes one API-key field; enter the key and save it.
 
 ![The Models page: the DeepSeek card, with Add provider and Add a custom provider below it](providers-models-page.png)
 
@@ -20,7 +20,6 @@ Providers that sign in with OAuth, such as Codex, are not supported here yet.
 
 ## Add a custom provider
 
-Choose **Add a custom provider** for a company gateway, self-hosted server, or provider absent from the installed catalog. Supply a lowercase Provider ID, base URL, a default API protocol, credential, and at least one model. Each model can override that protocol and can store its own key. The same typed key on several models stores once and is shared; different typed values become different keys.
 Choose **Add a custom provider** for a company gateway, self-hosted server, or provider absent from the installed catalog. Supply a lowercase Provider ID, base URL, API protocol, credential, and at least one model. The **API protocol** must be the one your gateway speaks, and the form offers three: `openai-completions` for OpenAI Chat Completions, `openai-responses` for the OpenAI Responses API, and `anthropic-messages` for the Anthropic Messages API. A provider speaks one protocol, so a gateway that serves two needs two providers.
 
 ![The custom provider form: Provider ID, display name, base URL, API protocol, and API key](providers-custom-form.png)
@@ -43,15 +42,15 @@ If a saved default names a provider that was deleted, the composer displays **Se
 
 The generated [plugin configuration catalog](../../config-catalog.md) lists every supported field and default for every plugin; [`dsh-llm-pi-ai`](../../config-catalog.md#deepseek-aidsh-llm-pi-ai) is the provider section this page configures. The [`dsh-llm-pi-ai`](../../../packages/llm/llm-pi-ai/README.md) and [`dsh-llm-deepseek`](../../../packages/llm/llm-deepseek/README.md) references own direct `settings.yaml` configuration, catalog resolution, reasoning controls, credentials, and adapter errors.
 
-::: tip The form is deliberately small
-The Models page exposes only what a route needs to exist: the API key, display name, base URL, API protocol, and for each model its id, display name, context window, and max output tokens. Every other field — reasoning effort levels, image input, request-compatibility switches, headers, timeouts, retry policy — is set in `$DSH_HOME/settings.yaml`, the same document the page writes. Edit it directly, or, when the browser runs on the same machine as the server, open it with **Open configuration file** in the Settings header; the adapters re-read it on the next request, so nothing needs a restart. The subsections below cover the fields most gateways need.
+::: tip Additional settings
+The Models page exposes the API key, display name, base URL, API protocol, and each model's id, display name, context window, max output tokens, and input types. Configure reasoning effort levels, request-compatibility switches, headers, timeouts, and retry policy in `$DSH_HOME/settings.yaml`, the same document the page writes. Edit it directly, or, when the browser runs on the same machine as the server, open it with **Open configuration file** in the Settings header; the adapters re-read it on the next request, so nothing needs a restart. The subsections below cover the fields most gateways need.
 :::
 
 ### Image input
 
-A model you enter by hand is treated as text-only until it says otherwise, because nothing can ask an endpoint which modalities it accepts. Attaching an image to such a model is refused before it is sent, naming the model.
+In **Settings → Models**, edit the provider, open **Customized settings**, and expand the model's **Model options**. **Input types** occupies its own row below the capacity fields. Select **Image** for a model that accepts images, and save. **Text** starts selected for a new custom model with no inherited image capability. At least one type must remain selected; select Image before clearing Text for an image-only model.
 
-A vision model on a custom provider therefore needs a claim. On the Models page, open the provider, find the model row, and check **Supports images**. That writes `input: [text, image]` for that model. The same field can still be written in `$DSH_HOME/settings.yaml`:
+The checkboxes save `input` for pi-ai models and `inputModalities` for the direct DeepSeek adapter. You can also edit the model in `$DSH_HOME/settings.yaml`; for example, this custom pi-ai provider declares one text-only model and one vision model:
 
 ```yaml
 llm-pi-ai:
@@ -66,7 +65,11 @@ llm-pi-ai:
           input: [text, image]
 ```
 
-`input` accepts `text` and `image`, and applies to that model alone, so one route can serve both kinds. Omitting it — or writing an empty list, which means the same thing — keeps whatever the installed catalog records for that model, and falls back to the route's `defaultInput` for a model the catalog does not describe.
+Pi-ai's `input` accepts `text` and `image` and applies to that model alone. An explicit nonempty selection takes priority. An omitted or empty `input` inherits the installed catalog's input types, then the route's `defaultInput`, which defaults to `[text]`. The checkboxes display these inherited values without saving an override when you merely open the row.
+
+DeepSeek treats an omitted `inputModalities` as text-only and rejects an empty list. Clearing Image also removes that model's `imagePixelBudget` and `imageMaxBytes`, because DeepSeek rejects image limits on a text-only model. Set those limits again if you later enable images and need custom limits.
+
+To restore inheritance after editing the checkboxes, remove the model's `input` or `inputModalities` field from `settings.yaml`. **Restore defaults** removes the entire model-catalog override, including other model edits, so use it only when you want to restore the whole catalog.
 
 If every model you entered by hand takes images, set the fallback once on the route instead of on each of them:
 
@@ -83,7 +86,7 @@ llm-pi-ai:
         - id: second-model
 ```
 
-`defaultInput` is a fallback, not an override, and defaults to `[text]`: on a built-in provider it answers only for models its catalog does not describe, so it never removes images from a catalog model that has them. Narrow one of those with that model's own `input`. A built-in provider has no `models` list to put it in, so write it under `modelOverrides`, keyed by model id:
+`defaultInput` is a fallback, not an override, and defaults to `[text]`: on a built-in provider it answers only for models its catalog does not describe, so it never removes images from a catalog model that has them. Narrow one of those with that model's own `input`. When a built-in provider has no explicit `models` list, write it under `modelOverrides`, keyed by model id:
 
 ```yaml
 llm-pi-ai:
@@ -94,7 +97,7 @@ llm-pi-ai:
           input: [text]
 ```
 
-Every list must name at least one modality except a model's own, where an empty list means the same as omitting it. An unknown modality is refused wherever it is written.
+In pi-ai configuration, every list must name at least one modality except a model's own `input`, where an empty list means the same as omitting it. An unknown modality is refused wherever it is written.
 
 Both fields state a claim about your endpoint rather than checking it. A model that declares images its endpoint does not serve is not caught here; the provider rejects the request instead.
 
@@ -181,10 +184,6 @@ Every switch, its accepted values, and the protocols that take it are listed und
 - **`MISSING_CREDENTIAL`** — Store the provider key through the Models page or supply the referenced environment variable.
 - **`UNKNOWN_MODEL`** — Select a configured model or add the missing model to the custom provider.
 - **Fetching available models returns 401** — Check the key. Model discovery calls the OpenAI-compatible `GET /models` endpoint; enter models manually for endpoints that do not provide it.
-- **An image is refused before sending** — The model declares no image modality. Check **Supports images** on that model under Settings → Models, or give a custom provider's model `input: [text, image]` in `$DSH_HOME/settings.yaml`; DeepSeek's own chat-completions route is text-only and cannot be configured otherwise.
-
-- **The gateway refuses every request although the key and URL are right** — Its request shape differs from OpenAI's. Start with `compat.supportsDeveloperRole: false` and `compat.maxTokensField: max_tokens` on the route.
-- **Only reasoning models fail** — pi-ai sends their system prompt as the `developer` role, which the gateway rejects. Set `compat.supportsDeveloperRole: false`. A model that already names `thinkingFormat: zai` fills that `false` without a further write.
 - **Fetching available models reports neither a `data` array nor a `models` object** — The endpoint's listing is in a format discovery does not read. Enter the models by hand.
 - **The gateway refuses every request although the key and URL are right** — Its request shape differs from OpenAI's. Start with `compat.supportsDeveloperRole: false` and `compat.maxTokensField: max_tokens` on the route.
 - **Only reasoning models fail** — pi-ai sends their system prompt as the `developer` role, which the gateway rejects. Set `compat.supportsDeveloperRole: false`.

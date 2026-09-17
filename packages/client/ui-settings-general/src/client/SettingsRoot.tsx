@@ -26,6 +26,7 @@ import type { SettingsRootComponentProps, SettingsSectionRow } from './shell-con
 import { HostStartMeta } from './HostStartMeta.tsx'
 import type { HostStartMetaView } from './host-start-meta.ts'
 import css from './SettingsRoot.module.css'
+import { DesktopUpdateIndicator } from './DesktopUpdateIndicator.tsx'
 
 const RECOVERY_CONFIRMATION_MS = 2_000
 
@@ -57,7 +58,7 @@ type PanelProps = {
   onSelect: (id: string) => void
   onClose: () => void
   t: SettingsRootComponentProps['t']
-  hostStart: HostStartMetaView
+  hostStartView: HostStartMetaView
 }
 
 /**
@@ -65,7 +66,7 @@ type PanelProps = {
  * header button, a mask click, and document-level Escape (mounted only while
  * open, so the listener lifetime is the panel's).
  */
-function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose, t, hostStart }: PanelProps) {
+function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose, t, hostStartView }: PanelProps) {
   // Entries can unmount underneath the requested id, so the render-time
   // projection falls back to the first row when the id is gone.
   const active = rows.find(r => r.id === activeId)?.id ?? rows[0]?.id
@@ -106,7 +107,7 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose, t, hostS
         </nav>
         <div className={css.content}>
           <div className={css.header}>
-            <HostStartMeta meta={hostStart} t={t} />
+            <HostStartMeta meta={hostStartView} t={t} />
             <div className={css.actions}>{renderSlot('settings.action', {})}</div>
             <button ref={closeButton} type="button" className={css.close} onClick={onClose}>
               <IconCloseOutline16 size={14} />
@@ -131,7 +132,20 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
   const {
     wide, reconnect, setLocale, clearLocale, setTheme, setFontSize, useConnectionState, useSections, useOnboardingSteps,
     useSessions, useHostStart, useLocale, useTheme, renderSlot, t,
+    useDesktopUpdate, openDesktopUpdate,
   } = props
+  const hostStartView = useHostStart === undefined
+    ? { startedAt: undefined as number | undefined, startCount: 0 }
+    : useHostStart(s => s)
+  const localeView = useLocale === undefined
+    ? { preference: undefined as string | undefined, locales: [] as { id: string; label: string }[] }
+    : useLocale(s => s)
+  const themeView = useTheme === undefined
+    ? { preference: 'system' as string, fontSize: 14 }
+    : useTheme(s => s)
+  const desktopUpdateView = useDesktopUpdate === undefined
+    ? { presentation: undefined as { phase?: string } | undefined }
+    : useDesktopUpdate(state => state)
   const [open, setOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | undefined>(undefined)
@@ -166,14 +180,13 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
   const connectionState = useConnectionState(state => state)
   const previousConnectionState = useRef(connectionState)
   const onboardingSteps = useOnboardingSteps(s => s)
-  const hostStart = useHostStart(s => s)
-  const locale = useLocale(s => s)
-  const theme = useTheme(s => s)
-  const onboardingActive = useSessions(state =>
-    state.phase === 'ready'
-    && (state.current === undefined || state.byId[state.current]?.blank === true))
+  const onboardingActive = useSessions((state) => {
+    const main = Object.values(state.byId)
+      .find(session => (session.retainedBy.mainView ?? 0) > 0)
+    return state.phase === 'ready' && (main === undefined || main.blank)
+  })
   const onboardingStep = onboardingActive
-    ? onboardingSteps.find(step => !completedOnboarding.has(step.id))
+    ? onboardingSteps.find((step: { id: string }) => !completedOnboarding.has(step.id))
     : undefined
 
   useEffect(() => {
@@ -245,7 +258,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
       icon: <IconGlobeOutline14 size={16} />,
       submenu: [
         { id: 'locale:system', label: t('menu.language.system') },
-        ...locale.locales.map(option => ({
+        ...localeView.locales.map((option: { id: string; label: string }) => ({
           id: `locale:${option.id}`,
           label: languageLabels[option.id] ?? option.label,
         })),
@@ -254,9 +267,9 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     {
       id: 'theme',
       label: t('menu.theme'),
-      icon: theme.preference === 'dark'
+      icon: themeView.preference === 'dark'
         ? <IconDarkOutline16 />
-        : theme.preference === 'light'
+        : themeView.preference === 'light'
           ? <IconLightOutline16 />
           : <IconFollowsystemOutline16 />,
       submenu: [
@@ -275,34 +288,35 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           label: t('menu.fontSize.increase'),
           icon: <IconSearchOutline16 />,
           shortcut: t('menu.fontSize.increaseShortcut'),
-          disabled: theme.fontSize >= CONTENT_FONT_SIZE_MAX,
+          disabled: themeView.fontSize >= CONTENT_FONT_SIZE_MAX,
         },
         {
           id: 'font:decrease',
           label: t('menu.fontSize.decrease'),
           icon: <IconSearchOutline16 />,
           shortcut: t('menu.fontSize.decreaseShortcut'),
-          disabled: theme.fontSize <= CONTENT_FONT_SIZE_MIN,
+          disabled: themeView.fontSize <= CONTENT_FONT_SIZE_MIN,
         },
         {
           id: 'font:reset',
           label: t('menu.fontSize.reset'),
           icon: <IconRefreshOutline16 />,
           shortcut: t('menu.fontSize.resetShortcut'),
-          disabled: theme.fontSize === CONTENT_FONT_SIZE_DEFAULT,
+          disabled: themeView.fontSize === CONTENT_FONT_SIZE_DEFAULT,
         },
       ],
     },
   ]
   const selectedIds = [
-    `locale:${locale.preference === undefined ? 'system' : locale.preference}`,
-    `theme:${theme.preference}`,
+    `locale:${localeView.preference === undefined ? 'system' : localeView.preference}`,
+    `theme:${themeView.preference}`,
   ]
   const settingsTrigger = (
     <button
       ref={triggerButton}
       type="button"
       className={clsx(css.trigger, !wide && css.rail, wide && css.settingsTrigger)}
+      aria-label={t('trigger')}
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={openSettings}
@@ -323,7 +337,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
                 onClose={() => { setMenuOpen(false) }}
                 items={menuItems}
                 selectedIds={selectedIds}
-                onSelect={(id) => {
+                onSelect={(id: string) => {
                   if (id === 'locale:system') {
                     clearLocale()
                     setMenuOpen(false)
@@ -340,11 +354,11 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
                     return
                   }
                   if (id === 'font:increase') {
-                    setFontSize(theme.fontSize + 1)
+                    setFontSize(themeView.fontSize + 1)
                     return
                   }
                   if (id === 'font:decrease') {
-                    setFontSize(theme.fontSize - 1)
+                    setFontSize(themeView.fontSize - 1)
                     return
                   }
                   setFontSize(CONTENT_FONT_SIZE_DEFAULT)
@@ -369,7 +383,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           </div>
         ) : settingsTrigger}
         <ConnectionIndicator
-          state={wide ? connectionIndicator : undefined}
+          state={wide && desktopUpdateView.presentation?.phase !== 'installing' ? connectionIndicator : undefined}
           disconnectedLabel={t('connection.error')}
           connectingLabel={t('connection.connecting')}
           recoveredLabel={t('connection.connected')}
@@ -377,6 +391,8 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           restartActionLabel={t('connection.restart')}
           onReconnect={reconnect}
         />
+        <DesktopUpdateIndicator wide={wide} hidden={connectionIndicator !== undefined && desktopUpdateView.presentation?.phase !== 'installing'}
+          t={t} view={desktopUpdateView} onOpen={openDesktopUpdate} />
       </div>
       {open && (
         <SettingsPanel
@@ -386,7 +402,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           onSelect={setActiveId}
           onClose={close}
           t={t}
-          hostStart={hostStart}
+          hostStartView={hostStartView}
         />
       )}
       {/* Dialog chrome and `#root` inert ownership live inside each step's

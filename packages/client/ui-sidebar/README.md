@@ -37,7 +37,15 @@ Plugins add an icon component to the root-scoped `sidebar.panellist` list with a
 
 ### Collapse behavior
 
-During a live collapse, the shell holds the expanded content at its current width while it fades out for 150ms and the layout's 300ms column slide runs to the end. The upper controls—the shell toggle, New Session, the New Session sibling list, plus add and search rendered through `sidebar.workspaces`—then share one 150ms fade and 49px leftward translation into the 56px rail; every 36px control box follows the same path to the rail's 10px left inset. Known injected siblings (`data-dsh-mnemon-entry`, `data-dsh-taskboard-entry`, `data-dsh-ssh-entry`) keep an 18px glyph and hide their text labels on that rail so a leftover caption cannot clip into a one-character mark. The bottom-pinned `sidebar.settings` control shares the fade timing but has no horizontal translation. Expanding remounts wide content with a matching 300ms fade. A page that starts collapsed renders the rail statically, and reduced-motion mode disables both transitions.
+The top expand button hosts the optional, non-interactive `sidebar.toggle.badge` slot while collapsed. Its occupant supplies status and tooltip content without adding another action or changing the button's navigation behavior.
+
+During a live collapse, the expanded content fades out at its current width, the upper controls share one fade and leftward translation into the 56px rail, and the layout's column slide ends the motion. A page that starts collapsed renders the rail statically, and reduced-motion mode disables both transitions. The bottom-pinned `sidebar.settings` control shares the fade timing but has no horizontal translation.
+
+On Windows Electron, `html[data-windows-titlebar]` fixes the sidebar toggle in the caption's top-left corner in both states, aligned with New Session's left edge only when expanded. The expanded brand sits below the caption and above New Session, with 8px of extra space above that button. Collapsing hides the brand and sidebar content and places New Session between the sidebar toggle and the Desktop-owned menus. The sidebar sets the root `--dsh-windows-menu-start` to 84px when collapsed; the Desktop preload uses it to position its menu after New Session and defaults to 48px when expanded. Caption icon buttons use centered 16px glyphs in 28px circular controls and exclude themselves from the window drag region.
+
+### macOS desktop
+
+Under `html[data-platform='darwin']` (set only by the desktop preload) the expanded column opens with a 52px top strip that clears the hiddenInset traffic lights, carries the collapse toggle, and acts as the window drag region; collapsing hides the column entirely instead of leaving the rail. The package registers `HeaderLeadingControls` into the conversation header's `conversation.session.header.leading` seat — the open-sidebar and New Session controls shown, purely via CSS against the AppFrame-published `data-sidebar-collapsed` attribute, only while the column is hidden. Rationale and the window-integration contract: the [macOS hidden-titlebar Agent Note](../../../.agents/notes/implemented/feature/2026-09-13-macos-hidden-titlebar-vibrancy.md).
 
 ### Scrollbars
 

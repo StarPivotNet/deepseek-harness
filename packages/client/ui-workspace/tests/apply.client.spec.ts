@@ -8,6 +8,7 @@ import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from '@deepsee
 import { WorkspaceBrowser } from '../src/client/rows/WorkspaceBrowser.tsx'
 import { WorkspacePicker } from '../src/client/WorkspacePicker.tsx'
 import { apply as hostApply } from '../src/index.ts'
+import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
 
 async function bench() {
   const ctx = new Context()
@@ -18,9 +19,6 @@ async function bench() {
     title: 'new', sessionIds: [], createdAt: '0', updatedAt: '0',
   }))
   const rename = vi.fn(async () => ({}))
-  const insertSessionBefore = vi.fn(async () => ({}))
-  const open = vi.fn()
-  const clear = vi.fn()
   const selectPanel = vi.fn()
   ctx.provide('layout', { selectPanel, beginNavigation: () => new AbortController().signal })
   const search = vi.fn(async () => ({
@@ -28,14 +26,29 @@ async function bench() {
     value: { items: [{ sessionId: 'session' as never, snippet: 'match' }], hasMore: false },
   }))
   const renameSession = vi.fn(async (title: string) => ({ ok: true, value: { title, seq: 1 } }))
-  const binding = vi.fn(() => ({ session: { rename: renameSession } }))
+  const binding = vi.fn((_id: string) => ({ session: { rename: renameSession } }))
+  const retain = vi.fn((target: string) => {
+    const resolved = binding(target)
+    const release = vi.fn()
+    return {
+      sessionId: target,
+      binding: resolved,
+      ready: Promise.resolve(resolved),
+      release,
+      [Symbol.dispose]: release,
+    } as unknown as SessionReference
+  })
+  const using = vi.fn(async (
+    target: string,
+    _options: unknown,
+    operation: (reference: SessionReference) => unknown,
+  ) => await operation(retain(target)))
   const fork = vi.fn(async () => 'forked' as never)
-  const markUnread = vi.fn()
   const subscribe = () => () => {}
   ctx.provide('workspaces', {
     list: {
       getSnapshot: () => ({
-        items: [], archivedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null,
+        items: [], archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
       }),
       subscribe,
     },
@@ -44,7 +57,7 @@ async function bench() {
     delete: vi.fn(async () => undefined),
     insertBefore: vi.fn(async () => undefined),
     archiveSession: vi.fn(async () => undefined),
-    insertSessionBefore,
+    insertSessionBefore: vi.fn(async () => ({})),
   } as never)
   ctx.provide('sessions', {
     list: {
@@ -55,37 +68,28 @@ async function bench() {
       subscribe,
     },
     create: vi.fn(async () => 'created' as never),
-    open,
-    clear,
+    retain,
+    using,
     search,
     searchResultLimit: 20,
     binding,
+    subagentAddress: vi.fn(() => undefined),
+    refreshSubagents: vi.fn(() => Promise.resolve()),
     fork,
-    markUnread,
   } as never)
   const pickDirectory = vi.fn(() => Promise.resolve({ ok: true as const, value: '/projects/picked' }))
   const directoryPicker = { pick: pickDirectory }
   Object.assign(new TestRemote(ctx), { directoryPicker })
   ctx.provide('remote.directoryPicker', directoryPicker as never)
-  ctx.provide('remote.session', { openWorkspacePath: () => Promise.resolve({ rpcId: 'w', result: { ok: false, error: { code: 'x', message: 'no' } } }) } as never)
   const locale = new LocaleRuntime(ctx)
   // These specs assert the shipped Chinese copy. There is no jsdom `window`
   // in this lane, so browser-language detection never runs and the locale
   // comes from FALLBACK_LOCALE (en): state the asserted locale explicitly.
   locale.setLocale('zh')
   ctx.provide('locale', locale)
-  ctx.provide('settingsScope', {
-    bind: () => ({
-      getSnapshot: () => ({ value: undefined, revision: 0, writable: true, status: 'ready' }),
-      subscribe: () => () => {},
-      set: async () => {},
-      unset: async () => {},
-      mutate: async () => {},
-    }),
-  } as never)
   return {
     ctx, slots: ctx.get('slots') as SlotRegistry, locale, create, rename,
-    insertSessionBefore, open, clear, selectPanel, search, renameSession, binding, fork, markUnread, pickDirectory,
+    retain, using, selectPanel, search, renameSession, binding, fork, pickDirectory,
   }
 }
 
@@ -99,13 +103,12 @@ function declare(slots: SlotRegistry, ...names: HoleName[]): () => void {
 
 describe('ui-workspace apply', () => {
   it('keeps the host Loader entry inert', () => {
-    expect(() => hostApply(new Context())).not.toThrow()
+    expect(hostApply).not.toThrow()
   })
 
   it('declares the services it drives', () => {
     expect(inject).toEqual([
-      'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.directoryPicker', 'remote.session',
-      'settingsScope', 'layout',
+      'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.directoryPicker', 'layout',
     ])
   })
 
@@ -140,7 +143,7 @@ describe('ui-workspace apply', () => {
     browser.startSession()
     expect(startSession).toHaveBeenLastCalledWith(undefined)
     browser.open('session' as never)
-    expect(b.open).toHaveBeenCalledWith('session')
+    expect(b.retain).toHaveBeenCalledWith('session', { source: 'mainView' })
     const signal = new AbortController().signal
     await expect(browser.searchSessions('match', signal)).resolves.toEqual({
       items: [{ sessionId: 'session', snippet: 'match' }],
@@ -149,21 +152,17 @@ describe('ui-workspace apply', () => {
     expect(b.search).toHaveBeenCalledWith('match', signal)
     expect(browser.searchResultLimit).toBe(20)
     await browser.renameSession('session' as never, 'renamed session')
-    expect(b.binding).toHaveBeenCalledWith('session')
+    expect(b.using).toHaveBeenCalledWith(
+      'session', { source: 'workspaceOperation' }, expect.any(Function),
+    )
     expect(b.renameSession).toHaveBeenCalledWith('renamed session')
     browser.forkSession('session' as never)
     await vi.waitFor(() => {
-      expect(b.open).toHaveBeenCalledWith('forked')
+      expect(b.retain).toHaveBeenCalledWith('forked', { source: 'mainView' })
     })
     expect(b.fork).toHaveBeenCalledWith({ sessionId: 'session', increaseTitle: true })
-    browser.markUnread('session' as never)
-    expect(b.markUnread).toHaveBeenCalledWith('session')
-    browser.openSplit('session' as never)
-    expect(b.open).toHaveBeenCalledWith('session')
     await browser.renameWorkspace('ws' as never, 'renamed')
     expect(b.rename).toHaveBeenCalledWith('ws', 'renamed')
-    await browser.insertSessionBefore('ws' as never, 's1' as never, 's2' as never)
-    expect(b.insertSessionBefore).toHaveBeenCalledWith('ws', 's1', 's2')
     await browser.createWorkspace({ path: '/tmp/browser-project' })
     expect(b.create).toHaveBeenCalledWith({ path: '/tmp/browser-project' })
 

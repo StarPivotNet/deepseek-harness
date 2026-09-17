@@ -1,9 +1,8 @@
 /**
  * Sidebar slot contract: the registrant-side props composition for the
  * layout-owned `sidebar` slot, plus the holes this shell declares. The shell
- * owns column geometry (fold state machine, brand row, New Session);
- * the list under New Session is `sidebar.automation`, then official global
- * panel rows; everything between that list and the list bottom is the
+ * owns column geometry, the brand row, New Session, and global panel rows;
+ * everything between the workspace section header and the list bottom is the
  * `sidebar.workspaces` registrant's (ui-workspace), and the foot is the
  * `sidebar.settings` registrant's (ui-settings), followed by optional footer
  * actions in `sidebar.footer.action`.
@@ -15,6 +14,8 @@ import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
+    /** Non-interactive notification inside the collapsed sidebar expand button. */
+    'sidebar.toggle.badge': { kind: 'single'; scope: 'root'; owner: Record<never, never> }
     /**
      * Brand mark rendered in the expanded brand row and collapsed rail.
      * Declared by this package's `sidebar` entry; deployments may replace
@@ -26,12 +27,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * package's `sidebar` entry; the shell supplies a generic text fallback.
      */
     'sidebar.brand.name': { kind: 'single'; scope: 'root'; owner: SidebarBrandNameOwnerProps }
-    /**
-     * Capsule controls under New Session. Declared by this package's
-     * 'sidebar' entry. Occupants must match New Session geometry. Host
-     * Automation registers first; other plugins append after it.
-     */
-    'sidebar.automation': { kind: 'list'; scope: 'root'; owner: SidebarAutomationOwnerProps }
     /**
      * Global panel icons. Each list id addresses the matching main panel;
      * the sidebar owns the button and resolves its label from list metadata.
@@ -92,15 +87,6 @@ export interface SidebarPanelMetadata {
  * Owner share of the browser hole — the only facts crossing the shell/region
  * boundary. Business data and actions arrive through the region's own inject.
  */
-/**
- * Owner share of each New Session sibling: the column display state the
- * occupant's trigger must render against (wide row vs rail icon).
- */
-export interface SidebarAutomationOwnerProps {
-  /** Whether the sidebar renders wide content (false = 56px rail). */
-  wide: boolean
-}
-
 export interface SidebarSectionOwnerProps {
   /** Shell fold-state output: wide renders the full browser, rail the icon column. */
   wide: boolean
@@ -153,6 +139,7 @@ export type SidebarRootComponentProps =
     | 'sidebar.brand.mark'
     | 'sidebar.brand.name'
     | 'sidebar.automation'
+    | 'sidebar.toggle.badge'
     | 'sidebar.panellist'
     | 'sidebar.workspaces'
     | 'sidebar.settings'

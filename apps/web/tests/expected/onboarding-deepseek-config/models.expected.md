@@ -7,24 +7,15 @@
     - button "模型":
       - img
       - text: 模型
-    - button "子代理":
+    - button "内置插件":
       - img
-      - text: 子代理
-    - button "插件":
-      - img
-      - text: 插件
-    - button "Skills":
-      - img
-      - text: Skills
+      - text: 内置插件
     - button "Agent 预设":
       - img
       - text: Agent 预设
     - button "已归档会话":
       - img
       - text: 已归档会话
-    - button "系统提示词":
-      - img
-      - text: 系统提示词
   - button "打开配置文件"
   - button "关闭":
     - img
@@ -32,10 +23,6 @@
   - heading "模型" [level=2]
   - paragraph: 填入各提供方的 API 密钥即可使用其模型。
   - list:
-    - listitem:
-      - text: FAC
-      - img "API 密钥缺失"
-      - button "编辑 FAC (fac)": 编辑
     - listitem:
       - text: DeepSeek
       - img "API 密钥已配置"
@@ -57,7 +44,7 @@
           - textbox "显示名称 1":
             - /placeholder: 显示名称
             - text: Private Preview
-          - button "容量 1" [expanded]:
+          - button "模型选项 1" [expanded]:
             - img
           - button "删除模型 1":
             - img
@@ -69,6 +56,12 @@
           - textbox "最大输出 token 数 1":
             - /placeholder: 256K
             - text: 64K
+          - group "输入类型 1":
+            - text: 输入类型
+            - checkbox "文本" [checked]
+            - text: 文本
+            - checkbox "图片" [checked]
+            - text: 图片
           - button "添加模型":
             - img
             - text: 添加模型

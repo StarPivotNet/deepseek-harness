@@ -27,7 +27,6 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'approval/policy',
   'assistant/attempt',
   'assistant/message',
-  'automation/start',
   'command/done',
   'command/run',
   'compaction/end',
@@ -38,7 +37,6 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'feedback/message-delete',
   'feedback/message-put',
   'feedback/record',
-  'git/worktree',
   'goal/change',
   'hook/invoked',
   'hook/result',
@@ -79,6 +77,7 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'turn/start',
   'user/message',
   'web/deepseek-search-llm-request',
+  'workspace/changes',
   'workspace/home',
 ])
 

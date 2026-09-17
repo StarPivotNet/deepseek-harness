@@ -1,15 +1,21 @@
 {
-  "extends": "../../../tsconfig.base.client.json",
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "lib/types",
-    "types": ["node"]
+    "lib": [
+      "ES2024",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "src"
   ],
   "references": [
-    { "path": "../store" },
     {
       "path": "../../../vendor/cordis"
     },
@@ -27,24 +33,6 @@
     },
     {
       "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../settings/settings"
-    },
-    {
-      "path": "../locale"
-    },
-    {
-      "path": "../../api/session-controller/tsconfig.client.json"
-    },
-    {
-      "path": "../ui-primitives"
-    },
-    {
-      "path": "../ui-slots"
-    },
-    {
-      "path": "../ui-settings"
     }
   ]
 }

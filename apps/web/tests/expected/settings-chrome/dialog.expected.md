@@ -7,25 +7,15 @@
     - button "模型":
       - img
       - text: 模型
-    - button "子代理":
+    - button "内置插件":
       - img
-      - text: 子代理
-    - button "插件":
-      - img
-      - text: 插件
-    - button "Skills":
-      - img
-      - text: Skills
+      - text: 内置插件
     - button "Agent 预设":
       - img
       - text: Agent 预设
     - button "已归档会话":
       - img
       - text: 已归档会话
-    - button "系统提示词":
-      - img
-      - text: 系统提示词
-  - text: 启动于 {{clock}} · 已启动 1 次
   - button "打开配置文件"
   - button "关闭":
     - img
@@ -61,8 +51,3 @@
   - button "排队发送":
     - text: 排队发送
     - img
-  - text: 产品更新 向 GitHub Releases 查询是否有更新的 dsh 或桌面端版本。查询不会下载或安装任何内容。 尚未检查
-  - button "立即检查"
-  - text: 插件热重载 关闭后，保存源码不会替换正在运行的插件。改完后再手动重载。
-  - switch "自动热重载"
-  - button "重载插件"

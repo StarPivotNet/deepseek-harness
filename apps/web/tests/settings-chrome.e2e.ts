@@ -3,9 +3,8 @@
 // real theme gesture — click 深色 and the whole cascade runs: ThemeRuntime preference -> Host settings
 // -> theme/change -> ui-layout's presenter -> body attribute -> alias token +
 // browser theme-color metadata)
-// the Language row, busy-state Enter preference, and plugin auto-reload
-// switch (all Host-backed), plus Permission as the persisted default for
-// subsequently created sessions.
+// the Language row and busy-state Enter preference (both Host-backed), plus
+// Permission as the persisted default for subsequently created sessions.
 // Zero model calls: everything is pure client + persistence state on a blank
 // frame, so there is no fixture and a stray stream would fail loud on the
 // open llm seam.
@@ -28,15 +27,8 @@ const PLUGINS_EXPECTED = join(SNAPSHOT_DIR, 'plugins.expected.md')
 const PLUGIN_INSTANCES_EXPECTED = join(SNAPSHOT_DIR, 'plugin-instances.expected.md')
 // The English fallback surface: a browser naming no shipped language.
 const DIALOG_EN_EXPECTED = join(SNAPSHOT_DIR, 'dialog-en.expected.md')
-const OVERLAY = fileURLToPath(new URL('./settings-chrome.overlay.yml', import.meta.url))
-const PLUGIN_ROW_SELECTOR = '[data-plugin-entry$="ui-settings"]'
+const PLUGIN_ROW_SELECTOR = '[data-plugin-scope="preset"] [data-plugin-entry="tool-subagent"]'
 const MODE = webSnapshotMode()
-
-function launchSettingsChrome(
-  options: Parameters<typeof launchWebScaffold>[0] = {},
-): ReturnType<typeof launchWebScaffold> {
-  return launchWebScaffold({ ...options, extraOverlayPath: OVERLAY })
-}
 
 describe('web e2e: settings modal and General preferences', () => {
   let scaffold: WebScaffold
@@ -45,7 +37,7 @@ describe('web e2e: settings modal and General preferences', () => {
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchSettingsChrome()
+    scaffold = await launchWebScaffold({})
     browser = await chromium.launch()
     // Chinese browser: the shared page asserts the localized settings surface
     // the client derives from it (the English default has its own spec below).
@@ -74,13 +66,6 @@ describe('web e2e: settings modal and General preferences', () => {
     await dialog.getByRole('button', { name: '工作区内修改' }).waitFor({ timeout: 10_000 })
     await expect.poll(() => dialog.getByText('语言', { exact: true }).count(), { timeout: 5_000 }).toBe(1)
     await expect.poll(() => dialog.getByText('外观', { exact: true }).count(), { timeout: 5_000 }).toBe(1)
-    await expect.poll(() => dialog.getByText('产品更新', { exact: true }).count(), { timeout: 5_000 }).toBe(1)
-    expect(await dialog.getByRole('button', { name: '立即检查' }).count()).toBe(1)
-    await expect.poll(() => dialog.getByText('尚未检查', { exact: true }).count(), { timeout: 5_000 }).toBe(1)
-    await expect.poll(() => dialog.getByText('插件热重载', { exact: true }).count(), { timeout: 5_000 }).toBe(1)
-    expect(await dialog.getByRole('switch', { name: '自动热重载' }).getAttribute('aria-checked')).toBe('false')
-    expect(await dialog.getByRole('button', { name: '重载插件' }).count()).toBe(1)
-    await expect.poll(() => dialog.getByText(/启动于/).count(), { timeout: 10_000 }).toBe(1)
     const openDocument = dialog.getByRole('button', { name: '打开配置文件' })
     await openDocument.waitFor({ timeout: 10_000 })
     let openRequests = 0
@@ -112,24 +97,23 @@ describe('web e2e: settings modal and General preferences', () => {
     await dialog.getByRole('button', { name: '模型' }).click()
     await expect.poll(() => dialog.getByRole('button', { name: '模型' }).getAttribute('aria-current'), { timeout: 5_000 }).toBe('true')
     expect(await dialog.getByRole('button', { name: '通用设置' }).getAttribute('aria-current')).toBeNull()
-    await dialog.getByRole('button', { name: '子代理' }).click()
-    await expect.poll(() => dialog.getByRole('button', { name: '子代理' }).getAttribute('aria-current'), { timeout: 5_000 }).toBe('true')
-    await dialog.getByRole('heading', { name: '子代理', exact: true }).waitFor({ timeout: 10_000 })
-    expect(await dialog.getByRole('button', { name: '新建子代理' }).count()).toBe(1)
-    expect(await dialog.getByRole('button', { name: '模型' }).getAttribute('aria-current')).toBeNull()
-    // Plugins is a read-only projection of the same assembled Loader tree.
-    // Capture one stable shipped row rather than the whole inventory so adding
-    // an unrelated plugin does not rewrite this surface's golden.
-    await dialog.getByRole('button', { name: 'Skills', exact: true }).waitFor({ timeout: 10_000 })
-    await dialog.getByRole('button', { name: '插件', exact: true }).click()
-    await dialog.getByRole('heading', { name: '插件', exact: true }).waitFor({ timeout: 10_000 })
-    await dialog.getByRole('tab', { name: '插件列表', exact: true }).click()
-    // The preset group opens first with its display-only switcher; the global
-    // plane starts collapsed and expands on demand.
+    // Built-in plugins: the read-only Plugin list, a projection of the same
+    // assembled Loader tree, shown as the section's one page; management and
+    // configuration live on the sidebar's Plugins panel (its own scenario files
+    // drive that page over a profile runtime). Capture one stable shipped row
+    // rather than the whole inventory so adding an unrelated plugin does not
+    // rewrite this surface's golden.
+    await dialog.getByRole('button', { name: '内置插件', exact: true }).click()
+    await dialog.getByRole('heading', { name: '内置插件', exact: true }).waitFor({ timeout: 10_000 })
+    // Both groups start collapsed; the preset group's header still carries its display-only switcher.
     const presetSwitcher = dialog.getByRole('button', { name: '选择要查看的 Agent 预设' })
     await presetSwitcher.waitFor({ timeout: 10_000 })
     // The shipped default's zh display name comes from the zh dictionaries.
     expect(await presetSwitcher.textContent()).toBe('标准模式（默认）')
+    const presetToggle = dialog.getByRole('button', { name: '会话插件', exact: true })
+    expect(await presetToggle.getAttribute('aria-expanded')).toBe('false')
+    expect(await dialog.locator('[data-plugin-scope="preset"] [data-plugin-entry]').count()).toBe(0)
+    await presetToggle.click()
     await dialog.getByRole('button', { name: /^全局/ }).click()
     const pluginRow = dialog.locator(PLUGIN_ROW_SELECTOR)
     await pluginRow.waitFor({ timeout: 10_000 })
@@ -142,10 +126,17 @@ describe('web e2e: settings modal and General preferences', () => {
     // presets took over included, preset compositions excluded.
     expect(await dialog.locator('[data-plugin-scope="global"] [data-plugin-entry]').count())
       .toBe(expectedPluginCount)
+    // The enablement tag is the row's collapsed status: an active fiber draws no
+    // dot, so no global row names the active phase. Guard the assertion against
+    // matching nothing because no row is enabled.
+    expect(await dialog.locator('[data-plugin-scope="global"] [data-plugin-entry] button[aria-label$="已启用"]').count())
+      .toBeGreaterThan(0)
+    expect(await dialog.locator('[data-plugin-scope="global"] [role="img"][aria-label="运行中"]').count()).toBe(0)
     expect(await dialog.locator('[data-plugin-count]').getAttribute('data-plugin-count'))
       .toBe(String(expectedPluginCount))
-    expect(await dialog.getByRole('button', { name: '插件', exact: true }).getAttribute('aria-current')).toBe('true')
-    expect(await dialog.getByRole('tab', { name: '插件列表', exact: true }).getAttribute('aria-selected')).toBe('true')
+    expect(await dialog.getByRole('button', { name: '内置插件', exact: true }).getAttribute('aria-current')).toBe('true')
+    // One contribution shows as the page itself, without a tab row.
+    expect(await dialog.getByRole('tab').count()).toBe(0)
     expect(await dialog.getByRole('button', { name: '模型' }).getAttribute('aria-current')).toBeNull()
     const pluginsSnapshot = await captureStableAria(
       page,
@@ -586,89 +577,6 @@ describe('web e2e: settings modal and General preferences', () => {
     expect(tripwire.pageErrors).toEqual([])
   }, 90_000)
 
-  it('persists plugin auto-reload across reload and a distinct port', async () => {
-    onTestFailed(() => saveFailureShot(page, 'web-e2e-settings-plugin-reload'))
-    await page.getByRole('button', { name: '设置', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '设置' })
-    await dialog.waitFor({ timeout: 10_000 })
-    const toggle = dialog.getByRole('switch', { name: '自动热重载' })
-    expect(await toggle.getAttribute('aria-checked')).toBe('false')
-    await toggle.click()
-    await expect.poll(() => toggle.getAttribute('aria-checked'), { timeout: 5_000 }).toBe('true')
-    await expect.poll(async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'), { timeout: 5_000 })
-      .toMatch(/client-hmr:\n\s+autoReload: true/)
-    await page.keyboard.press('Escape')
-
-    const warningStart = tripwire.warnings.length
-    await page.reload({ waitUntil: 'load' })
-    await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    acknowledgeReloadConnectionLoss(tripwire, warningStart)
-    await page.getByRole('button', { name: '设置', exact: true }).click()
-    const reloaded = page.getByRole('dialog', { name: '设置' })
-    await expect.poll(() => reloaded.getByRole('switch', { name: '自动热重载' }).getAttribute('aria-checked'), { timeout: 5_000 }).toBe('true')
-
-    const second = await launchWebScaffold({ harnessHome: scaffold.harnessHome })
-    const secondPage = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
-    const secondTripwire = watchConsole(secondPage)
-    try {
-      expect(second.baseUrl).not.toBe(scaffold.baseUrl)
-      await secondPage.goto(second.baseUrl, { waitUntil: 'load' })
-      await secondPage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-      await secondPage.getByRole('button', { name: '设置', exact: true }).click()
-      await expect.poll(() => secondPage.getByRole('dialog', { name: '设置' })
-        .getByRole('switch', { name: '自动热重载' }).getAttribute('aria-checked'), { timeout: 5_000 }).toBe('true')
-      expect(secondTripwire.pageErrors).toEqual([])
-      expect(secondTripwire.warnings).toEqual([])
-    } finally {
-      await secondPage.close()
-      await second.close()
-    }
-
-    await reloaded.getByRole('switch', { name: '自动热重载' }).click()
-    await expect.poll(() => reloaded.getByRole('switch', { name: '自动热重载' }).getAttribute('aria-checked'), { timeout: 5_000 }).toBe('false')
-    await expect.poll(async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'), { timeout: 5_000 })
-      .toMatch(/client-hmr:\n\s+autoReload: false/)
-    await page.keyboard.press('Escape')
-    expect(tripwire.pageErrors).toEqual([])
-  }, 90_000)
-
-  it('persists unlimited retries from a trusted-host browser across reload', async () => {
-    onTestFailed(() => saveFailureShot(page, 'web-e2e-settings-unlimited-retries'))
-    const remote = await launchSettingsChrome({
-      harnessHome: scaffold.harnessHome,
-      remoteAuthority: 'remote.localhost',
-    })
-    const remotePage = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
-    const remoteTripwire = watchConsole(remotePage)
-    try {
-      await remotePage.goto(remote.baseUrl, { waitUntil: 'load' })
-      await remotePage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-      await remotePage.getByRole('button', { name: '设置', exact: true }).click()
-      const dialog = remotePage.getByRole('dialog', { name: '设置' })
-      await dialog.waitFor({ timeout: 10_000 })
-      const unlimited = dialog.getByRole('switch', { name: '无限' })
-      await unlimited.waitFor({ timeout: 10_000 })
-      expect(await unlimited.getAttribute('aria-checked')).toBe('false')
-      await unlimited.click()
-      await expect.poll(() => unlimited.getAttribute('aria-checked'), { timeout: 5_000 }).toBe('true')
-      await expect.poll(async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'), { timeout: 5_000 })
-        .toMatch(/llm-default-policy:\n\s+unlimited: true/)
-      await remotePage.keyboard.press('Escape')
-
-      const warningStart = remoteTripwire.warnings.length
-      await remotePage.reload({ waitUntil: 'load' })
-      await remotePage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-      acknowledgeReloadConnectionLoss(remoteTripwire, warningStart)
-      await remotePage.getByRole('button', { name: '设置', exact: true }).click()
-      const reloaded = remotePage.getByRole('dialog', { name: '设置' })
-      await expect.poll(() => reloaded.getByRole('switch', { name: '无限' }).getAttribute('aria-checked'), { timeout: 5_000 }).toBe('true')
-      expect(remoteTripwire.pageErrors).toEqual([])
-    } finally {
-      await remotePage.close()
-      await remote.close()
-    }
-  }, 90_000)
-
   it('persists the settings language across reload and a distinct port', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-settings-language'))
     await page.getByRole('button', { name: '设置', exact: true }).click()
@@ -693,8 +601,6 @@ describe('web e2e: settings modal and General preferences', () => {
     await expect.poll(() => page.evaluate(() => document.documentElement.lang), { timeout: 5_000 }).toBe('en')
     expect(await enDialog.getByRole('button', { name: 'General' }).getAttribute('aria-current')).toBe('true')
     await expect.poll(() => enDialog.getByText('Appearance', { exact: true }).count(), { timeout: 5_000 }).toBe(1)
-    await expect.poll(() => enDialog.getByText('Product updates', { exact: true }).count(), { timeout: 5_000 }).toBe(1)
-    await expect.poll(() => enDialog.getByText('Plugin hot reload', { exact: true }).count(), { timeout: 5_000 }).toBe(1)
     expect(await page.evaluate(() => localStorage.getItem('dsh.locale'))).toBeNull()
     await expect.poll(async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'), { timeout: 5_000 })
       .toMatch(/locale:\n\s+preference: en/)
@@ -743,7 +649,7 @@ describe('web e2e: settings modal and General preferences', () => {
     // browser. English is also FALLBACK_LOCALE, so this scenario alone cannot
     // distinguish detection from the default — the zh scenarios above supply
     // the discriminating half (a Chinese browser must NOT land on the default).
-    const fresh = await launchSettingsChrome()
+    const fresh = await launchWebScaffold({})
     const enPage = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: 'en-US' })
     const enTripwire = watchConsole(enPage)
     onTestFailed(() => saveFailureShot(enPage, 'web-e2e-settings-browser-language'))
@@ -757,11 +663,17 @@ describe('web e2e: settings modal and General preferences', () => {
       await dialog.getByRole('button', { name: 'English' }).waitFor({ timeout: 10_000 })
       // The plugin list resolves shipped preset names through the en
       // dictionaries instead of echoing the preset files' Chinese metadata.
-      await dialog.getByRole('button', { name: 'Plugins', exact: true }).click()
-      await dialog.getByRole('tab', { name: 'Plugin list', exact: true }).click()
+      await dialog.getByRole('button', { name: 'Built-in plugins', exact: true }).click()
       const presetSwitcher = dialog.getByRole('button', { name: 'Choose the agent preset to inspect' })
       await presetSwitcher.waitFor({ timeout: 10_000 })
       expect(await presetSwitcher.textContent()).toBe('Standard mode (default)')
+      // The plugin manager speaks the en dictionary too: its sidebar entry
+      // and the unavailable notice a scaffold without a profile runtime shows.
+      await enPage.keyboard.press('Escape')
+      await expect.poll(() => enPage.getByRole('dialog', { name: 'Settings' }).count(), { timeout: 5_000 }).toBe(0)
+      await enPage.getByRole('navigation', { name: 'Global panels' }).getByRole('button', { name: 'Plugins', exact: true }).click()
+      await enPage.getByText('This deployment runs without a manageable profile, so plugins cannot be installed or switched here.', { exact: true })
+        .waitFor({ timeout: 10_000 })
       // This page has no closing inventory spec to sweep its console, so the
       // scenario clears both tripwire channels itself.
       expect(enTripwire.pageErrors).toEqual([])
@@ -776,7 +688,7 @@ describe('web e2e: settings modal and General preferences', () => {
     // The product default for "no usable signal": a French browser ships
     // neither zh nor en, so resolution falls to FALLBACK_LOCALE (en) rather
     // than to Chinese.
-    const fresh = await launchSettingsChrome()
+    const fresh = await launchWebScaffold({})
     const frPage = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: 'fr-FR' })
     const frTripwire = watchConsole(frPage)
     onTestFailed(() => saveFailureShot(frPage, 'web-e2e-settings-unshipped-language'))

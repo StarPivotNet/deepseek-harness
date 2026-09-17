@@ -2,10 +2,11 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
-import type { ISessions, SessionBinding } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionBinding } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar-browser/client'
 import type {} from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 // The `file` entry of `SidebarRightResourceParamsMap`, which types `{ params: { line } }` below.
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
@@ -44,13 +45,9 @@ const CHAT_NODE_INJECT: ChatNodeTurnDataInjected = {
   },
 }
 
-function clientSessions(ctx: Context): ISessions {
-  return ctx.sessions as unknown as ISessions
-}
-
 /** Services required by the Chat target and its presentation registrations. */
 export const inject = [
-  'slots', 'sessions', 'uiSession', 'uiConversation', 'locale',
+  'slots', 'sessions', 'uiWorkspace', 'uiSession', 'uiConversation', 'locale',
   'settingsScope', 'remote', 'remote.session', 'sidebarRight',
 ]
 
@@ -111,7 +108,7 @@ export function apply(ctx: Context): void {
       },
       store: chatStore,
       inject: (sessionId: SessionId): ChatViewInjected => {
-        const binding = clientSessions(ctx).binding(sessionId)
+        const binding = ctx.sessions.binding(sessionId)
         if (binding === undefined) throw new Error(`ui-chat: unknown session "${sessionId}"`)
         const session = binding.session
         const chat = chatSource(binding)
@@ -135,16 +132,23 @@ export function apply(ctx: Context): void {
           // its top or at line 400, so the same tab is revealed and told where
           // to land.
           openFile: async (path, options) => {
-            const cwd = clientSessions(ctx).list.getSnapshot().byId[sessionId]?.cwd
+            const cwd = ctx.sessions.list.getSnapshot().byId[sessionId]?.cwd
             const url = fileAddressFor(sessionId, cwd, path)
             if (options?.line === undefined) ctx.sidebarRight.openResource(url)
             else ctx.sidebarRight.openResource(url, { params: { line: options.line } })
             await Promise.resolve()
           },
           openSkill: (name) => {
-            const scope = clientSessions(ctx).scope(sessionId)
+            const scope = ctx.sessions.scope(sessionId)
             if (scope === undefined) return
             ctx.get('inputTriggers')?.sessionOf(scope).openReference('skill', { ref: `/${name}` })
+          },
+          openExternalLink: (url) => {
+            if (ctx.get('sidebarRightTabs')?.get('browser') !== undefined) {
+              ctx.sidebarRight.openTab('browser', { params: { url } })
+            } else {
+              window.open(url, '_blank', 'noopener,noreferrer')
+            }
           },
           loadOlder: () => { void session.loadOlder() },
           loadThrough: seq => session.loadThrough(seq),
@@ -160,8 +164,8 @@ export function apply(ctx: Context): void {
             read: () => chatScrollPositions.get(sessionId) ?? null,
           },
           forkAt: (seq) => {
-            clientSessions(ctx).fork({ sessionId, atSeq: seq, increaseTitle: true })
-              .then((childId) => { clientSessions(ctx).open(childId) })
+            ctx.sessions.fork({ sessionId, atSeq: seq, increaseTitle: true })
+              .then((childId) => { ctx.uiWorkspace.openSession(childId) })
               .catch(() => {
                 // Fork or child-title failure leaves the source view unchanged.
               })

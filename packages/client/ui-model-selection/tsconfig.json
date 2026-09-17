@@ -51,7 +51,7 @@
       "path": "../../api/session-controller/tsconfig.client.json"
     },
     {
-      "path": "../../session/session-route"
+      "path": "../../util/values"
     }
   ]
 }

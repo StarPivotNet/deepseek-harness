@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReactNode } from 'react'
-import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {
   SidebarFooterActionOwnerProps, SidebarRootComponentProps, SidebarSectionOwnerProps,
   SidebarSettingsOwnerProps,
 } from '../src/client/contract/slots.ts'
+import { HeaderLeadingControls, type HeaderLeadingControlsProps } from '../src/client/HeaderLeadingControls.tsx'
 import { SidebarRoot } from '../src/client/SidebarRoot.tsx'
 import { en } from '../src/client/locales.ts'
 import { en as commonEn } from '@deepseek-ai/dsh-client-locale/src/locales/en.ts'
@@ -23,29 +24,17 @@ const t: SidebarRootComponentProps['t'] = key =>
 
 afterEach(() => {
   cleanup()
+  delete document.documentElement.dataset.platform
   vi.unstubAllEnvs()
   vi.useRealTimers()
 })
 
-// useWorkspaces rides the standard props share unused; the shell does read
-// useSessions for the desktop Completed badge.
-const neverWorkspaces = (() => { throw new Error('shell must not read workspaces') }) as never
-type AttentionSnapshot = Parameters<Parameters<SidebarRootComponentProps['useSessionPendingInteraction']>[0]>[0]
+// The shell never reads the global hooks itself, but they ride the standard
+// props share; stub them as never-called functions.
+const neverHook = (() => { throw new Error('shell must not read global hooks') }) as never
+type AttentionSnapshot = Parameters<Parameters<SidebarRootComponentProps['useSessionStatus']>[0]>[0]
 const noAttention: AttentionSnapshot = new Map()
-const useSessionPendingInteraction: SidebarRootComponentProps['useSessionPendingInteraction'] = selector => selector(noAttention)
-
-function sessionsHook(completedIds: readonly string[] = []): SidebarRootComponentProps['useSessions'] {
-  const byId = Object.fromEntries(completedIds.map(id => [id, { completed: true }])) as SessionListState['byId']
-  return select => select({
-    ids: completedIds as SessionListState['ids'],
-    byId,
-    current: undefined,
-    phase: 'ready',
-    subagentsByParent: {},
-    jobsBySession: {},
-    currentAddress: undefined,
-  })
-}
+const useSessionStatus: SidebarRootComponentProps['useSessionStatus'] = selector => selector(noAttention)
 
 function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; width?: number } = {}) {
   const startSession = vi.fn()
@@ -59,9 +48,9 @@ function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; w
   const root = () => (
     <SidebarRoot
       collapsed={current.collapsed} width={current.width}
-      useSessions={sessionsHook()} useSessionPendingInteraction={useSessionPendingInteraction}
+      useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])}
-      useResource={useResource} useWorkspaces={neverWorkspaces}
+      useResource={useResource} useWorkspaces={neverHook}
       startSession={startSession} toggleSidebar={toggleSidebar} t={t}
       renderSlot={((
         key: string,
@@ -69,9 +58,7 @@ function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; w
       ) => {
         if (key === 'sidebar.brand.mark') return brandMark
         if (key === 'sidebar.brand.name') return brandName
-        if (key === 'sidebar.automation') {
-          return <div data-testid="automation-seat" data-wide={(owner as { wide: boolean }).wide} />
-        }
+        if (key === 'sidebar.toggle.badge') return null
         if (key === 'sidebar.settings') {
           settingsOwner = owner
           return <div data-testid="settings-seat" data-wide={owner.wide} />
@@ -128,9 +115,9 @@ describe('SidebarRoot shell', () => {
     vi.stubEnv('DSH_CLIENT_VERSION', '1.2.3-rc.4')
     const { container } = render(<SidebarRoot
       collapsed={false} width={300}
-      useSessions={sessionsHook()} useSessionPendingInteraction={useSessionPendingInteraction}
+      useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])}
-      useResource={useResource} useWorkspaces={neverWorkspaces}
+      useResource={useResource} useWorkspaces={neverHook}
       startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
       renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
@@ -148,9 +135,9 @@ describe('SidebarRoot shell', () => {
     for (const [name, value] of Object.entries(environment)) vi.stubEnv(name, value)
     render(<SidebarRoot
       collapsed={false} width={300}
-      useSessions={sessionsHook()} useSessionPendingInteraction={useSessionPendingInteraction}
+      useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])}
-      useResource={useResource} useWorkspaces={neverWorkspaces}
+      useResource={useResource} useWorkspaces={neverHook}
       startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
       renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
@@ -163,9 +150,9 @@ describe('SidebarRoot shell', () => {
   it('retains the local-build fallback without complete build metadata', () => {
     render(<SidebarRoot
       collapsed={false} width={300}
-      useSessions={sessionsHook()} useSessionPendingInteraction={useSessionPendingInteraction}
+      useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])}
-      useResource={useResource} useWorkspaces={neverWorkspaces}
+      useResource={useResource} useWorkspaces={neverHook}
       startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
       renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
@@ -189,12 +176,9 @@ describe('SidebarRoot shell', () => {
     vi.useFakeTimers()
     const b = mountShell()
     b.rerender({ collapsed: true })
-    // Wide content survives the full column slide, then settles into the rail.
+    // Wide content survives the crossfade window, then settles into the rail.
     expect(b.regionOwner().wide).toBe(true)
-    vi.advanceTimersByTime(299)
-    b.rerender({})
-    expect(b.regionOwner().wide).toBe(true)
-    vi.advanceTimersByTime(1)
+    vi.advanceTimersByTime(200)
     b.rerender({})
     expect(b.regionOwner().wide).toBe(false)
     expect(b.footerActionOwner().wide).toBe(false)
@@ -208,4 +192,55 @@ describe('SidebarRoot shell', () => {
     expect(b.regionOwner().wide).toBe(false)
     expect(screen.getByRole('button', { name: 'Open sidebar' })).toBeTruthy()
   })
+
+  it('shows only the badge bubble while the rail badge is hovered inside the toggle', () => {
+    vi.useFakeTimers()
+    render(<SidebarRoot
+      collapsed width={56}
+      useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
+      usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])}
+      useResource={useResource} useWorkspaces={neverHook}
+      startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
+      renderSlot={((key: string) => key === 'sidebar.toggle.badge'
+        ? <Tooltip label="Update — V1.2.3"><span data-testid="badge" /></Tooltip>
+        : null) as SidebarRootComponentProps['renderSlot']}
+    />)
+    const toggle = screen.getByRole('button', { name: 'Open sidebar' })
+    fireEvent.mouseEnter(toggle)
+    act(() => { vi.advanceTimersByTime(500) })
+    expect(screen.getByRole('tooltip').textContent).toBe('Open sidebar')
+    // The badge's own bubble replaces the toggle's rather than stacking on it,
+    // even after the toggle's longer hover delay has elapsed.
+    fireEvent.mouseEnter(screen.getByTestId('badge'))
+    act(() => { vi.advanceTimersByTime(500) })
+    expect(screen.getAllByRole('tooltip').map(bubble => bubble.textContent)).toEqual(['Update — V1.2.3'])
+    fireEvent.mouseLeave(screen.getByTestId('badge'), { relatedTarget: toggle })
+    expect(screen.getByRole('tooltip').textContent).toBe('Open sidebar')
+    fireEvent.mouseLeave(toggle)
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+})
+
+it('keeps the macOS sidebar toggle in its top strip', () => {
+  document.documentElement.dataset.platform = 'darwin'
+  const shell = mountShell()
+  fireEvent.click(screen.getByRole('button', { name: en['toggle.collapse'] }))
+  expect(shell.toggleSidebar).toHaveBeenCalledOnce()
+})
+
+it.each([undefined, 'win32', 'linux', 'darwin'])('shows header sidebar controls only on macOS desktop (%s)', (platform) => {
+  if (platform !== undefined) document.documentElement.dataset.platform = platform
+  const toggleSidebar = vi.fn()
+  const startSession = vi.fn()
+  // This occupant only consumes its two actions and locale, not Session hooks.
+  const props = { toggleSidebar, startSession, t } as HeaderLeadingControlsProps
+  const view = render(<HeaderLeadingControls {...props} />)
+  if (platform !== 'darwin') {
+    expect(view.container.innerHTML).toBe('')
+    return
+  }
+  fireEvent.click(screen.getByRole('button', { name: en['toggle.open'] }))
+  fireEvent.click(screen.getByRole('button', { name: en['session.new.label'] }))
+  expect(toggleSidebar).toHaveBeenCalledOnce()
+  expect(startSession).toHaveBeenCalledOnce()
 })

@@ -34,7 +34,8 @@
     "acorn": "^8.17.0",
     "buffer": "^6.0.3",
     "picomatch": "^4.0.4",
-    "readable-stream": "^4.7.0"
+    "readable-stream": "^4.7.0",
+    "@deepseek-ai/dsh-client-web": "workspace:^"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
