@@ -49,7 +49,12 @@ interface PluginInvocation {
 }
 
 /** The resolved `dsh` invocation. Help, version, and errors exit inside {@link parseDshArgs}. */
-export type DshInvocation = ProfileInvocation | DumpConfigInvocation | PluginInvocation
+interface DesktopInvocation {
+  mode: 'desktop'
+  args: string[]
+}
+
+export type DshInvocation = ProfileInvocation | DumpConfigInvocation | PluginInvocation | DesktopInvocation
 
 /** Launcher flags for profile boot and configuration dumps. */
 interface BootOptions {
@@ -169,6 +174,18 @@ export function parseDshArgs(argv: readonly string[], version: string): DshInvoc
     })
 
   if (first === 'plugin') {
+    const desktop = program.command('desktop').description('open the Electron window around the web profile')
+    desktop
+      .helpOption(false)
+      .allowUnknownOption()
+      .passThroughOptions()
+      .enablePositionalOptions()
+      .argument('[args...]', 'arguments forwarded to the wrapped dsh web Host')
+      .action((args: string[]) => {
+        rejectParentOptions('desktop')
+        resolved = { mode: 'desktop', args }
+      })
+
     const plugin = program.command('plugin').description('manage a profile\'s plugins by forwarding the remaining arguments to pnpm in the profile directory')
     plugin
       .requiredOption('--profile <name>', 'the profile whose plugins to manage (initialized on first use)', selectProfile)

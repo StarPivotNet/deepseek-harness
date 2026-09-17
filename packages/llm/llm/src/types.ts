@@ -5,7 +5,7 @@
  */
 
 import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { FileAttachmentRef, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
+import type { FileAttachmentRef, ImageAttachmentRef, VideoAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type { ToolCallId, ProviderRequestId, ReasoningEffortId } from './brand.ts'
 import type { Message } from './message.ts'
 
@@ -94,6 +94,19 @@ export interface ImageBlock {
  * so adapters and providers see text in its place while the durable log keeps
  * the structured reference for presentation and authorization.
  */
+export interface VideoBlock {
+  type: 'video'
+  /** Immutable stored bytes and container metadata owned by the attachment service. */
+  attachment: VideoAttachmentRef
+}
+
+/**
+ * A durable verbatim file reference, valid in user content. Files never reach
+ * a provider natively: request assembly projects every occurrence to
+ * deterministic handle text (name, byte size, and the read-only saved path),
+ * so adapters and providers see text in its place while the durable log keeps
+ * the structured reference for presentation and authorization.
+ */
 export interface FileBlock {
   type: 'file'
   /** Immutable verbatim bytes and display metadata owned by the attachment service. */
@@ -126,6 +139,7 @@ export interface ContentBlockMap {
   'text': TextBlock
   'reasoning': ReasoningBlock
   'image': ImageBlock
+  'video': VideoBlock
   'file': FileBlock
   'tool-call': ToolCallBlock
   'tool-result': ToolResultBlock
@@ -218,6 +232,7 @@ export interface LlmProviderInfo {
 export interface ModelModalityMap {
   text: 'text'
   image: 'image'
+  video: 'video'
 }
 
 /** Any declared provider model modality. */
@@ -309,10 +324,23 @@ export interface LlmDiscoveredModel {
   contextWindow?: number
   /** Maximum output tokens, when disclosed. */
   maxTokens?: number
+  /**
+   * Selectable reasoning efforts the listing disclosed, keyed by the
+   * adapter-owned level id a selector would offer. A value is the wire
+   * spelling dispatch should send; `off` may be `null` meaning "supported,
+   * send nothing". Absence means the listing did not describe reasoning.
+   */
+  reasoningEfforts?: Readonly<Record<string, string | null>>
+  /**
+   * Whether the endpoint accepts a reasoning-effort parameter for this
+   * model. Absence means the listing did not say.
+   */
+  supportsReasoningEffort?: boolean
   /** Accepted input types when disclosed by the catalog or endpoint; absent means unknown. */
   inputModalities?: readonly ModelModality[]
 }
 
+/** One adapter-discovered model; catalog membership is advisory, not request validation. */
 /** One adapter-discovered model; catalog membership is advisory, not request validation. */
 export interface LlmModelInfo {
   /** Provider route that owns this model entry. */
