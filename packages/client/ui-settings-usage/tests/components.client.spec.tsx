@@ -18,13 +18,17 @@ function props(load: UsageSectionInjected['load']): UsageSectionProps {
   return { t, load } as UsageSectionProps
 }
 
+function metricText(label: string): string | null {
+  return screen.getByText(label).parentElement?.querySelector('dd')?.textContent ?? null
+}
+
 const OVERVIEW: UsageOverviewValue = {
-  tokens: 30,
-  peakTokens: 20,
+  tokens: 5_940_000_000,
+  peakTokens: 260_000_000,
   durationMs: 5_000,
-  peakDurationMs: 5_000,
-  currentStreakDays: 2,
-  longestStreakDays: 2,
+  peakDurationMs: (5 * 60 + 5) * 60_000,
+  currentStreakDays: 34,
+  longestStreakDays: 34,
   firstActivityAt: Date.parse('2026-03-04T00:00:00.000Z'),
   lastActivityAt: Date.parse('2026-03-05T00:00:00.000Z'),
   days: [
@@ -46,6 +50,12 @@ describe('UsageSection', () => {
     await act(async () => { deferred.resolve(OVERVIEW) })
     expect(load).toHaveBeenCalledOnce()
     expect(screen.getByText(zh.metricTokens)).toBeTruthy()
+    expect(metricText(zh.metricTokens)).toBe('59.4亿')
+    expect(metricText(zh.metricPeakTokens)).toBe('2.6亿')
+    expect(metricText(zh.metricLongestChat)).toBe('5小时5分')
+    expect(metricText(zh.metricCurrentStreak)).toBe('34 天')
+    expect(metricText(zh.metricLongestStreak)).toBe('34 天')
+    expect(document.querySelectorAll('[data-level]')).toHaveLength(364)
     expect(screen.getByText(zh.activity)).toBeTruthy()
     expect(screen.getByText(zh.trend)).toBeTruthy()
     expect(screen.getByText(zh.models)).toBeTruthy()

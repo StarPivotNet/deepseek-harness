@@ -6,7 +6,7 @@ The **Usage** settings section. The page sums provider-reported tokens and model
 
 The nav row sits after Skills (`order: 35`). The first mount calls `usage.overview` with the browser IANA zone; that RPC inspects Sessions without activating Agents and rebases UTC calendar rows onto the caller zone.
 
-Metric cards show lifetime tokens, peak tokens, longest assembled-message duration, and activity streaks. The heatmap, trend, and donut are local viewing state over that snapshot. Loading, empty, and generic failure states stay on the mounted component; a failed read can be retried without exposing transport details.
+Metric cards show lifetime tokens, peak tokens, longest assembled-message duration, and activity streaks. Compact magnitudes stay on one line. The heatmap, trend, and donut are local viewing state over that snapshot. Idle heatmap cells use the overlay fill so empty days remain a grid, and the 52-week grid fills the card width. Loading, empty, and generic failure states stay on the mounted component; a failed read can be retried without exposing transport details.
 
 ## Model Experience
 

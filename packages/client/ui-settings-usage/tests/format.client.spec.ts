@@ -26,7 +26,7 @@ describe('usage formatters', () => {
   })
 
   it('formats duration as hours and minutes', () => {
-    expect(formatDuration(11 * 3_600_000 + 54 * 60_000, tZh)).toBe('11 小时 54 分')
+    expect(formatDuration(11 * 3_600_000 + 54 * 60_000, tZh)).toBe('11小时54分')
     expect(formatDuration(90_000, tEn)).toBe('2m')
   })
 

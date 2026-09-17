@@ -10,7 +10,7 @@ export const zh = {
   metricCurrentStreak: '当前连续天数', metricLongestStreak: '最长连续天数',
   activity: 'Token 活动', activityDaily: '每日', activityWeekly: '每周', activityCumulative: '累计',
   range: '时间范围', range7: '近 7 日', range30: '近 30 日', trend: '每日 Token 趋势图', models: '模型用量',
-  tokensUnit: 'tokens', daysUnit: '{value} 天', hoursMinutes: '{hours} 小时 {minutes} 分', minutesOnly: '{minutes} 分',
+  tokensUnit: 'tokens', daysUnit: '{value} 天', hoursMinutes: '{hours}小时{minutes}分', minutesOnly: '{minutes}分',
   'number.groupSeparator': ',', 'number.thousand': '{value}K', 'number.million': '{value}M',
   'number.wan': '{value}万', 'number.yi': '{value}亿',
   'month.1': '1月', 'month.2': '2月', 'month.3': '3月', 'month.4': '4月', 'month.5': '5月', 'month.6': '6月',
