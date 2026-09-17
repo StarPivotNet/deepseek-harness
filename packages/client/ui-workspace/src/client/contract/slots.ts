@@ -124,7 +124,7 @@ export type WorkspaceBrowserInjected = {
   /** Fork a Session at its last completed turn and open the child. */
   forkSession: (sessionId: SessionId) => void
   /** Restore the Completed reminder so the Session returns to that section. */
-  markUnread: (sessionId: SessionId) => void
+  markUnread?: (sessionId: SessionId) => void
   /** Open a filesystem path in the Host operating system's default application. */
   openPath: (path: string) => Promise<void>
   /** Open a Session and show it beside the current conversation. */

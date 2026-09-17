@@ -300,6 +300,13 @@ class TestSessionReference implements SessionReference {
  * behavior/calls/stubs) are bench-only surface.
  */
 export class TestSessions implements ISessions {
+  markUnread(_id: SessionId): void {}
+  async rewrite(_opts: {
+    sessionId: SessionId
+    atSeq: number
+    content: import('@deepseek-ai/dsh-api-session-controller').PromptContentPart[]
+  }): Promise<void> {}
+
   /** The useSessions catalog feed, independent of view ownership. */
   readonly list: SnapshotStore<SessionListState>
   private readonly records = new Map<SessionId, SessionRecord>()
