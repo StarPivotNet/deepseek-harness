@@ -320,7 +320,8 @@ function handleUpdate(
     binName: 'plugin-marketplace',
     installAnchor: profile.installAnchor,
     profileDir: profile.dir,
-    before,
+    before: { manifest: before, dependencies: [] },
+    preserveDisabled: true,
   })
   return {
     kind: 'success',

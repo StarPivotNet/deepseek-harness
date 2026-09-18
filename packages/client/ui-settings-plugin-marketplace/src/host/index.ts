@@ -12,7 +12,7 @@ import {
   readProfilePatches,
   reconcileProfilePlugins,
   runProfilePnpm,
-  writeProfilePatches,
+  writeProfilePatches, readProfilePlugins,
   type ProfileHandle,
 } from '@deepseek-ai/dsh-app-boot'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
@@ -360,7 +360,17 @@ export function apply(ctx: Context, config: Config = {}): void {
           return fail('not-toggleable', `${listed.packageName} cannot be enabled or disabled as a single entry`)
         }
         const profile = requireProfile(ctx)
-        const patches = readProfilePatches('plugin-marketplace', profile.dir)
+        const patches = readProfilePatches('plugin-marketplace', {
+          name: profile.name,
+          dir: profile.dir,
+          patchPath: join(profile.dir, 'cordis.patch.yml'),
+          installAnchor: profile.installAnchor,
+          cwd: profile.dir,
+          home: profile.dir,
+          startedBundles: [],
+          overlays: [],
+          telemetryDisabledEnv: undefined,
+        })
         writeProfilePatches(profile.dir, applyEnablement(patches, request.entryId, request.enabled))
         return { ok: true }
       })
@@ -635,7 +645,8 @@ function runPnpm(ctx: Context, args: readonly string[]): PluginMutationResult {
     binName: 'plugin-marketplace',
     installAnchor: profile.installAnchor,
     profileDir: profile.dir,
-    before,
+    before: { manifest: before, dependencies: [] },
+    preserveDisabled: true,
   })
   return { ok: true, restartRequired: true }
 }

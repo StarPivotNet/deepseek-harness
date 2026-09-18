@@ -173,7 +173,18 @@ export function parseDshArgs(argv: readonly string[], version: string): DshInvoc
       resolved = resolveBoot(program, profile, options, args)
     })
 
-  if (first === 'plugin') {
+  const rejectParentOptions = (command: string): void => {
+    const parent = program.opts<BootOptions & { profile?: string }>()
+    if (parent.profile !== undefined || parent.patch !== undefined
+      || parent.dumpConfig !== undefined || parent.dumpDefaultConfig !== undefined
+      || parent.fromDefaultProfile !== undefined) {
+      program.error(
+        `error: ${command} takes none of parent --profile, --from-default-profile, --patch, --dump-config, or --dump-default-config`,
+      )
+    }
+  }
+
+  if (first === 'plugin' || first === 'desktop') {
     const desktop = program.command('desktop').description('open the Electron window around the web profile')
     desktop
       .helpOption(false)
@@ -200,7 +211,7 @@ export function parseDshArgs(argv: readonly string[], version: string): DshInvoc
   }
 
   try {
-    const expanded = first !== undefined && !first.startsWith('-') && first !== 'plugin'
+    const expanded = first !== undefined && !first.startsWith('-') && first !== 'plugin' && first !== 'desktop'
       ? ['--profile', ...argv]
       : argv
     program.parse(expanded, { from: 'user' })

@@ -540,7 +540,7 @@ export function resolveProfiles(
         displayName,
         ...api === undefined ? {} : { api },
         ...baseURL === undefined ? {} : { baseURL },
-        models: catalog.models,
+        models: catalog.models as never,
         namesCredential: source.apiKeyEnv !== undefined || catalog.configuredApiKeys.size > 0,
       })
     } catch (error) {

@@ -95,6 +95,10 @@ export async function prepareOfficeSkillAssets(source: string, destination: stri
 export async function preparePrimaryRuntime(options: { deferSmoke?: boolean } = {}): Promise<void> {
   const target = resolveDesktopBuildTarget()
   const paths = resolveDesktopTargetBuildPaths()
+  if (target === 'linux-x64') {
+    mkdirSync(join(paths.runtime, 'node'), { recursive: true })
+    return
+  }
   const artifact = lock.targets[target]
   mkdirSync(paths.runtime, { recursive: true })
   mkdirSync(paths.downloads, { recursive: true })
