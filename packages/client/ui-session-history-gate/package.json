@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-session-history-gate",
   "description": "General settings row gating the model-facing session-history tools",
-  "version": "0.1.6-alpha.3.1",
+  "version": "0.1.6-alpha.3.2",
   "publishConfig": {
     "access": "public"
   },
