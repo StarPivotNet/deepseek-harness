@@ -1,3 +1,8 @@
+export { EVENTS_ENDPOINT, RELOAD_ENDPOINT } from './events.ts'
+export {
+  AUTO_RELOAD_FIELD, CLIENT_HMR_SETTINGS_NAMESPACE, ClientHmrSettingsSchema,
+  DEFAULT_AUTO_RELOAD, type ClientHmrSettings,
+} from './hmr-settings.ts'
 /**
  * Host transport for Web client graph changes and rebuilt bundles. One interval
  * stat-polls every graph row's client bundle (polling by design: network mounts
@@ -18,7 +23,6 @@ import type { PluginsEventFrame } from './events.ts'
 import { EVENTS_ENDPOINT } from './events.ts'
 
 export type { PluginsEventFrame } from './events.ts'
-export { EVENTS_ENDPOINT } from './events.ts'
 
 /** Cordis plugin name. */
 export const name = 'client-hmr'

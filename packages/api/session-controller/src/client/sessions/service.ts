@@ -715,7 +715,7 @@ export class ClientSessions implements ISessions {
         ...(address === undefined ? {} : { parentId: address.parentSessionId, origin: 'subagent' }),
       }
     }
-    this.list.set({ ids, byId, phase, subagentsByParent, jobsBySession })
+    this.list.set({ ids, byId, current: this.list.getSnapshot().current, phase, subagentsByParent, jobsBySession })
   }
 
   private startScopeDrop(

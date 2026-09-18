@@ -42,3 +42,6 @@ export function parsePluginsEventFrame(value: unknown): PluginsEventParseResult 
 
 /** System SSE endpoint pushing graph/rebuilt frames (wire protocol constant). */
 export const EVENTS_ENDPOINT = '/plugins/events'
+
+/** POST endpoint that reloads every watched client plugin entry. */
+export const RELOAD_ENDPOINT = '/plugins/reload'
