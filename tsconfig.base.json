@@ -180,7 +180,6 @@
       "@deepseek-ai/dsh-session-route/client": ["./packages/session/session-route/src/client.ts"],
       "@deepseek-ai/dsh-llm-default-policy/defaults": ["./packages/llm/llm-default-policy/src/defaults.ts"],
       "@deepseek-ai/dsh-llm-default-policy/settings": ["./packages/llm/llm-default-policy/src/settings.ts"],
-      "@deepseek-ai/dsh-client-connection/client": ["./packages/client/connection/src/client/index.ts"],
       "@deepseek-ai/dsh-client-ui-automation": ["./packages/client/ui-automation/src"],
       "@deepseek-ai/dsh-client-ui-git-branch": ["./packages/client/ui-git-branch/src"],
       "@deepseek-ai/dsh-client-ui-session-history-gate": ["./packages/client/ui-session-history-gate/src"],

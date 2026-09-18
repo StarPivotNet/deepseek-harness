@@ -71,23 +71,6 @@ export function ComposerAttachments({
                   />
                 )
               }
-              if (attachment.kind === 'video') {
-                return (
-                  <div className={css.imageItem} data-video-chip>
-                    <div className={css.thumbnail}>
-                      <video src={attachment.previewUrl} controls preload="metadata" aria-label={attachment.file.name || t('video.label')} />
-                    </div>
-                    <button
-                      type="button"
-                      className={css.remove}
-                      aria-label={t('video.remove', { name: attachment.file.name })}
-                      onClick={() => { onRemoveAttachment(attachment.id) }}
-                    >
-                      <IconCloseFill14 size={12} />
-                    </button>
-                  </div>
-                )
-              }
               return (
                 <div className={css.imageItem}>
                   <button

@@ -23,18 +23,11 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 // Type-only: pulls the Session root standard-hook merge.
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
 import { UiWorkspaceService } from './navigation.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
-import { SessionOverflowPolicy } from './session-overflow-policy.ts'
-import { SessionOverflowRow } from './settings/SessionOverflowRow.tsx'
-import type { SessionOverflowRowInjected } from './settings/SessionOverflowRow.tsx'
-import {
-  WORKSPACE_SETTINGS_NAMESPACE, type WorkspaceSettings,
-} from './session-overflow.ts'
 import { en, zh, type WorkspaceKey } from './locales.ts'
 
 export type { UiWorkspace } from './navigation.ts'
@@ -74,8 +67,7 @@ const NS = 'workspace'
  * declaration through `slots.inject()` instead of assuming order.
  */
 export const inject = [
-  'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.directoryPicker', 'remote.session',
-  'settingsScope', 'layout',
+  'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.directoryPicker', 'layout',
 ]
 
 /**
@@ -91,20 +83,6 @@ export function apply(ctx: Context): void {
     ctx, ctx.remote.directoryPicker, workspaces, sessions)
   ctx.slots.provideRoot({ hooks: { workspaces: workspaces.list } })
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
-
-  const overflowPolicy = new SessionOverflowPolicy(
-    ctx.settingsScope.bind<WorkspaceSettings>({ namespace: WORKSPACE_SETTINGS_NAMESPACE }),
-  )
-  ctx.slots.inject('settings.general.item', () => ctx.slots.register({
-    name: 'settings.general.item',
-    id: 'session-overflow',
-    order: 21,
-    locale: NS,
-    inject: (): SessionOverflowRowInjected => ({
-      hooks: { sessionOverflowLimit: overflowPolicy.sessionOverflowLimit },
-      setSessionOverflowLimit: (limit) => { overflowPolicy.setSessionOverflowLimit(limit) },
-    }),
-  }, SessionOverflowRow))
 
   const searchSessions: WorkspaceBrowserInjected['searchSessions'] = async (query, signal) => {
     const result = await sessions.search(query, signal)
@@ -132,6 +110,7 @@ export function apply(ctx: Context): void {
     // the current Session Workspace before the recent-Workspace fallback.
     startSession: (workspaceId) => { uiWorkspace.startSession(workspaceId) },
     open: openSession,
+    markUnread: (sessionId) => { sessions.markUnread(sessionId) },
     searchSessions,
     searchResultLimit: sessions.searchResultLimit,
     renameSession: async (sessionId, title) => {
@@ -153,26 +132,9 @@ export function apply(ctx: Context): void {
     insertWorkspaceBefore: async (workspaceId, beforeWorkspaceId) => {
       await workspaces.insertBefore(workspaceId, beforeWorkspaceId)
     },
-    insertSessionBefore: async (workspaceId, sessionId, beforeSessionId) => {
-      await workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
-    },
     archiveSession: async (sessionId) => { await uiWorkspace.archiveSession(sessionId) },
     createWorkspace: input => workspaces.create(input),
-    markUnread: (sessionId) => { sessions.markUnread(sessionId) },
-    openPath: async (path) => {
-      const result = await ctx.remote.session.openWorkspacePath({ path })
-      if (!result.ok) throw new Error(result.error.message)
-    },
-    openSplit: (sessionId) => { sessions.open(sessionId) },
-    hideWorkspace: async (workspaceId) => { await workspaces.hide(workspaceId) },
-    showWorkspace: async (workspaceId) => { await workspaces.show(workspaceId) },
-    addWorkspaceFolder: (workspaceId, path) => workspaces.addFolder(workspaceId, path),
-    removeWorkspaceFolder: (workspaceId, path) => workspaces.removeFolder(workspaceId, path),
-    hooks: {
-      directoryFlow: browserFlowSource,
-      sessionOverflowLimit: overflowPolicy.sessionOverflowLimit,
-      hostInfo,
-    },
+    hooks: { directoryFlow: browserFlowSource, hostInfo },
   })
   const pickerInjected = (): WorkspacePickerInjected => ({
     createWorkspace: input => workspaces.create(input),

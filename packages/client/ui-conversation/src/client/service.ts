@@ -1,5 +1,5 @@
 /**
- * Scope-addressed conversation send, rewrite, cancel, and history orchestration.
+ * Scope-addressed conversation send, cancel, and history orchestration.
  *
  * Scope addressing rides the cordis Service tracker: property access through
  * `ctx.conversation` rebinds `this.ctx` to the caller's context, so methods
@@ -18,7 +18,7 @@ import type {
 } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-client-file-upload/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { ImageMediaType, VideoMediaType } from '@deepseek-ai/dsh-attachment'
+import type { ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type {
@@ -51,14 +51,6 @@ export interface IConversation {
    * @returns completion; business failures reject (and land in promptError).
    */
   send(text: string): Promise<void>
-  /**
-   * Rewrite a settled user prompt in this same session and start a new turn
-   * from the replacement. Failures also land in promptError.
-   * @param atSeq - current-surface `user/message` seq being edited.
-   * @param text - replacement text, sent verbatim as one text block.
-   * @returns completion; business failures reject.
-   */
-  rewrite(atSeq: number, text: string): Promise<void>
   /**
    * Apply one edit, remove, or Steer operation to a pending queue occurrence.
    * @param itemId - agent-owned inbox occurrence identity.
@@ -221,18 +213,6 @@ export class ConversationController extends Service implements IConversation {
   }
 
   /**
-   * Rewrite a settled user prompt in the scoped session. Business failures
-   * also land in the session snapshot's promptError.
-   * @param atSeq - current-surface `user/message` seq being edited.
-   * @param text - replacement text, sent verbatim as one text block.
-   */
-  async rewrite(atSeq: number, text: string): Promise<void> {
-    const session = this.scopedSession('rewrite')
-    const result = await session.rewrite(atSeq, [{ type: 'text', text }])
-    if (!result.ok) throw new Error(`conversation.rewrite failed: ${result.error.code}: ${result.error.message}`)
-  }
-
-  /**
    * Submit ordered draft attachments with text through one host admission. A local
    * submission echo enters the session snapshot synchronously; serialization
    * and the prompt round-trip start after the browser can paint it. On the
@@ -275,25 +255,11 @@ export class ConversationController extends Service implements IConversation {
           ...(attachment.height === undefined ? {} : { height: attachment.height }),
         },
       }
-      : attachment.kind === 'video'
-        ? {
-          type: 'video' as const,
-          value: {
-            previewUrl: attachment.previewUrl,
-            ...(attachment.file.name === '' ? {} : { name: attachment.file.name }),
-          },
-        }
-        : { type: 'file' as const, value: uploadFor(attachment).file })
+      : { type: 'file' as const, value: uploadFor(attachment).file })
     const serializeAttachments = (): Promise<Parameters<SessionFace['prompt']>[0]> => Promise.all(
-      attachments.map(async (attachment) => {
-        if (attachment.kind === 'image') {
-          return { type: 'image' as const, ...await this.encodeImage(attachment.file) }
-        }
-        if (attachment.kind === 'video') {
-          return { type: 'video' as const, ...await this.encodeVideo(attachment.file) }
-        }
-        return { type: 'file' as const, receiptId: uploadFor(attachment).receiptId }
-      }),
+      attachments.map(async attachment => attachment.kind === 'image'
+        ? { type: 'image' as const, ...await this.encodeImage(attachment.file) }
+        : { type: 'file' as const, receiptId: uploadFor(attachment).receiptId }),
     )
     const snapshot = session.getSnapshot()
     if (snapshot.subagent !== null) {
@@ -487,7 +453,6 @@ export class ConversationController extends Service implements IConversation {
     return {
       attachments: await Promise.all(attachments.map(async (attachment) => {
         if (attachment.kind === 'image') return { type: 'image' as const, ...await this.encodeImage(attachment.file) }
-        if (attachment.kind === 'video') return { type: 'video' as const, ...await this.encodeVideo(attachment.file) }
         const upload = uploads[attachment.id]
         if (upload === undefined || upload.status !== 'ready') {
           throw new Error('conversation.serializeDraftAttachments: one or more files have not finished uploading')
@@ -615,15 +580,6 @@ export class ConversationController extends Service implements IConversation {
       ...(file.name === '' ? {} : { name: file.name }),
     }
   }
-
-  /** Canonical base64 wire form of one browser video file. */
-  private async encodeVideo(file: File): Promise<Omit<Extract<SubmitAttachment, { type: 'video' }>, 'type'>> {
-    return {
-      mediaType: videoMediaType(file.type),
-      data: await base64ImageOf(file),
-      ...(file.name === '' ? {} : { name: file.name }),
-    }
-  }
 }
 
 function imageMediaType(value: string): ImageMediaType {
@@ -635,17 +591,6 @@ function imageMediaType(value: string): ImageMediaType {
       return value
     default:
       throw new UnsupportedImageMediaTypeError(value)
-  }
-}
-
-function videoMediaType(value: string): VideoMediaType {
-  switch (value) {
-    case 'video/mp4':
-    case 'video/x-matroska':
-    case 'video/quicktime':
-      return value
-    default:
-      throw new Error(`unsupported video media type: ${value}`)
   }
 }
 
