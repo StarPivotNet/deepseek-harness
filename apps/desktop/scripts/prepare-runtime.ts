@@ -1,7 +1,7 @@
 /** Prepare the target Electron distribution and pinned pnpm CLI. */
 
 import { execFileSync } from 'node:child_process'
-import { chmodSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
@@ -59,6 +59,20 @@ async function main(): Promise<void> {
     pnpm: pnpmVersion,
   }, undefined, 2)}\n`)
   await preparePrimaryRuntime({ deferSmoke: values['defer-primary-runtime-smoke'] })
+  mkdirSync(join(RUNTIME_ROOT, 'node'), { recursive: true })
+  const packedNode = join(
+    RUNTIME_ROOT,
+    'primary-runtime',
+    'dependencies',
+    'node',
+    'bin',
+    platform === 'win32' ? 'node.exe' : 'node',
+  )
+  const dest = join(RUNTIME_ROOT, 'node', platform === 'win32' ? 'node.exe' : 'node')
+  if (!existsSync(dest)) {
+    cpSync(existsSync(packedNode) ? packedNode : process.execPath, dest)
+    if (platform !== 'win32') chmodSync(dest, 0o755)
+  }
 }
 
 await main()
