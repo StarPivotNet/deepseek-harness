@@ -17,7 +17,7 @@ afterEach(cleanup)
 
 function emptySessions() {
   return bindSnapshotSelector(createSnapshotStore<SessionListState>({
-    ids: [], byId: {}, current: undefined, phase: 'ready', subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+    ids: [], byId: {}, current: undefined, phase: 'ready', subagentsByParent: {}, jobsBySession: {},
   }))
 }
 
@@ -27,10 +27,6 @@ function emptyWorkspaces() {
   }))
 }
 
-type AttentionSnapshot = Parameters<Parameters<SessionHistoryGateRowProps['useSessionPendingInteraction']>[0]>[0]
-const noAttention: AttentionSnapshot = new Map()
-const useSessionPendingInteraction: SessionHistoryGateRowProps['useSessionPendingInteraction'] =
-  selector => selector(noAttention)
 const useResource = (() => ({
   status: 'none' as const, value: undefined, failure: undefined, reload: () => {},
 })) as SessionHistoryGateRowProps['useResource']
@@ -47,7 +43,6 @@ function mount(options: { enabled?: boolean; writable?: boolean } = {}) {
   const preference = new SessionHistoryGatePreference(stub.scope)
   const props: SessionHistoryGateRowProps = {
     useSessions: emptySessions(),
-    useSessionPendingInteraction,
     usePanelInfo: (selector => selector({ activePanelId: null })) as SessionHistoryGateRowProps['usePanelInfo'],
     useResource,
     useWorkspaces: emptyWorkspaces(),

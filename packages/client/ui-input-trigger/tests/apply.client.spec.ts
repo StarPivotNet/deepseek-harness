@@ -8,6 +8,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it } from 'vitest'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { createScope, scopeOf } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { apply, inject, InputTriggerService } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
@@ -81,8 +82,9 @@ describe('apply', () => {
     // the erased registration widens it past a direct cast, so hop unknown.
     const injectEntry = entries[0]!.inject as unknown as (sessionId: SessionId) => MenuViewInjected
     const injected = injectEntry(sid('a'))
+    const sessions = ctx.get('sessions') as unknown as ISessions
     const controller = inputTriggers.sessionOf(
-      ctx.sessions.scope(sid('a'))!,
+      sessions.scope(sid('a'))!,
     )
     expect(injected.menu).toBe(controller.menu)
     expect(injected.headers).toBe(controller.headers)
