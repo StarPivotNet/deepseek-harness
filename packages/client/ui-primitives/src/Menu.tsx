@@ -15,6 +15,8 @@ export interface MenuItem {
   icon?: ReactNode
   /** Destructive row: error-colored text/icon and danger hover fill. */
   danger?: boolean
+  /** Optional keyboard shortcut label shown on the trailing edge. */
+  shortcut?: string
   /** Nested card opened to the right on hover/focus. */
   submenu?: readonly MenuItem[]
 }

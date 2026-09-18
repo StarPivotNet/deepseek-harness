@@ -1,3 +1,4 @@
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 /**
  * Unread Completed count forwarded to the desktop Host. The reminder bit lives
  * on each session-list row; this module only counts it.
@@ -9,7 +10,7 @@
  * @returns the unread Completed count.
  */
 export function unreadCompletedCount(
-  byId: Record<string, { completed?: boolean }>,
+  byId: Readonly<Record<SessionId, { readonly completed?: boolean }>>,
 ): number {
   let count = 0
   for (const row of Object.values(byId)) {

@@ -121,6 +121,13 @@ export type UseConversation = SnapshotSelectorHook<ConversationSnapshot>
 /** Selector hook over the registered Conversation View roster. */
 export type UseConversationViews = SnapshotSelectorHook<readonly ViewTab[]>
 
+export interface AssistantRouteOwnerProps {
+  provider?: string
+  model?: string
+  requestConfig?: { provider: string; model: string; reasoningEffort?: string } | null
+  provenance?: { provider: string; model: string } | null
+}
+
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
     /** Conversation shell beneath its root-scoped main-panel entry. */
@@ -178,8 +185,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'conversation.view': { kind: 'list'; scope: 'session'; owner: ConvViewOwnerProps }
     /** Selector-routed replacements for the current Session's resident composer. */
     'conversation.composer': { kind: 'chain'; scope: 'session'; owner: ComposerChainProps }
+    /** Model/route chip owned by the chat assistant-route plugin. */
+    'conversation.chat.assistantRoute': { kind: 'single'; scope: 'session'; owner: AssistantRouteOwnerProps }
     /** Workspace picker shown by the blank-session Hero. */
     'conversation.hero.workspace': { kind: 'single'; scope: 'root'; owner: EmptyWorkspaceOwnerProps }
+    /** Git branch chip on the blank-session Hero. */
+    'conversation.hero.branch': { kind: 'single'; scope: 'root'; owner: Record<string, never> }
     /** Brand mark shown before the blank-session headline. */
     'conversation.hero.brand.mark': { kind: 'single'; scope: 'root'; owner: HeroBrandMarkOwnerProps }
     /** Agent-preset control staged for a New Session. */

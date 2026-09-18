@@ -1,5 +1,6 @@
 /** Browser Conversation assemble core, React adapter, shell, and input plugin. */
 export { apply, Config, inject } from './apply.ts'
+export type { AssistantRouteOwnerProps } from './contract/slots.ts'
 export type { Config as ConversationConfig } from './apply.ts'
 export { UiConversation } from './conversation/assembly.ts'
 export type { ConversationBinding } from './conversation/assembly.ts'

@@ -57,6 +57,8 @@ export interface SessionListState {
   ids: SessionId[]
   /** Host/catalog rows plus local fallback rows for live Client generations; only `ids` expresses Host-list membership. */
   byId: Record<SessionId, SessionSummary>
+  /** Addressed Session used by navigation chrome such as the git-branch chip. */
+  current: SessionId | undefined
   /** Arrival lifecycle projected 1:1 from the manager snapshot (see SessionListPhase): empty-with-ready means "truly no sessions". */
   phase: SessionListPhase
   /** Direct durable catalogs keyed by their selected parent address. */
@@ -263,7 +265,7 @@ export class ClientSessions implements ISessions {
   ) {
     this.manager = new SessionManager(remote)
     this.list = createSnapshotStore<SessionListState>({
-      ids: [], byId: {}, phase: 'pending', subagentsByParent: {}, jobsBySession: {},
+      ids: [], byId: {}, current: undefined, phase: 'pending', subagentsByParent: {}, jobsBySession: {},
     })
     const disposeManagerProjection = this.manager.subscribe(() => { this.projectList() })
     rootCtx.effect(() => async () => {

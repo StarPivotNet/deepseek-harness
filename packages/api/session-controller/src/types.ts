@@ -174,6 +174,8 @@ export interface SessionSummary {
   readonly updatedAt: number
   readonly running: boolean
   readonly blank: boolean
+  /** Completed-turn reminder still unread in the desktop/session list. */
+  readonly completed?: boolean
   readonly interrupted?: true
   readonly parentSessionId?: SessionId
   readonly origin?: 'subagent' | 'automation'
