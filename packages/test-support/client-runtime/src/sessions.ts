@@ -177,6 +177,14 @@ export class FixtureSession implements SessionFace {
   rename(): never {
     throw new Error(`test session "${this.sessionId}": rename is not stubbed — supply it on the fixture's session face`)
   }
+
+  /**
+   * Fail-loud stub; supply `rewrite` on the fixture's session face to exercise it.
+   * @returns never — always throws.
+   */
+  rewrite(): never {
+    throw new Error(`test session "${this.sessionId}": rewrite is not stubbed — supply it on the fixture's session face`)
+  }
 }
 
 /** Catalog fixture data remains available across live Client generations. */
@@ -335,7 +343,7 @@ export class TestSessions implements ISessions {
    */
   constructor(private readonly stabilize: Stabilizer, private readonly rootCtx: Context) {
     this.list = createSnapshotStore<SessionListState>({
-      ids: [], byId: {}, phase: 'ready', subagentsByParent: {}, jobsBySession: {},
+      ids: [], byId: {}, current: undefined, phase: 'ready', subagentsByParent: {}, jobsBySession: {},
     })
     rootCtx.effect(() => async () => {
       this.closed = true

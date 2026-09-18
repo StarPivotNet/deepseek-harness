@@ -30,7 +30,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     /**
      * Host automation list in the expanded sidebar.
      */
-    'sidebar.automation': { kind: 'list'; scope: 'root'; owner: Record<never, never> }
+    'sidebar.automation': { kind: 'list'; scope: 'root'; owner: SidebarSectionOwnerProps }
     /**
      * Global panel icons. Each list id addresses the matching main panel;
      * the sidebar owns the button and resolves its label from list metadata.

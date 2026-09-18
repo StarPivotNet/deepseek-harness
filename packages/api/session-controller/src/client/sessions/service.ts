@@ -58,7 +58,7 @@ export interface SessionListState {
   /** Host/catalog rows plus local fallback rows for live Client generations; only `ids` expresses Host-list membership. */
   byId: Record<SessionId, SessionSummary>
   /** Addressed Session used by navigation chrome such as the git-branch chip. */
-  current: SessionId | undefined
+  current?: SessionId | undefined
   /** Arrival lifecycle projected 1:1 from the manager snapshot (see SessionListPhase): empty-with-ready means "truly no sessions". */
   phase: SessionListPhase
   /** Direct durable catalogs keyed by their selected parent address. */

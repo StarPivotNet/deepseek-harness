@@ -20,7 +20,7 @@ const OPTIONS = [{ id: 'zh', label: '中文' }, { id: 'en', label: 'English' }]
 
 function emptySessions() {
   const store = createSnapshotStore<SessionListState>(
-    { ids: [], byId: {}, phase: 'ready', subagentsByParent: {}, jobsBySession: {} })
+    { ids: [], byId: {}, current: undefined, phase: 'ready', subagentsByParent: {}, jobsBySession: {} })
   return bindSnapshotSelector(store)
 }
 function emptyWorkspaces() {
