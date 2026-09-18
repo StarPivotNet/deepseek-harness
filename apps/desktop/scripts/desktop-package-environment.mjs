@@ -14,6 +14,13 @@ const SHARED_SETTING = /^(?:DSH_DESKTOP_(?:APP_ID|AUTO_UPDATE_ENV|MANDATORY_UPDA
 const WINDOWS_SETTING = /^DSH_DESKTOP_WINDOWS_(?:CER_FILE|SIGNTOOL|KEY_CONTAINER|TOKEN_PIN)$/u
 const MACOS_SETTING = /^(?:DSH_DESKTOP_MACOS_(?:SIGNING_IDENTITY|TEAM_ID)|APPLE_(?:API_KEY|API_KEY_ID|API_ISSUER|ID|APP_SPECIFIC_PASSWORD|TEAM_ID|KEYCHAIN|KEYCHAIN_PROFILE)|CSC_(?:LINK|KEY_PASSWORD))$/u
 const AMBIENT_RELEASE_SETTING = /^(?:DSH_DESKTOP_(?:APP_ID|AUTO_UPDATE_ENV|MANDATORY_UPDATE_.*|WINDOWS_.*|MACOS_.*)|APPLE_.*|(?:WIN_)?CSC_.*|DOWNLOAD_(?:TEST|PROD)_.*)$/iu
+function unsignedForkEnvironment(environment) {
+  return {
+    ...Object.fromEntries(Object.entries(environment).filter(([name]) => !AMBIENT_RELEASE_SETTING.test(name))),
+    ...(environment.DSH_DESKTOP_APP_ID ? { DSH_DESKTOP_APP_ID: environment.DSH_DESKTOP_APP_ID } : {}),
+  }
+}
+
 const FILE_SETTINGS = ['DSH_DESKTOP_WINDOWS_CER_FILE', 'DSH_DESKTOP_WINDOWS_SIGNTOOL', 'APPLE_API_KEY', 'APPLE_KEYCHAIN', 'CSC_LINK']
 
 /**
@@ -25,7 +32,7 @@ const FILE_SETTINGS = ['DSH_DESKTOP_WINDOWS_CER_FILE', 'DSH_DESKTOP_WINDOWS_SIGN
  */
 export function loadDesktopPackageEnvironment(platform, environment = process.env, appRoot = APP_ROOT) {
   if (platform === 'linux') {
-    return { ...Object.fromEntries(Object.entries(environment).filter(([name]) => !AMBIENT_RELEASE_SETTING.test(name))) }
+    return unsignedForkEnvironment(environment)
   }
   const path = join(appRoot, platform === 'win32' ? '.env.windows' : '.env.macos')
   let contents
@@ -34,7 +41,7 @@ export function loadDesktopPackageEnvironment(platform, environment = process.en
   }
   catch {
     if (environment.DSH_DESKTOP_UNSIGNED_RUNTIME === '1' || environment.DSH_DESKTOP_UNSIGNED === '1') {
-      return { ...Object.fromEntries(Object.entries(environment).filter(([name]) => !AMBIENT_RELEASE_SETTING.test(name))) }
+      return unsignedForkEnvironment(environment)
     }
     throw new Error(`desktop package: cannot read ${path}; copy ${path}.example and fill in the local settings`)
   }
