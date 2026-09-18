@@ -431,7 +431,11 @@ function prepareDesktopRuntime(platform: DesktopPlatform): PreparedDesktopRuntim
     'scripts/package-target.ts',
     target,
     '--prepare-only',
-  ], root, { DSH_DESKTOP_UNSIGNED_RUNTIME: '1' })
+  ], root, {
+    DSH_DESKTOP_UNSIGNED_RUNTIME: '1',
+    DSH_DESKTOP_UNSIGNED: '1',
+    DSH_DESKTOP_APP_ID: 'ai.deepseek.dsh.desktop',
+  })
   const targetRoot = join(desktopBuildTargets, target)
   const runtime = join(targetRoot, 'runtime')
   const dsh = join(targetRoot, 'dsh')

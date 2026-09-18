@@ -81,6 +81,8 @@ function requireReadableFile(environment, name) {
  */
 export function validateDesktopPackageEnvironment(environment, target, options = {}) {
   resolveDesktopAppId(environment)
+  const unsignedRuntime = environment.DSH_DESKTOP_UNSIGNED_RUNTIME === '1' || environment.DSH_DESKTOP_UNSIGNED === '1' || options.unsigned
+  if (unsignedRuntime) return
   resolveDesktopPolicyEnvironment(environment)
   if (options.unsigned) return
   if (!options.prepareOnly) resolveDesktopAutoUpdateConfig(environment, target.platform, target.arch)
