@@ -22,13 +22,13 @@ function mount(options: { enabled?: boolean; writable?: boolean } = {}) {
     writable: options.writable ?? true,
   })
   const preference = new SessionHistoryGatePreference(stub.scope)
-  const props: SessionHistoryGateRowProps = {
+  const props = {
     useEnabled: bindSnapshotSelector(preference.enabled),
     useWritable: bindSnapshotSelector(preference.writable),
     useSaving: bindSnapshotSelector(preference.saving),
     setEnabled: (enabled) => { preference.setEnabled(enabled) },
     t: makeTranslate(en),
-  }
+  } as SessionHistoryGateRowProps
   render(<SessionHistoryGateRow {...props} />)
   return { preference, stub, row: screen.getByRole('checkbox', { name: 'Session history tools' }) }
 }

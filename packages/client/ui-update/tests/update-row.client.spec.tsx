@@ -22,13 +22,13 @@ function mountRow(status: ProductUpdateUiStatus) {
   const checkNow = vi.fn()
   const dismiss = vi.fn()
   const openRelease = vi.fn()
-  const props: UpdateRowProps = {
+  const props = {
     useStatus: bindSnapshotSelector(createSnapshotStore(status)),
     checkNow,
     dismiss,
     openRelease,
     t: makeTranslate(en),
-  }
+  } as UpdateRowProps
   render(<UpdateRow {...props} />)
   return { checkNow, dismiss, openRelease }
 }
@@ -36,12 +36,12 @@ function mountRow(status: ProductUpdateUiStatus) {
 function mountToast(status: ProductUpdateUiStatus) {
   const dismiss = vi.fn()
   const openRelease = vi.fn()
-  const props: UpdateToastProps = {
+  const props = {
     useStatus: bindSnapshotSelector(createSnapshotStore(status)),
     dismiss,
     openRelease,
     t: makeTranslate(en),
-  }
+  } as UpdateToastProps
   render(<UpdateToast {...props} />)
   return { dismiss, openRelease }
 }
