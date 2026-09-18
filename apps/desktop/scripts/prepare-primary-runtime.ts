@@ -113,6 +113,9 @@ export async function preparePrimaryRuntime(options: { deferSmoke?: boolean } = 
         numpy: lock.pythonPackages.numpy, pandas: lock.pythonPackages.pandas,
       },
     }, undefined, 2)}\n`)
+    const hostRequire = createRequire(resolve(import.meta.dirname, '..', '..', 'desktop-host', 'package.json'))
+    await prepareOfficeSkillAssets(join(dirname(hostRequire.resolve('@deepseek-ai/dsh-skill-office/package.json')), 'assets'),
+      join(paths.runtime, 'office-skills'))
     return
   }
   const artifact = lock.targets[target]
