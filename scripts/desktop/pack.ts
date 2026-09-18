@@ -426,11 +426,10 @@ function prepareDesktopRuntime(platform: DesktopPlatform): PreparedDesktopRuntim
   run(pnpmBin(), [
     '--dir',
     join('apps', 'desktop'),
-    'exec',
-    'tsx',
-    'scripts/package-target.ts',
+    'run',
+    'prepare:package',
+    '--',
     target,
-    '--prepare-only',
   ], root, {
     DSH_DESKTOP_UNSIGNED_RUNTIME: '1',
     DSH_DESKTOP_UNSIGNED: '1',
