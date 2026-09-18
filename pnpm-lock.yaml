@@ -2326,7 +2326,8 @@ importers:
         version: 15.0.0
       open:
         specifier: ^11.0.0
-        version: 11.0.0      '@deepseek-ai/dsh-automation':
+        version: 11.0.0
+      '@deepseek-ai/dsh-automation':
         specifier: workspace:^
         version: link:../../automation/automation
       '@deepseek-ai/dsh-client-ui-automation':
