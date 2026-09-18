@@ -9,7 +9,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { generationLogPath } from '../../../packages/session/session-persistence-jsonl/src/format.ts'
 import { scanZstdFrames } from '../../../packages/session/session-persistence-jsonl/src/zstd.ts'
 import type {} from '@deepseek-ai/dsh-agent-presets'
-import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+import type {} from '@deepseek-ai/dsh-api-session-controller'
 import { normalizeSessionSnapshots } from '@deepseek-ai/dsh-session-snapshot'
 import { launchWebScaffold, webSnapshotMode } from './scaffold.ts'
 

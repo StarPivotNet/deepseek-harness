@@ -151,7 +151,7 @@ class ClientRemoteService extends Service implements ClientRemote {
   constructor(ctx: Context) {
     super(ctx, 'remote')
     this.ownerCtx = ctx
-    const connection = ctx.get('connection') as ConnectionHandle
+    const connection = ctx.get('connection') as unknown as ConnectionHandle
     this.connection = connection
     this.events = new ClientRemoteEvents(
       ctx,
