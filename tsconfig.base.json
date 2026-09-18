@@ -197,6 +197,8 @@
       "@deepseek-ai/dsh-session-control/invariant": ["./packages/session-query/session-control/src/invariant.ts"],
       "@deepseek-ai/dsh-session-history-gate": ["./packages/session-query/session-history-gate/src"],
       "@deepseek-ai/dsh-session-route": ["./packages/session/session-route/src"],
+      "@deepseek-ai/dsh-session-route/client": ["./packages/session/session-route/src/client.ts"],
+      "@deepseek-ai/dsh-session-route/types": ["./packages/session/session-route/src/types.ts"],
       "@deepseek-ai/dsh-session-route/invariant": ["./packages/session/session-route/src/invariant.ts"],
       "@deepseek-ai/dsh-tool-automation": ["./packages/automation/tool-automation/src"],
       "@deepseek-ai/dsh-tool-automation/invariant": ["./packages/automation/tool-automation/src/invariant.ts"],

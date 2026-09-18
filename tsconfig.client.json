@@ -39,7 +39,12 @@
   // belongs to the host aggregate, which excludes this program's `*.client.*`
   // in turn. `exclude` wins over `include`, so the test glob above stays broad.
   "exclude": [
-    "packages/client/*/tests/**/*.host.spec.ts"
+    "packages/client/*/tests/**/*.host.spec.ts",
+    "packages/*/*/tests/**/*.host.spec.ts",
+    "packages/api/session-controller/src/agent.ts",
+    "packages/api/session-controller/src/history.ts",
+    "packages/api/session-controller/src/assistant-stream.ts",
+    "packages/api/session-controller/src/index.ts"
   ],
   "references": [
     { "path": "./packages/client/ui-sidebar-terminal" },
@@ -100,6 +105,7 @@
     { "path": "./packages/client/ui-goal" },
     { "path": "./packages/client/ui-message-feedback" },
     { "path": "./packages/client/ui-model-selection" },
+    { "path": "./packages/session/session-route" },
     { "path": "./packages/client/ui-agent-preset" },
     { "path": "./packages/client/ui-permission-presets" },
     { "path": "./packages/client/ui-plan" },
