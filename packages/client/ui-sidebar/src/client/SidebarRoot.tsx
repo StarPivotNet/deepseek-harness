@@ -268,7 +268,7 @@ export function SidebarRoot({
       </Tooltip>
 
       <div className={css.automationArea} data-dsh-sidebar-actions="">
-        {renderSlot('sidebar.automation', { wide })}
+        {renderSlot('sidebar.automation', { wide, expandSidebar: toggleSidebar })}
       </div>
       {panels.length > 0 && (
         <nav className={css.panelList} aria-label={t('panels.label')}>
