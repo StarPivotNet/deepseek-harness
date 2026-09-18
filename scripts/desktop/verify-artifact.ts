@@ -115,7 +115,13 @@ export function verifyArchiveStructure(extractRoot: string): readonly string[] {
   if (!existsSync(join(resources, 'app.asar.unpacked', 'dsh'))) fail('app.asar.unpacked/dsh is missing (native payload not unpacked)')
   steps.push('native payload unpacked')
 
-  if (asarEntry(header.directory, 'renderer/startup.html') === undefined) fail('renderer/startup.html is missing inside app.asar')
+  if (asarEntry(header.directory, 'renderer/mandatory-update.html') === undefined) {
+    fail('renderer/mandatory-update.html is missing inside app.asar')
+  }
+  if (asarEntry(header.directory, 'renderer/update-dialog.html') === undefined) {
+    fail('renderer/update-dialog.html is missing inside app.asar')
+  }
+  if (asarEntry(header.directory, 'package.json') === undefined) fail('package.json is missing inside app.asar')
   steps.push('renderer shell inside asar')
 
   const bare = bareNpmImports(readAsarMember(asarPath, header, 'lib/main.js').toString('utf8'))

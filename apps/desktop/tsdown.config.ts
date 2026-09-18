@@ -12,7 +12,7 @@ export default defineConfig([
     clean: false,
     // The asar ships lib/ alone with no node_modules: runtime dependencies
     // must be inlined, and electron stays external as the host-provided builtin.
-    deps: { neverBundle: ['electron'], alwaysBundle: ['electron-updater', 'semver'] },
+    deps: { neverBundle: ['electron'], alwaysBundle: ['electron-updater', 'electron-updater/out/electronHttpExecutor.js', 'semver'] },
   },
   ...(['preload-app', 'preload-mandatory', 'preload-update-dialog'] as const).map(name => ({
     // Sandboxed Electron preloads run as CommonJS even though the application package is ESM.
