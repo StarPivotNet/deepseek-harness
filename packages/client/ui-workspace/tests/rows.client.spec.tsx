@@ -361,8 +361,6 @@ describe('workspace browser rows', () => {
 
   it('workspace row menu opens on the ellipsis, renames, and shows the danger delete row', () => {
     const onRename = vi.fn()
-    const onAddFolder = vi.fn()
-    const onRemoveFolder = vi.fn()
     const onDelete = vi.fn()
     const onToggle = vi.fn()
     const group: GroupNode = {
@@ -371,7 +369,7 @@ describe('workspace browser rows', () => {
     }
     render(<ProjectRowItem
       group={group} onToggle={onToggle} onCreate={vi.fn()}
-      actions={{ rename: onRename, addFolder: onAddFolder, removeFolder: onRemoveFolder, delete: onDelete }} t={t}
+      actions={{ rename: onRename, delete: onDelete }} t={t}
     />)
     fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
     // Opening the menu neither toggles the group nor renames yet.
@@ -381,59 +379,14 @@ describe('workspace browser rows', () => {
     expect(onRename).toHaveBeenCalledOnce()
     expect(screen.queryByRole('menu')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: '添加文件夹…' }))
-    expect(onAddFolder).toHaveBeenCalledOnce()
-    fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
     fireEvent.click(screen.getByRole('menuitem', { name: '删除工作区' }))
     expect(screen.queryByRole('menu')).toBeNull()
     expect(onRename).toHaveBeenCalledOnce()
-    expect(onRemoveFolder).not.toHaveBeenCalled()
     expect(onDelete).toHaveBeenCalledOnce()
     // Escape closes without selecting (Menu onClose path).
     fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('menu')).toBeNull()
-  })
-
-  it('visible Workspace menu offers Hide as the primary action without a confirmation dialog', () => {
-    const onHide = vi.fn()
-    const onRename = vi.fn()
-    const group: GroupNode = {
-      key: 'project', workspaceId: wid('project'), cwd: '/projects/project', createdAt: 0, label: 'Project',
-      sessionCount: 0, expanded: false, containsCurrent: false, sessions: [],
-    }
-    render(<ProjectRowItem
-      group={group} onToggle={vi.fn()} onCreate={vi.fn()}
-      actions={{ hide: onHide, rename: onRename, addFolder: vi.fn(), removeFolder: vi.fn(), delete: vi.fn() }} t={t}
-    />)
-    fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
-    const items = screen.getAllByRole('menuitem').map(item => item.textContent)
-    expect(items[0]).toBe('隐藏工作区')
-    expect(screen.queryByRole('menuitem', { name: '显示工作区' })).toBeNull()
-    fireEvent.click(screen.getByRole('menuitem', { name: '隐藏工作区' }))
-    expect(onHide).toHaveBeenCalledOnce()
-    expect(onRename).not.toHaveBeenCalled()
-    expect(screen.queryByRole('dialog')).toBeNull()
-  })
-
-  it('hidden Workspace menu is Show plus Delete and omits rename and folder edits', () => {
-    const onShow = vi.fn()
-    const onDelete = vi.fn()
-    const group: GroupNode = {
-      key: 'project', workspaceId: wid('project'), cwd: '/projects/project', folders: ['/extra'], createdAt: 0, label: 'Project',
-      sessionCount: 0, expanded: false, containsCurrent: false, sessions: [],
-    }
-    render(<ProjectRowItem
-      group={group} onToggle={vi.fn()} onCreate={vi.fn()}
-      actions={{ show: onShow, delete: onDelete }} t={t}
-    />)
-    fireEvent.click(screen.getByRole('button', { name: '工作区“Project”的操作' }))
-    expect(screen.getAllByRole('menuitem').map(item => item.textContent)).toEqual(['显示工作区', '删除工作区'])
-    expect(screen.queryByRole('menuitem', { name: '重命名' })).toBeNull()
-    expect(screen.queryByRole('menuitem', { name: '添加文件夹…' })).toBeNull()
-    fireEvent.click(screen.getByRole('menuitem', { name: '显示工作区' }))
-    expect(onShow).toHaveBeenCalledOnce()
-    expect(onDelete).not.toHaveBeenCalled()
   })
 
   it('workspace hover card shows its details and copies the full directory path', async () => {
@@ -442,7 +395,7 @@ describe('workspace browser rows', () => {
     const restoreClipboard = installClipboard(writeText)
     try {
       const group: GroupNode = {
-        key: 'project', workspaceId: wid('project'), cwd: '/projects/project', folders: ['/libs/shared'], createdAt: 0, label: 'Project',
+        key: 'project', workspaceId: wid('project'), cwd: '/projects/project', createdAt: 0, label: 'Project',
         sessionCount: 0, expanded: false, containsCurrent: false, sessions: [],
       }
       render(<ProjectRowItem group={group} onToggle={vi.fn()} onCreate={vi.fn()} t={t} />)
@@ -451,8 +404,6 @@ describe('workspace browser rows', () => {
       // Card body: full title + cwd + absolute creation time.
       expect(screen.getAllByText('Project')).toHaveLength(2)
       expect(screen.getByText('/projects/project')).toBeTruthy()
-      expect(screen.getByText('+1')).toBeTruthy()
-      expect(screen.getByText('/libs/shared')).toBeTruthy()
       expect(screen.getByText(/^创建于 \d+年\d+月\d+日 /)).toBeTruthy()
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: '复制: /projects/project' })) })
       expect(writeText).toHaveBeenCalledWith('/projects/project')
@@ -608,7 +559,7 @@ describe('workspace browser rows', () => {
     }
     const { rerender } = render(<ProjectRowItem
       group={group} onToggle={onToggle} onCreate={vi.fn()}
-      actions={{ rename: onRenameWorkspace, addFolder: vi.fn(), removeFolder: vi.fn(), delete: vi.fn() }} t={t}
+      actions={{ rename: onRenameWorkspace, delete: vi.fn() }} t={t}
     />)
     const workspaceRow = screen.getByRole('treeitem')
     expect(fireEvent.contextMenu(workspaceRow, { clientX: 48, clientY: 96 })).toBe(false)
@@ -629,7 +580,7 @@ describe('workspace browser rows', () => {
     const onReveal = vi.fn()
     const onSplit = vi.fn()
     const onMarkUnread = vi.fn()
-    rerender(<SessionNodeItem node={{ ...node, cwd: '/projects/project' }} currentId={undefined} now={0} onOpen={onOpen}
+    rerender(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={onOpen}
       onRename={onRenameSession} onFork={vi.fn()} onArchive={vi.fn()} onPin={onPin} onUnpin={onUnpin}
       onMarkUnread={onMarkUnread} onSplit={onSplit} onRevealPath={onReveal} t={t} />)
     const sessionRow = screen.getByRole('treeitem')
@@ -684,7 +635,7 @@ describe('workspace browser rows', () => {
     expect(onRenameSession).toHaveBeenCalledWith(node.id, 'One')
     expect(onOpen).not.toHaveBeenCalled()
 
-    rerender(<SessionNodeItem node={{ ...node, cwd: '/projects/project', pinned: true }} currentId={undefined} now={0} onOpen={onOpen}
+    rerender(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={onOpen}
       onRename={onRenameSession} onFork={vi.fn()} onArchive={vi.fn()} onPin={onPin} onUnpin={onUnpin}
       onMarkUnread={onMarkUnread} onSplit={onSplit} onRevealPath={onReveal} t={t} />)
     expect(fireEvent.contextMenu(screen.getByRole('treeitem'), { clientX: 72, clientY: 140 })).toBe(false)
@@ -696,7 +647,7 @@ describe('workspace browser rows', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
 
     const onArchive = vi.fn()
-    rerender(<SessionNodeItem node={{ ...node, cwd: '/projects/project' }} currentId={undefined} now={0} onOpen={onOpen}
+    rerender(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={onOpen}
       onRename={onRenameSession} onFork={vi.fn()} onArchive={onArchive} t={t} />)
     expect(fireEvent.contextMenu(screen.getByRole('treeitem'), { clientX: 72, clientY: 140 })).toBe(false)
     expect(screen.queryByRole('menuitem', { name: '置顶任务' })).toBeNull()
@@ -714,28 +665,6 @@ describe('workspace browser rows', () => {
     expect(fireEvent.contextMenu(screen.getByRole('treeitem'), { clientX: 72, clientY: 140 })).toBe(false)
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('menu')).toBeNull()
-  })
-
-  it('workspace context menu remove-folder and Escape close paths', () => {
-    const onRemoveFolder = vi.fn()
-    const group: GroupNode = {
-      key: 'project', workspaceId: wid('project'), cwd: '/projects/project', folders: ['/libs/shared'], createdAt: 0, label: 'Project',
-      sessionCount: 0, expanded: false, containsCurrent: false, sessions: [],
-    }
-    render(<ProjectRowItem
-      group={group} onToggle={vi.fn()} onCreate={vi.fn()}
-      actions={{ rename: vi.fn(), addFolder: vi.fn(), removeFolder: onRemoveFolder, delete: vi.fn() }} t={t}
-    />)
-    const workspaceRow = screen.getByRole('treeitem')
-    expect(fireEvent.contextMenu(workspaceRow, { clientX: 48, clientY: 96 })).toBe(false)
-    fireEvent.keyDown(document, { key: 'Escape' })
-    expect(screen.queryByRole('menu')).toBeNull()
-    expect(fireEvent.contextMenu(workspaceRow, { clientX: 48, clientY: 96 })).toBe(false)
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: '移除文件夹' }).parentElement as HTMLElement)
-    fireEvent.click(screen.getByRole('menuitem', { name: '/libs/shared' }))
-    expect(onRemoveFolder).toHaveBeenCalledWith('/libs/shared')
-    expect(fireEvent.contextMenu(workspaceRow, { clientX: 48, clientY: 96 })).toBe(false)
-    fireEvent.click(screen.getByRole('menuitem', { name: '重命名' }))
   })
 
   it('workspace row drag start writes the group key', () => {
@@ -768,7 +697,7 @@ describe('workspace browser rows', () => {
       const node: SessionNode = {
         id: sid('s-empty'), title: 'Empty', blank: false, running: false,
         runningSubagentCount: 0, completed: false,
-        hasActiveSchedule: false, updatedAt: 0, cwd: '',
+        hasActiveSchedule: false, updatedAt: 0,
       }
       render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
         onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} t={t} />)
@@ -796,7 +725,7 @@ describe('workspace browser rows', () => {
       const node: SessionNode = {
         id: sid('s-root'), title: 'Root', blank: false, running: false,
         runningSubagentCount: 0, completed: false,
-        hasActiveSchedule: false, updatedAt: 0, cwd: '/',
+        hasActiveSchedule: false, updatedAt: 0,
       }
       render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()}
         onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} t={t} />)
