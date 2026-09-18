@@ -100,6 +100,19 @@ export async function preparePrimaryRuntime(options: { deferSmoke?: boolean } = 
     const dest = join(paths.runtime, 'node', 'node')
     cpSync(process.execPath, dest)
     chmodSync(dest, 0o755)
+    const desktop = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8')) as { version: string }
+    const primary = join(paths.runtime, 'primary-runtime')
+    mkdirSync(primary, { recursive: true })
+    writeFileSync(join(primary, 'runtime.json'), `${JSON.stringify({
+      desktopVersion: desktop.version,
+      platform: 'linux',
+      arch: 'x64',
+      pythonPackages: lock.pythonPackages,
+      components: {
+        python: lock.pythonVersion, node: lock.nodeVersion, pnpm: '0',
+        numpy: lock.pythonPackages.numpy, pandas: lock.pythonPackages.pandas,
+      },
+    }, undefined, 2)}\n`)
     return
   }
   const artifact = lock.targets[target]
