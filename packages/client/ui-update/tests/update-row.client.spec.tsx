@@ -8,16 +8,6 @@ import { UpdateToast, type UpdateToastProps } from '../src/client/UpdateToast.ts
 import { en } from '../src/client/locales.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 
-type AttentionSnapshot = Parameters<Parameters<UpdateRowProps['useSessionPendingInteraction']>[0]>[0]
-const noAttention: AttentionSnapshot = new Map()
-const useSessionPendingInteraction: UpdateRowProps['useSessionPendingInteraction'] = selector => selector(noAttention)
-const runtime = {
-  useSessions: (() => { throw new Error('unused') }) as never,
-  useSessionPendingInteraction,
-  usePanelInfo: (selector => selector({ activePanelId: null })) as UpdateRowProps['usePanelInfo'],
-  useResource: (() => ({ status: 'none' as const, value: undefined, failure: undefined, reload: () => {} })) as never,
-  useWorkspaces: (() => { throw new Error('unused') }) as never,
-}
 
 afterEach(cleanup)
 
@@ -33,7 +23,6 @@ function mountRow(status: ProductUpdateUiStatus) {
   const dismiss = vi.fn()
   const openRelease = vi.fn()
   const props: UpdateRowProps = {
-    ...runtime,
     useStatus: bindSnapshotSelector(createSnapshotStore(status)),
     checkNow,
     dismiss,
@@ -48,7 +37,6 @@ function mountToast(status: ProductUpdateUiStatus) {
   const dismiss = vi.fn()
   const openRelease = vi.fn()
   const props: UpdateToastProps = {
-    ...runtime,
     useStatus: bindSnapshotSelector(createSnapshotStore(status)),
     dismiss,
     openRelease,

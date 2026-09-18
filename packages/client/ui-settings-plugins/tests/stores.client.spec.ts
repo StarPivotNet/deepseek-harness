@@ -1138,7 +1138,7 @@ describe('shared Subagent card actions', () => {
 
   it('retains a rejected model draft after limits save, and retries only that draft', async () => {
     const { limits, models, face, state } = card()
-    models.mutate.mockImplementationOnce(() => {})
+    models.mutate.mockImplementationOnce(async () => {})
     face.editLimit('maxDepth', '2')
     face.toggleEnabled()
     face.save()

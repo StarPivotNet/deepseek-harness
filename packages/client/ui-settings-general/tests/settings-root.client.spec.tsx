@@ -91,7 +91,7 @@ function mount({
     phase: 'ready', subagentsByParent: {}, jobsBySession: {},
   }
   const unusedHook = (() => { throw new Error('unused by SettingsRoot') }) as never
-  const props: SettingsRootComponentProps = {
+  const props = {
     useSessions: select => select(sessions),
     useSessionStatus,
     usePanelInfo, useSessionRetainInfo: () => undefined, useResource,
@@ -121,7 +121,7 @@ function mount({
       return select(current)
     },
     renderSlot,
-  }
+  } as SettingsRootComponentProps
   const view = render(<SettingsRoot {...props} />)
   const bump = (next: Row[]) => {
     act(() => {

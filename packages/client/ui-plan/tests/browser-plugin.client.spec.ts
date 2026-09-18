@@ -27,7 +27,7 @@ function providePreview(ctx: Context) {
   const removeType = vi.fn()
   const registerType = vi.fn((_definition: Parameters<Context['sidebarRightTabs']['register']>[0]) => removeType)
   const openResourceIn = vi.fn<Context['sidebarRight']['openResourceIn']>()
-  const subagentAddress = vi.fn(() => undefined)
+  const subagentAddress = vi.fn<(...args: never[]) => unknown>(() => undefined)
   ctx.provide('sessions', { subagentAddress } as never)
   ctx.provide('resources', { register: vi.fn(() => removeResources) })
   ctx.provide('sidebarRightTabs', { register: registerType })

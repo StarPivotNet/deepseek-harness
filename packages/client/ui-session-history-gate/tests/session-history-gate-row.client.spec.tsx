@@ -1,9 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { bindSnapshotSelector, makeTranslate, stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
 import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { SessionHistoryGateRow } from '../src/client/SessionHistoryGateRow.tsx'
@@ -14,22 +11,6 @@ import { en } from '../src/client/locales.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 
 afterEach(cleanup)
-
-function emptySessions() {
-  return bindSnapshotSelector(createSnapshotStore<SessionListState>({
-    ids: [], byId: {}, current: undefined, phase: 'ready', subagentsByParent: {}, jobsBySession: {},
-  }))
-}
-
-function emptyWorkspaces() {
-  return bindSnapshotSelector(createSnapshotStore<WorkspaceSnapshot>({
-    items: [], archivedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null,
-  }))
-}
-
-const useResource = (() => ({
-  status: 'none' as const, value: undefined, failure: undefined, reload: () => {},
-})) as SessionHistoryGateRowProps['useResource']
 
 /** Render the row over a real preference bound to a fresh stubbed scope. */
 function mount(options: { enabled?: boolean; writable?: boolean } = {}) {
@@ -42,10 +23,6 @@ function mount(options: { enabled?: boolean; writable?: boolean } = {}) {
   })
   const preference = new SessionHistoryGatePreference(stub.scope)
   const props: SessionHistoryGateRowProps = {
-    useSessions: emptySessions(),
-    usePanelInfo: (selector => selector({ activePanelId: null })) as SessionHistoryGateRowProps['usePanelInfo'],
-    useResource,
-    useWorkspaces: emptyWorkspaces(),
     useEnabled: bindSnapshotSelector(preference.enabled),
     useWritable: bindSnapshotSelector(preference.writable),
     useSaving: bindSnapshotSelector(preference.saving),
