@@ -67,7 +67,7 @@ const workspace = (id: string, sessionIds: string[], title = id): WorkspaceView 
 const workspaceState = (
   items: readonly WorkspaceView[],
   archivedSessionIds: readonly SessionId[] = [],
-): WorkspaceSnapshot => ({ items, archivedSessionIds, state: 'idle', phase: 'ready', error: null })
+): WorkspaceSnapshot => ({ items, archivedSessionIds, hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null })
 const noPendingInteraction: SessionStatusSnapshot = new Map()
 function hook<T>(snapshot: T) {
   return function select<S>(selector: (state: T) => S): S { return selector(snapshot) }
@@ -87,7 +87,7 @@ function dragData(): Pick<DataTransfer, 'effectAllowed' | 'dropEffect' | 'setDat
 
 function mount(overrides: Partial<WorkspaceBrowserProps> = {}) {
   const store = createWorkspaceViewStore().create()
-  const props: WorkspaceBrowserProps = {
+  const props = {
     wide: true,
     expandSidebar: vi.fn(),
     useSessions: hook(sessionState([])),
@@ -113,7 +113,7 @@ function mount(overrides: Partial<WorkspaceBrowserProps> = {}) {
     renderSlot: ((_name: string, owner: { open: boolean }) => (owner.open ? <div data-testid="directory-flow" /> : null)) as never,
     t,
     ...overrides,
-  }
+  } as WorkspaceBrowserProps
   const view = render(<WorkspaceBrowser {...props} />)
   return { view, props, store }
 }
