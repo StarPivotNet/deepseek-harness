@@ -2,7 +2,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, chmodSync } from 'node:fs'
 import { cp } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
@@ -97,6 +97,9 @@ export async function preparePrimaryRuntime(options: { deferSmoke?: boolean } = 
   const paths = resolveDesktopTargetBuildPaths()
   if (target === 'linux-x64') {
     mkdirSync(join(paths.runtime, 'node'), { recursive: true })
+    const dest = join(paths.runtime, 'node', 'node')
+    cpSync(process.execPath, dest)
+    chmodSync(dest, 0o755)
     return
   }
   const artifact = lock.targets[target]
