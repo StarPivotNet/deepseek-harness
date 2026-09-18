@@ -12,7 +12,7 @@ import {
   readProfilePatches,
   reconcileProfilePlugins,
   runProfilePnpm,
-  writeProfilePatches, readProfilePlugins,
+  writeProfilePatches,
   type ProfileHandle,
 } from '@deepseek-ai/dsh-app-boot'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'

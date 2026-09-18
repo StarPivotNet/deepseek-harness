@@ -300,7 +300,12 @@ async function main(): Promise<void> {
   let success = false
   try {
     if (target.platform === 'darwin') {
-      await withMacOSSigningKeychain(environment, signingEnvironment => packageTarget(invocation, signingEnvironment, run))
+      const skipSigning = invocation.prepareOnly
+        || invocation.unsigned
+        || environment.DSH_DESKTOP_UNSIGNED_RUNTIME === '1'
+        || environment.DSH_DESKTOP_UNSIGNED === '1'
+      if (skipSigning) await packageTarget(invocation, environment, run)
+      else await withMacOSSigningKeychain(environment, signingEnvironment => packageTarget(invocation, signingEnvironment, run))
     } else {
       await packageTarget(invocation, environment, run)
     }
