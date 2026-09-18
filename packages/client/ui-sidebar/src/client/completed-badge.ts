@@ -9,11 +9,11 @@
  * @returns the unread Completed count.
  */
 export function unreadCompletedCount(
-  byId: { readonly [sessionId: string]: { readonly completed?: boolean } | undefined },
+  byId: Readonly<Record<string, { readonly completed?: boolean }>>,
 ): number {
   let count = 0
   for (const row of Object.values(byId)) {
-    if (row.completed === true) count += 1
+    if (row?.completed === true) count += 1
   }
   return count
 }

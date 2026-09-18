@@ -135,7 +135,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     useDesktopUpdate, openDesktopUpdate,
   } = props
   const hostStartView = useHostStart === undefined
-    ? { startedAt: undefined as number | undefined, startCount: 0 }
+    ? { status: 'unavailable' as const, startCount: 0 }
     : useHostStart(s => s)
   const localeView = useLocale === undefined
     ? { preference: undefined as string | undefined, locales: [] as { id: string; label: string }[] }
@@ -144,7 +144,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     ? { preference: 'system' as string, fontSize: 14 }
     : useTheme(s => s)
   const desktopUpdateView = useDesktopUpdate === undefined
-    ? { presentation: undefined as { phase?: string } | undefined }
+    ? { failed: false, opening: false }
     : useDesktopUpdate(state => state)
   const [open, setOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)

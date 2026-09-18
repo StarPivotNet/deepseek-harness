@@ -176,8 +176,6 @@
       "@deepseek-ai/dsh-host-webserver": ["./packages/host/webserver/src"],
       "@deepseek-ai/dsh-host-frontend-static": ["./packages/host/frontend-static/src"],
       "@deepseek-ai/dsh-plugin-manager": ["./packages/boot/plugin-manager/src"],
-      "@deepseek-ai/dsh-session-route/types": ["./packages/session/session-route/src/types.ts"],
-      "@deepseek-ai/dsh-session-route/client": ["./packages/session/session-route/src/client.ts"],
       "@deepseek-ai/dsh-llm-default-policy/defaults": ["./packages/llm/llm-default-policy/src/defaults.ts"],
       "@deepseek-ai/dsh-llm-default-policy/settings": ["./packages/llm/llm-default-policy/src/settings.ts"],
       "@deepseek-ai/dsh-client-ui-automation": ["./packages/client/ui-automation/src"],

@@ -623,7 +623,7 @@ describe('Client Remote transport readiness', () => {
         await ctx.plugin({ inject: [], apply: applyConnection })
         await ctx.plugin({ inject, apply })
         await vi.advanceTimersByTimeAsync(0)
-        const connection = ctx.get('connection') as ConnectionHandle
+        const connection = ctx.get('connection') as unknown as ConnectionHandle
         expect(FakeWebSocket.sockets).toHaveLength(1)
         expect(connection.generation.getSnapshot()).toBeUndefined()
         await vi.advanceTimersByTimeAsync(110)

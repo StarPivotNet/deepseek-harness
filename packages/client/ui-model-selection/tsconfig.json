@@ -48,6 +48,9 @@
       "path": "../../core/session"
     },
     {
+      "path": "../../session/session-route"
+    },
+    {
       "path": "../../api/session-controller/tsconfig.client.json"
     },
     {

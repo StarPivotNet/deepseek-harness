@@ -56,7 +56,7 @@ export const inject = [
  * @param ctx - Client root context.
  */
 export function apply(ctx: Context): void {
-  const sessions = ctx.get('sessions') as ISessions
+  const sessions = ctx.get('sessions') as unknown as ISessions
   const chatSources = new WeakMap<SessionBinding, ObservableSnapshot<ChatSnapshot>>()
   const chatSource = (binding: SessionBinding): ObservableSnapshot<ChatSnapshot> => {
     let source = chatSources.get(binding)
