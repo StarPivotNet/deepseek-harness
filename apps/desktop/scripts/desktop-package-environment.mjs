@@ -24,12 +24,18 @@ const FILE_SETTINGS = ['DSH_DESKTOP_WINDOWS_CER_FILE', 'DSH_DESKTOP_WINDOWS_SIGN
  * @returns {NodeJS.ProcessEnv} Isolated environment with file-owned release settings.
  */
 export function loadDesktopPackageEnvironment(platform, environment = process.env, appRoot = APP_ROOT) {
+  if (platform === 'linux') {
+    return { ...Object.fromEntries(Object.entries(environment).filter(([name]) => !AMBIENT_RELEASE_SETTING.test(name))) }
+  }
   const path = join(appRoot, platform === 'win32' ? '.env.windows' : '.env.macos')
   let contents
   try {
     contents = readFileSync(path, 'utf8')
   }
   catch {
+    if (environment.DSH_DESKTOP_UNSIGNED_RUNTIME === '1' || environment.DSH_DESKTOP_UNSIGNED === '1') {
+      return { ...Object.fromEntries(Object.entries(environment).filter(([name]) => !AMBIENT_RELEASE_SETTING.test(name))) }
+    }
     throw new Error(`desktop package: cannot read ${path}; copy ${path}.example and fill in the local settings`)
   }
   let settings
