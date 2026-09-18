@@ -304,7 +304,7 @@ export class TestSessions implements ISessions {
   async rewrite(_opts: {
     sessionId: SessionId
     atSeq: number
-    content: import('@deepseek-ai/dsh-api-session-controller').PromptContentPart[]
+    content: import('@deepseek-ai/dsh-api-session-controller/types').PromptContentPart[]
   }): Promise<void> {}
 
   /** The useSessions catalog feed, independent of view ownership. */

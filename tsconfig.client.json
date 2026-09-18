@@ -40,11 +40,7 @@
   // in turn. `exclude` wins over `include`, so the test glob above stays broad.
   "exclude": [
     "packages/client/*/tests/**/*.host.spec.ts",
-    "packages/*/*/tests/**/*.host.spec.ts",
-    "packages/api/session-controller/src/agent.ts",
-    "packages/api/session-controller/src/history.ts",
-    "packages/api/session-controller/src/assistant-stream.ts",
-    "packages/api/session-controller/src/index.ts"
+    "packages/*/*/tests/**/*.host.spec.ts"
   ],
   "references": [
     { "path": "./packages/client/ui-sidebar-terminal" },

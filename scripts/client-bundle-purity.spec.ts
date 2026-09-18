@@ -173,7 +173,7 @@ describe('client bundle purity gate', () => {
   })
 
   it('admits package-specific requests only for the declaring bundle', () => {
-    const requesting = purityResolveId('@deepseek-ai/dsh-api-session-controller')
+    const requesting = purityResolveId('@deepseek-ai/dsh-api-session-controller/client')
     expect(requesting('@deepseek-ai/dsh-api-gateway/client')).toBeNull()
     expect(() => resolveId('@deepseek-ai/dsh-api-gateway/client')).toThrow(/purity/)
   })
