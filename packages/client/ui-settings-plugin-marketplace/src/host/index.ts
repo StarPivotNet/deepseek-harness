@@ -55,7 +55,7 @@ import {
 } from '../ids.ts'
 
 export const name = 'plugin-marketplace'
-export const inject = ['loader', 'profile', 'connection']
+export const inject = ['loader', 'profileContext', 'connection']
 export {
   MARKETPLACE_BUNDLE_PACKAGE,
   MARKETPLACE_CLIENT_ENTRY_ID,
@@ -456,8 +456,10 @@ function pinClientAutoReloadOff(ctx: Context): void {
 }
 
 function requireProfile(ctx: Context): ProfileHandle {
-  const profile = ctx.get('profile') as ProfileHandle | undefined
-  if (profile === undefined) throw new Error('plugin-marketplace: ctx.profile is required')
+  // 438c862fea renamed the launch service to profileContext; keep a
+  // fallback read of the pre-refactor name for mixed checkouts.
+  const profile = (ctx.get('profileContext') ?? ctx.get('profile')) as ProfileHandle | undefined
+  if (profile === undefined) throw new Error('plugin-marketplace: ctx.profileContext is required')
   return profile
 }
 
