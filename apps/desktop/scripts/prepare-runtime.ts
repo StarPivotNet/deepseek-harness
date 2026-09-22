@@ -2,7 +2,7 @@
 
 import { packagingStep } from './packaging-step.mjs'
 import { execFileSync } from 'node:child_process'
-import { chmodSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
@@ -23,6 +23,12 @@ function preparePnpm(): string {
   const destination = join(RUNTIME_ROOT, 'pnpm')
   rmSync(destination, { recursive: true, force: true })
   cpSync(packageDir, destination, { recursive: true })
+  // In-Host profile management (plugin marketplace installs) resolves pnpm
+  // from PATH by executable name; the npm package only ships JS entries.
+  const binDir = join(destination, 'bin')
+  const unixEntry = join(binDir, 'pnpm')
+  writeFileSync(unixEntry, '#!/bin/sh\nexec "$(dirname "$0")/../../node/node" "$(dirname "$0")/pnpm.cjs" "$@"\n', { mode: 0o755 })
+  writeFileSync(join(binDir, 'pnpm.cmd'), '@echo off\r\n"%~dp0..\\..\\node\\node.exe" "%~dp0pnpm.cjs" %*\r\n')
   return manifest.version
 }
 
@@ -53,6 +59,20 @@ async function main(): Promise<void> {
   }, undefined, 2)}\n`)
   await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'prepare:primary-runtime',
     () => preparePrimaryRuntime({ deferSmoke: values['defer-primary-runtime-smoke'] }))
+  mkdirSync(join(RUNTIME_ROOT, 'node'), { recursive: true })
+  const packedNode = join(
+    RUNTIME_ROOT,
+    'primary-runtime',
+    'dependencies',
+    'node',
+    'bin',
+    platform === 'win32' ? 'node.exe' : 'node',
+  )
+  const dest = join(RUNTIME_ROOT, 'node', platform === 'win32' ? 'node.exe' : 'node')
+  if (!existsSync(dest)) {
+    cpSync(existsSync(packedNode) ? packedNode : process.execPath, dest)
+    if (platform !== 'win32') chmodSync(dest, 0o755)
+  }
 }
 
 await main()
