@@ -418,6 +418,7 @@ function prepareTargetName(platform: DesktopPlatform): 'mac-arm64' | 'win-x64' |
  * @returns verified `runtime/` and `dsh/` roots.
  */
 function prepareDesktopRuntime(platform: DesktopPlatform): PreparedDesktopRuntime {
+  run(pnpmBin(), ['--dir', join('native', 'system', 'packages', 'entry'), 'run', 'build:js'], root)
   const target = prepareTargetName(platform)
   // Fork releases publish without Apple credentials; the enclosing unsigned
   // app is the trust root and native files keep linker ad-hoc signatures.

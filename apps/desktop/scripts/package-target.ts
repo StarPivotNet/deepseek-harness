@@ -23,8 +23,22 @@ import { DESKTOP_BUILD_VERSION_ENV, resolveDesktopBuildVersion, validateDesktopB
 import { suggestDesktopBuildVersion } from './desktop-build-version-discovery.ts'
 import { desktopBuildCommitEnvironment, readDesktopBuildCommit, resolveDesktopBuildCommit } from './desktop-build-commit.mjs'
 import { requireDesktopToolchain } from './desktop-toolchain-preflight.ts'
-import { withMacOSNotarizationProxy } from './macos-notarization-proxy.ts'
 
+
+async function withMacOSNotarizationProxy(
+  ...args: Parameters<typeof import('./macos-notarization-proxy.ts').withMacOSNotarizationProxy>
+): ReturnType<typeof import('./macos-notarization-proxy.ts').withMacOSNotarizationProxy> {
+  // Unsigned / non-macOS packs never configure a proxy. Importing the helper
+  // would load native flock.js, which CI does not build before prepare:package.
+  if (args[0] === undefined) {
+    const action = args[1]
+    const report = args[4]
+    report?.('not-used')
+    return action()
+  }
+  const { withMacOSNotarizationProxy: run } = await import('./macos-notarization-proxy.ts')
+  return run(...args)
+}
 const APP_ROOT = resolve(import.meta.dirname, '..')
 const REPOSITORY_ROOT = resolve(APP_ROOT, '..', '..')
 const WINDOWS_SIGNING_ENV_PREFIX = 'DSH_DESKTOP_WINDOWS_'
