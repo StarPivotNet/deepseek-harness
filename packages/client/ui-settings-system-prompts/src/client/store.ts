@@ -5,11 +5,17 @@
  */
 
 import type {
-  ClientRemote, SettingsNamespaceView,
+  SettingsNamespaceView,
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SystemPromptSectionView } from '@deepseek-ai/dsh-api-settings-controller/types'
 
 type RegisteredPromptSectionView = SystemPromptSectionView
+type SettingsWire = {
+  describe: () => Promise<{ ok: boolean; value?: { namespaces: SettingsNamespaceView[] }; error?: { message: string } }>
+  replace: (...args: unknown[]) => Promise<{ ok: boolean; value?: unknown; error?: { message: string } }>
+}
+type LlmWire = { listProviders: () => Promise<{ ok: boolean; value?: unknown; error?: { message: string } }> }
+type SystemPromptWire = { list: () => Promise<{ ok: boolean; value?: { sections?: unknown } }> }
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 
 /** Settings namespace this page reads and writes. */
@@ -219,7 +225,7 @@ export class SystemPromptsStore {
   private registered: readonly RegisteredPromptSectionView[] = []
 
   /** @param api - Settings, registered-section, and model-catalog wire faces. */
-  constructor(private readonly api: Pick<ClientRemote, 'settings' | 'llm' | 'systemPrompt'>) {}
+  constructor(private readonly api: { settings: SettingsWire; llm: LlmWire; systemPrompt?: SystemPromptWire }) {}
 
   /**
    * Refresh the namespace and catalog. Latest request wins.
@@ -237,11 +243,11 @@ export class SystemPromptsStore {
       const [settingsResponse, modelsResponse, sectionsResponse] = await Promise.all([
         this.api.settings.describe(),
         this.api.llm.listProviders(),
-        this.api.systemPrompt.list(),
+        this.api.systemPrompt?.list?.() ?? Promise.resolve({ ok: true, value: { sections: [] } }),
       ])
       if (generation !== this.generation) return
       if (!settingsResponse.ok) throw new Error(settingsResponse.error.message)
-      const view = settingsResponse.value.namespaces.find(entry => entry.ns === USER_SYSTEM_PROMPTS_NS)
+      const view = settingsResponse.value.namespaces.find((entry: SettingsNamespaceView) => entry.ns === USER_SYSTEM_PROMPTS_NS)
       if (view === undefined) {
         this.view = undefined
         this.store.update((state) => {
@@ -260,7 +266,12 @@ export class SystemPromptsStore {
       if (!modelsResponse.ok) {
         catalogError = modelsResponse.error.message
       } else {
-        catalog = (modelsResponse.value as readonly { id: string; name?: string }[]).map(p => ({ provider: p.id, providerName: p.name ?? p.id, model: p.id, modelName: p.name ?? p.id }))
+        catalog = (modelsResponse.value as readonly { id: string; name?: string }[]).map(provider => ({
+          provider: provider.id,
+          providerName: provider.name ?? provider.id,
+          model: provider.id,
+          modelName: provider.name ?? provider.id,
+        }))
       }
       let registered: readonly RegisteredPromptSectionView[] = []
       let builtInError: string | null = null

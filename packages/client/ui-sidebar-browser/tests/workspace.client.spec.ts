@@ -9,7 +9,7 @@ const workspace = (id: string, path: string, sessionIds: readonly SessionId[]): 
   workspaceId: id as WorkspaceId, path, title: path, sessionIds, createdAt: '', updatedAt: '',
 })
 const snapshot = (phase: WorkspaceSnapshot['phase'], items: readonly WorkspaceView[] = []): WorkspaceSnapshot => ({
-  phase, items, state: 'idle', error: null, archivedSessionIds: [], pinnedSessionIds: [],
+  phase, items, state: 'idle', error: null, archivedSessionIds: [], pinnedSessionIds: [], hiddenWorkspaceIds: [],
 })
 
 afterEach(() => { vi.restoreAllMocks() })

@@ -446,7 +446,7 @@ function pinClientAutoReloadOff(ctx: Context): void {
       })
     }
     pin()
-    const off = settingsCtx.on('settings/updated', (ns: unknown) => {
+    const off = settingsCtx.on('settings/document-updated', (ns: unknown) => {
       if (String(ns) === CLIENT_HMR_NAMESPACE) pin()
     })
     settingsCtx.effect(() => () => {

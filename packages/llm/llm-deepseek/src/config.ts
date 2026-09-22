@@ -77,7 +77,7 @@ export function plainOptions(config: Config): Options {
   return Object.fromEntries(Object.entries(config).map(([key, value]) => [key, isVolatile(value) ? value.get() : value]))
 }
 
-const catalogModel: z<DeepSeekCatalogModel> = z.object({
+const catalogModel = z.object({
   id: z.string().required(),
   name: z.string(),
   description: z.string(),
@@ -96,7 +96,7 @@ export const Config = z.object({
   reasoningEffort: z.union(['off', 'low', 'high', 'max']).volatile(),
   maxTokens: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_MAX_TOKENS).volatile(),
   defaultContextWindow: z.number().step(1).min(1).default(DEFAULT_CONTEXT_WINDOW).volatile(),
-  models: z.array(catalogModel).default(DEFAULT_MODELS).volatile(),
+  models: z.array(catalogModel).default(DEFAULT_MODELS as never).volatile(),
   streamIdleTimeoutMs: z.number().min(Number.MIN_VALUE).max(MAX_TIMER_DELAY_MS).default(DEFAULT_STREAM_IDLE_TIMEOUT_MS).volatile(),
   maxRequestFilesBytes: z.number().step(1).min(1).default(DEFAULT_MAX_REQUEST_FILES_BYTES).volatile(),
   maxInlineRequestImageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_INLINE_REQUEST_IMAGE_BYTES).volatile(),

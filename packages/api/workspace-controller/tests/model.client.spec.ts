@@ -68,7 +68,7 @@ function deferred<T>(): Deferred<T> {
   return { promise, reject, resolve }
 }
 
-class FakeWorkspaceRemote implements WorkspaceRemote {
+class FakeWorkspaceRemote {
   readonly initializeDefault = vi.fn<WorkspaceRemote['initializeDefault']>(async () => remoteOk({ workspace: workspace('default') }))
   readonly calls: Array<{ readonly method: string; readonly request: unknown }> = []
   onCreate: (request: WorkspaceCreateRequest) => Promise<RemoteResult<WorkspaceCreateValue>> = request =>
@@ -158,7 +158,7 @@ class FakeWorkspaceRemote implements WorkspaceRemote {
 }
 
 function modelFor(remote = new FakeWorkspaceRemote()): ClientWorkspaceModel {
-  return new ClientWorkspaceModel(remote)
+  return new ClientWorkspaceModel(remote as never)
 }
 
 function baseline(

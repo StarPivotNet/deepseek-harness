@@ -36,7 +36,7 @@ export function apply(ctx: Context): void {
   ctx.inject(['settings'], (settingsCtx) => {
     settingsCtx.settings.register(AUTOMATION_NAMESPACE, AutomationSettingsSchema)
     adopt()
-    settingsCtx.on('settings/updated', (ns) => {
+    settingsCtx.on('settings/document-updated', (ns) => {
       if (ns === AUTOMATION_NAMESPACE) adopt()
     })
   })

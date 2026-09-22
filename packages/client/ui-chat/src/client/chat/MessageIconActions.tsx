@@ -35,6 +35,14 @@ export interface MessageIconActionsProps {
   usageAction?: ReactNode
   /** The owning view's locale seat, passed down as a plain prop. */
   t: ChatViewSlotProps['t']
+  /** Begin in-place edit of this user message. */
+  onEdit?: (() => void) | undefined
+  /** Save the in-progress rewrite. */
+  onSaveEdit?: (() => void) | undefined
+  /** Cancel the in-progress rewrite. */
+  onCancelEdit?: (() => void) | undefined
+  /** Disable save while the draft is empty. */
+  saveDisabled?: boolean | undefined
 }
 
 /**

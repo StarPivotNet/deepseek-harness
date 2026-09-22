@@ -41,7 +41,7 @@ async function boot(models?: Messages.Options['models']) {
     baseURL: Messages.PUBLIC_BASE_URL,
     maxTokens: 4096,
     ...models === undefined ? {} : { models },
-  })
+  } as never)
   return ctx
 }
 const tool = { name: 'lookup_value', description: 'Read the requested value. Always call this tool to obtain a value.', parameters: { type: 'object', properties: { key: { type: 'string' } }, required: ['key'] } }

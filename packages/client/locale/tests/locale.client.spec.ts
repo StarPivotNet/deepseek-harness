@@ -171,7 +171,7 @@ describe('LocaleRuntime', () => {
   })
 
   it('clearLocale unsets the Host preference and returns to the browser-derived locale', () => {
-    const host = stubSettingsScope<LocaleSettings>()
+    const host = stubConfigForm<LocaleSettings>()
     const { svc, events } = make(host)
     svc.setLocale('en')
     expect(svc.getLocale().active).toBe('en')

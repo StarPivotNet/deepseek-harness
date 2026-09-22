@@ -1610,3 +1610,19 @@ export const IconMicrophoneOutlineRegular = (props: IconProps) => (
 export const IconMicrophoneOutlineMedium = (props: IconProps) => (
   <IconMicrophoneOutlineArtwork {...props} strokeWidth={ICON_MEDIUM_STROKE} />
 )
+
+/** Fork-era size-suffixed aliases mapped onto the official weight-named icons. */
+export const IconChevronDownOutline14 = IconChevronDownOutlineMedium
+export const IconChevronUpOutline14 = IconChevronUpOutlineMedium
+export const IconRefreshOutline14 = IconRefreshOutlineMedium
+export const IconRefreshOutline16 = IconRefreshOutlineMedium
+export const IconWarningOutline16 = IconWarningOutlineMedium
+export const IconApiOutline14 = IconApiOutlineMedium
+export const IconSearchOutline16 = IconSearchOutlineMedium
+export const IconEditOutline16 = IconEditOutlineMedium
+export const IconPlusOutline16 = IconPlusOutlineMedium
+export const IconTrashOutline16 = IconTrashOutlineMedium
+export const IconCloseOutline16 = IconCloseOutlineMedium
+export const IconClockOutline16 = IconClockOutlineMedium
+export const IconPlayOutline16 = IconPlayOutlineMedium
+export const IconBranchOutline16 = IconBranchOutlineMedium

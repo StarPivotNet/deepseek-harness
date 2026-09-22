@@ -22,10 +22,10 @@
  */
 
 import { stat } from 'node:fs/promises'
-import { Context } from '@deepseek-ai/cordis'
+import { Context, Service } from '@deepseek-ai/cordis'
 import { evaluate } from '@deepseek-ai/cordis-plugin-loader'
 import z from '@deepseek-ai/schemastery'
-import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { bindScopeParent, createScope, scopeOf, type Scope, type ScopeKey, type ScopeParentBinding } from '@deepseek-ai/dsh-scope'
 // Type-only: resolves the `agent/created` lifecycle event this service watches.
 import type {} from '@deepseek-ai/dsh-agent'
@@ -33,6 +33,7 @@ import type {} from '@deepseek-ai/dsh-app-boot'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { AgentPresetDocument, AgentPresetRoster } from './types.ts'
 import type {} from '@deepseek-ai/dsh-session-projection'
+import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 // Type-only: resolves the registry notification emitted after scope reparenting.
 import type {} from '@deepseek-ai/dsh-tools'
 import type SettingsService from '@deepseek-ai/dsh-settings'
@@ -88,12 +89,6 @@ export { copyComposition, deleteComposition, readComposition, writableRoot } fro
 export { agentPresetProjectionDefinition } from './session.ts'
 export type { AgentPreset, Config, PresetRoot, PresetTrust } from './preset.ts'
 
-declare module '@deepseek-ai/cordis' {
-  interface Context {
-    agentPresets: AgentPresets
-  }
-}
-
 /**
  * Preset ids that renamed presets must still resolve.
  *
@@ -116,7 +111,7 @@ const LEGACY_PRESET_IDS: Readonly<Record<string, string>> = {
  * call so a preset authored while the process runs is visible immediately,
  * and a preset deleted underneath a picker disappears from the next read.
  */
-export class AgentPresets extends TypertRemoteService {
+export class AgentPresets extends Service {
   static inject = ['loader', 'sessionProjections']
 
   /** Runtime schema for the preset roster. */
@@ -297,7 +292,6 @@ export class AgentPresets extends TypertRemoteService {
    * capability, not a roster property — a caller needing both joins them.
    * @returns the rows, authoring capability, and effective selection policy.
    */
-  @Remote('list')
   async remoteExportList(): Promise<AgentPresetRoster> {
     // Keep the visible policy and marked default from the same settings
     // snapshot even when discovery yields while settings are hot-reloaded.
@@ -555,7 +549,6 @@ export class AgentPresets extends TypertRemoteService {
    * @throws {RemoteError} `gateway/bad-request` for an empty id, or
    * `agent-preset/not-found` when no configured root supplies it.
    */
-  @Remote('read')
   async readDocument(agentPreset: string): Promise<AgentPresetDocument> {
     validatePresetId(agentPreset, 'agentPreset')
     const preset = await this.resolve(agentPreset)
@@ -607,7 +600,6 @@ export class AgentPresets extends TypertRemoteService {
    * @throws {RemoteError} with the corresponding stable preset code and
    * details when the copy is refused.
    */
-  @Remote('copy')
   async remoteExportCopy(from: string, id: string, name?: string): Promise<void> {
     validatePresetId(from, 'from')
     validatePresetId(id, 'agentPreset')
@@ -645,7 +637,6 @@ export class AgentPresets extends TypertRemoteService {
    * @throws {RemoteError} with the corresponding stable preset code and
    * details when deletion is refused.
    */
-  @Remote('deletePreset')
   async remoteExportDelete(id: string): Promise<void> {
     validatePresetId(id, 'agentPreset')
     await this.remove(id)
@@ -737,7 +728,6 @@ export class AgentPresets extends TypertRemoteService {
    * @throws {RemoteError} with `gateway/bad-request`, `agent-preset/locked`,
    * `agent-preset/not-found`, or `agent-preset/invalid` when refused.
    */
-  @Remote('select')
   async select(agent: Agent, agentPreset: string): Promise<string> {
     validatePresetId(agentPreset, 'agentPreset')
     const queued = this.switches.get(agent.id) ?? Promise.resolve()

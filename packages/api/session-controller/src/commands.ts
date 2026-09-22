@@ -1,7 +1,9 @@
 /** Session commands whose activation policy is explicit at each Remote method. */
 
 import { randomUUID } from 'node:crypto'
+import { mkdir, realpath, stat } from 'node:fs/promises'
 import type { Context } from '@deepseek-ai/cordis'
+import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { Agent, ModelSelection as AgentModelSelection } from '@deepseek-ai/dsh-agent'
 import { AttachmentError } from '@deepseek-ai/dsh-attachment'
@@ -13,7 +15,7 @@ import type {} from '@deepseek-ai/dsh-client-file-upload'
 import {
   ReasoningEffortId, assistantStreamChunks, createUserMessage, freezeMessage,
 } from '@deepseek-ai/dsh-llm'
-import type { MessageSource } from '@deepseek-ai/dsh-llm'
+import type { ContentBlock, MessageSource } from '@deepseek-ai/dsh-llm'
 import { buildForkSeed } from '@deepseek-ai/dsh-session/fork'
 import { SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader, SessionId, UserMessage } from '@deepseek-ai/dsh-session'
@@ -23,6 +25,8 @@ import { canonicalClientTimeZone } from '@deepseek-ai/dsh-util-time'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type { Workspace } from '@deepseek-ai/dsh-workspace'
+import { membershipHome } from '@deepseek-ai/dsh-workspace'
+import { setSessionHome } from '@deepseek-ai/dsh-sandbox-policy'
 import {
   ApiSessionAgentController,
   ApiSessionCwdConflict,
@@ -44,8 +48,12 @@ import type {
   SessionForkValue,
   SessionPromptRequest,
   SessionPromptValue,
+  SessionRehomeRequest,
+  SessionRehomeValue,
   SessionRenameRequest,
   SessionRenameValue,
+  SessionRewriteRequest,
+  SessionRewriteValue,
   SessionSelectModelRequest,
   SessionSelectModelValue,
   SessionUpdateQueueRequest,
@@ -62,6 +70,35 @@ interface SessionReadState {
 type PromptContentCandidate =
   | SessionPromptRequest['content'][number]
   | Extract<SessionUpdateQueueRequest['action'], { readonly kind: 'edit' }>['content'][number]
+
+
+function mergeQueueEditText(
+  current: readonly ContentBlock[],
+  next: readonly ContentBlock[],
+): ContentBlock[] | null {
+  if (next.length !== 1 || next[0]?.type !== 'text') return null
+  const text = next[0].text
+  let replaced = false
+  const merged: ContentBlock[] = []
+  for (const block of current) {
+    if (block.type !== 'text') {
+      merged.push(block)
+      continue
+    }
+    if (!replaced) {
+      merged.push({ type: 'text', text })
+      replaced = true
+    }
+  }
+  if (!replaced) merged.push({ type: 'text', text })
+  return merged
+}
+
+async function ensureNoRepoDirectory(): Promise<string> {
+  const path = dshHomePath('no-repo')
+  await mkdir(path, { recursive: true })
+  return await realpath(path)
+}
 
 function hasPromptContent(content: readonly PromptContentCandidate[]): boolean {
   return content.some(part => part.type !== 'text' || part.text.trim().length > 0)
@@ -618,7 +655,6 @@ export class SessionCommandController {
    */
   async updateQueue(request: SessionUpdateQueueRequest): Promise<SessionUpdateQueueValue> {
     if (request.action.kind === 'edit') {
-      // oxlint-disable-next-line typescript/no-unnecessary-condition -- Remote callers can submit untyped JSON.
       if (request.action.content.some(block => block.type !== 'text')) {
         throw new RemoteError(
           'session/attachment-invalid',
@@ -745,7 +781,6 @@ export class SessionCommandController {
   private async readSessionState(sessionId: SessionId): Promise<SessionReadState> {
     const attached = this.ctx.sessions.get(sessionId)
     if (attached !== undefined) {
-      // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
       return { id: attached.id, header: attached.header, events: attached.snapshotEvents() }
     }
     const inspected = await inspectApiSession(this.ctx, sessionId)
@@ -792,7 +827,6 @@ function hasPromptRequest(agent: Agent, requestId: SessionRequestId): boolean {
     return source.kind === 'user' && 'rpcId' in source && source.rpcId === requestId
   }
   if (agent.inbox.nextTurn.some(matches) || agent.inbox.nextStep.some(matches)) return true
-  // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
   return agent.session.snapshotEvents().some((event) => {
     if (event.type !== 'user/message') return false
     const source = event.data.source

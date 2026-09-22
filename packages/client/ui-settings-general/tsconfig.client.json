@@ -8,6 +8,7 @@
   "include": [
     "src/client",
     "src/types.ts",
+    "src/host-lifetime.ts",
     "src/css-modules.d.ts"
   ],
   "references": [

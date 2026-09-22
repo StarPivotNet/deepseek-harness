@@ -87,6 +87,8 @@ function abortedCancelCause(signal: AbortSignal): AgentCancelCause | undefined {
       return { kind: cause.kind }
     case 'hook':
       return { kind: 'hook', reason: cause.reason }
+    case 'automation':
+      return { kind: 'automation', ruleId: cause.ruleId }
     /* v8 ignore next -- cancel accepts the closed AgentCancelCause union */
     default:
       return assertNever(cause)

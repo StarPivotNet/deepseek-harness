@@ -16,7 +16,7 @@
     "src/invariant.ts"
   ],
   "references": [
-    { "path": "../ui-chat" },
+    { "path": "../ui-chat/tsconfig.client.json" },
     { "path": "../../../vendor/cordis" },
     { "path": "../../../vendor/include" },
     { "path": "../../../vendor/loader" },
@@ -27,13 +27,13 @@
     { "path": "../../runtime-diagnostics/invariants" },
     { "path": "../../settings/settings" },
     { "path": "../../test-support/client-runtime" },
-    { "path": "../locale" },
+    { "path": "../locale/tsconfig.client.json" },
     { "path": "../modules" },
     { "path": "../../api/session-controller/tsconfig.client.json" },
     { "path": "../ui-commands" },
-    { "path": "../ui-conversation" },
+    { "path": "../ui-conversation/tsconfig.client.json" },
     { "path": "../ui-primitives" },
-    { "path": "../ui-settings" },
+    { "path": "../ui-settings/tsconfig.client.json" },
     { "path": "../ui-slots" },
     { "path": "../ui-renderer" }
   ]

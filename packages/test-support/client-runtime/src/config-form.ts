@@ -59,3 +59,7 @@ export function stubConfigForm<T>(): StubConfigForm<T> {
     },
   }
 }
+
+/** Fork-era name for {@link stubConfigForm}. */
+export const stubSettingsScope = stubConfigForm
+export type StubSettingsScope<T> = StubConfigForm<T>

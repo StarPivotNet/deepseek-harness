@@ -32,3 +32,16 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 export interface SettingsDocumentOpenValue {
   readonly opened: true
 }
+
+/** One assembled system-prompt section as listed for settings UIs. */
+export interface SystemPromptSectionView {
+  readonly name: string
+  readonly order: number
+  readonly text: string
+  readonly complete: boolean
+}
+
+/** Deployment-wide system-prompt registry listing. */
+export interface SystemPromptListValue {
+  readonly sections: readonly SystemPromptSectionView[]
+}

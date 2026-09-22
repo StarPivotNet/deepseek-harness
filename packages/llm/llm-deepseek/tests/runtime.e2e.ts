@@ -113,7 +113,7 @@ async function harness(model: string, config: Partial<Config> = {}) {
     baseURL: LlmDeepSeek.PUBLIC_BASE_URL,
     ...model === VISION ? { models: [{ id: VISION, inputModalities: ['text', 'image'] }] } : {},
     ...config,
-  })
+  } as never)
   return ctx
 }
 

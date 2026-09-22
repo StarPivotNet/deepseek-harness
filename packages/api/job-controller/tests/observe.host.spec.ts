@@ -233,7 +233,7 @@ describe('JobController', () => {
       status: 'idle',
       ctx,
       send: () => {},
-      followup: () => {},
+      continueFromSurface: () => {}, followup: () => {},
       steer: () => {},
       inject: () => {},
       cancel: () => {},

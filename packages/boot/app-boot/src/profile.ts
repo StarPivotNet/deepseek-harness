@@ -23,10 +23,14 @@
 
 import { createRequire } from 'node:module'
 import { existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
-import { basename, dirname, join, relative, resolve, sep } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { homedir } from 'node:os'
+import { basename, delimiter, dirname, join, relative, resolve, sep } from 'node:path'
 import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import { applyEntryPatches, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
+import type { Context } from '@deepseek-ai/cordis'
+import * as yaml from 'js-yaml'
 import type { DshBundleManifest, DshPackageManifest } from '@deepseek-ai/dsh-package-manifest'
 import { loadOverlayPatches } from './index.ts'
 import { realModuleDirectory } from './profile-resolution/legacy-links.ts'
@@ -714,4 +718,172 @@ export function composeEntries(
     let index = 0
     warn(message.replace(/%C/g, () => JSON.stringify(args[index++])))
   })
+}
+/** The booted profile's name, directory, and installation resolution anchor. */
+export interface ProfileHandle {
+  /** The profile name (its directory basename). */
+  readonly name: string
+  /** Absolute profile directory. */
+  readonly dir: string
+  /** Absolute path of the dsh app's package.json (first bundle-resolution anchor). */
+  readonly installAnchor: string
+}
+
+/**
+ * Provide the booted profile on a host context before any tree entry mounts.
+ * @param ctx - the host context the tree will mount under.
+ * @param handle - the profile's name, directory, and installation anchor.
+ */
+export function provideProfile(ctx: Context, handle: ProfileHandle): void {
+  ctx.provide('profile', Object.freeze({
+    name: handle.name,
+    dir: handle.dir,
+    installAnchor: handle.installAnchor,
+  }))
+}
+
+/**
+ * Whether a package resolved from the two profile anchors declares `dsh.bundle`.
+ * @param binName - the diagnostic prefix on a resolution error (unused when unresolved).
+ * @param packageName - the package name to inspect.
+ * @param installAnchor - absolute path of the dsh app's package.json.
+ * @param profileDir - the profile directory (second resolution anchor).
+ * @returns true when the resolved package declares `dsh.bundle.patch`.
+ */
+export function packageExportsBundle(
+  binName: string, packageName: string, installAnchor: string, profileDir: string,
+): boolean {
+  let dir: string
+  try {
+    dir = resolveBundleDir(binName, packageName, installAnchor, profileDir)
+  } catch {
+    return false
+  }
+  return readProfileManifest(binName, dir).dsh?.bundle?.patch !== undefined
+}
+
+/** Arguments for {@link runProfilePnpm}. */
+export interface RunProfilePnpmOptions {
+  /** Absolute profile directory; becomes pnpm's cwd. */
+  profileDir: string
+  /** pnpm arguments, already path-anchored by the caller if needed. */
+  args: readonly string[]
+  /**
+   * `inherit` streams pnpm onto the caller's stdio (the CLI forwarder).
+   * `pipe` captures stdout and stderr (a Host plugin that must not write them).
+   */
+  stdio?: 'inherit' | 'pipe'
+  /** Override well-known fallback directories; tests pin an empty list. */
+  searchDirs?: readonly string[]
+  /** Look for Corepack next to this Node after PATH and searchDirs. */
+  includeCorepack?: boolean
+}
+
+/** Outcome of one {@link runProfilePnpm} invocation. */
+export interface ProfilePnpmResult {
+  /** True when `pnpm` was not on PATH; `exitCode` is then 127. */
+  missingPnpm: boolean
+  /** pnpm's exit status, or 1 when the process was killed. */
+  exitCode: number
+  /** Captured stdout when `stdio` is `pipe`; otherwise empty. */
+  stdout: string
+  /** Captured stderr when `stdio` is `pipe`; otherwise empty. */
+  stderr: string
+}
+
+const PNPM_BIN = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+
+/**
+ * Directories a GUI-short PATH still misses on a machine that already has pnpm.
+ * @returns unique existing-candidate directories.
+ */
+export function profilePnpmSearchDirs(): string[] {
+  const home = homedir()
+  const nodeDir = dirname(process.execPath)
+  const dirs = [
+    process.env.PNPM_HOME,
+    join(home, 'Library', 'pnpm'),
+    join(home, '.local', 'share', 'pnpm'),
+    join(home, '.npm-global', 'bin'),
+    '/usr/local/bin',
+    '/opt/homebrew/bin',
+    join(home, '.volta', 'bin'),
+    join(home, '.asdf', 'shims'),
+    nodeDir,
+  ]
+  return [...new Set(dirs.filter((dir): dir is string => dir !== undefined && dir.length > 0))]
+}
+
+/**
+ * Locate a host pnpm: PATH first, then well-known install directories, then Corepack.
+ * @returns the absolute pnpm executable, or undefined.
+ */
+export function resolveProfilePnpm(
+  searchDirs: readonly string[] = profilePnpmSearchDirs(),
+  includeCorepack = true,
+): string | undefined {
+  const pathDirs = (process.env.PATH ?? '').split(delimiter).filter(dir => dir.length > 0)
+  for (const dir of [...pathDirs, ...searchDirs]) {
+    const candidate = join(dir, PNPM_BIN)
+    if (existsSync(candidate)) return candidate
+  }
+  if (!includeCorepack) return undefined
+  const corepackName = process.platform === 'win32' ? 'corepack.cmd' : 'corepack'
+  const corepack = join(dirname(process.execPath), corepackName)
+  if (existsSync(corepack)) return corepack
+  return undefined
+}
+
+/**
+ * Run `pnpm <args>` in a profile directory.
+ * @param options - the profile directory, pnpm arguments, and stdio mode.
+ * @returns the process outcome, with `missingPnpm` set when pnpm is absent.
+ */
+export function runProfilePnpm(options: RunProfilePnpmOptions): ProfilePnpmResult {
+  const stdio = options.stdio ?? 'inherit'
+  const pnpm = resolveProfilePnpm(
+    options.searchDirs ?? profilePnpmSearchDirs(),
+    options.includeCorepack ?? true,
+  )
+  if (pnpm === undefined) {
+    return { missingPnpm: true, exitCode: 127, stdout: '', stderr: '' }
+  }
+  const extraPath = profilePnpmSearchDirs().join(delimiter)
+  const path = process.env.PATH === undefined || process.env.PATH.length === 0
+    ? extraPath
+    : `${process.env.PATH}${delimiter}${extraPath}`
+  const args = pnpm.endsWith('corepack') || pnpm.endsWith('corepack.cmd')
+    ? ['pnpm', ...options.args]
+    : [...options.args]
+  const result = spawnSync(pnpm, args, {
+    cwd: options.profileDir,
+    stdio,
+    env: { ...process.env, PATH: path },
+    ...stdio === 'pipe' ? { encoding: 'utf8' as const } : {},
+    shell: process.platform === 'win32',
+  })
+  if (result.error !== undefined) {
+    if ((result.error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { missingPnpm: true, exitCode: 127, stdout: '', stderr: '' }
+    }
+    throw result.error
+  }
+  return {
+    missingPnpm: false,
+    exitCode: result.status ?? 1,
+    stdout: typeof result.stdout === 'string' ? result.stdout : '',
+    stderr: typeof result.stderr === 'string' ? result.stderr : '',
+  }
+}
+
+/**
+ * Write a profile's user patch layer (include YAML dialect, trailing newline).
+ * @param dir - the profile directory.
+ * @param patches - the patch list to persist.
+ */
+export function writeProfilePatches(dir: string, patches: readonly PatchOptions[]): void {
+  writeFileSync(
+    join(dir, PROFILE_PATCH_FILENAME),
+    yaml.dump([...patches], { schema: entryListSchema, noRefs: true }).trimEnd() + '\n',
+  )
 }

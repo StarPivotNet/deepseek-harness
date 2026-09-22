@@ -143,7 +143,7 @@ export class ConfigFormController<T> implements ConfigForm<T> {
         response = await this.ctx.remote.settings.mutate(this.spec.namespace, ownedOps, revision)
       } catch (_settingsWriteFailure) {
         await this.recover(generation)
-        return
+        return false
       }
       if (!response.ok) {
         await this.recover(generation)

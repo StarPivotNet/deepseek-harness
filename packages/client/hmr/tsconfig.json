@@ -32,7 +32,7 @@
       "path": "../../settings/settings"
     },
     {
-      "path": "../locale"
+      "path": "../locale/tsconfig.client.json"
     },
     {
       "path": "../../api/session-controller/tsconfig.client.json"
@@ -44,7 +44,7 @@
       "path": "../ui-slots"
     },
     {
-      "path": "../ui-settings"
+      "path": "../ui-settings/tsconfig.client.json"
     }
   ]
 }

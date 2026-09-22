@@ -73,11 +73,13 @@ export interface LocaleDefinition {
 /** Immutable locale state published on every change. */
 export interface LocaleSnapshot {
   /** Active locale id. */
-  active: LocaleId
+  active: LocaleId | string
   /** Selectable locales in display order. */
   locales: readonly LocaleDefinition[]
   /** Monotonic change counter (registry or active changes). */
   revision: number
+  /** Last explicit locale selection, when one is stored. */
+  preference?: LocaleId
 }
 
 declare module '@deepseek-ai/cordis' {
@@ -203,6 +205,14 @@ export class LocaleRuntime {
    */
   getLocale(): LocaleSnapshot {
     return this.snapshot
+  }
+
+  /**
+   * Clear the explicit locale so the browser-derived locale is used.
+   */
+  clearLocale(): void {
+    this.preference = undefined
+    void this.host?.unset(LOCALE_PREFERENCE_FIELD)
   }
 
   /**

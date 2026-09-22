@@ -64,6 +64,10 @@ export interface SessionListState {
   phase: SessionListPhase
   /** Shared projection values and explicit-read state, including unopened Sessions. */
   projectionsBySession: Readonly<Record<SessionId, SessionProjectionSnapshot>>
+  /** Subagent ids grouped by parent session; empty when the Host omits the grouping. */
+  subagentsByParent?: Readonly<Record<string, readonly SessionId[]>>
+  /** Background jobs grouped by session; empty when the Host omits the grouping. */
+  jobsBySession?: Readonly<Record<string, readonly string[]>>
 }
 
 /** Structured session-create failure. */
@@ -699,7 +703,18 @@ export class ClientSessions implements ISessions {
         ...(title === undefined ? {} : { title, displayTitle: title }),
       }
     }
-    this.list.set({ ids, byId, current: this.list.getSnapshot().current, phase, subagentsByParent, jobsBySession, projectionsBySession })
+    const subagentsByParent: Record<string, SessionId[]> = {}
+    for (const [id, summary] of Object.entries(byId)) {
+      const parentId = summary.parentId
+      if (parentId === undefined) continue
+      const children = subagentsByParent[parentId] ?? []
+      children.push(id as SessionId)
+      subagentsByParent[parentId] = children
+    }
+    this.list.set({
+      ids, byId, current: this.list.getSnapshot().current, phase,
+      subagentsByParent, jobsBySession: {}, projectionsBySession,
+    })
   }
 
   private startScopeDrop(

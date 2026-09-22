@@ -16,6 +16,79 @@ export { redactSecrets } from './redact.ts'
 export type { RedactedSecret, RedactedValue } from './redact.ts'
 export type { SettingsNamespace } from './types.ts'
 
+const NAMESPACE_PATTERN = /^[a-z][a-z0-9-]*$/
+
+/**
+ * Brand a raw string as a {@link SettingsNamespace}.
+ * @param value - candidate namespace; lowercase kebab-case, as in plugin short names.
+ * @returns the branded namespace.
+ */
+export function settingsNamespace(value: string): SettingsNamespace {
+  if (!NAMESPACE_PATTERN.test(value)) {
+    throw new TypeError(`settings namespace "${value}" must match ${String(NAMESPACE_PATTERN)}`)
+  }
+  return value as SettingsNamespace
+}
+
+
+/** Fork-era namespace registration result used by StarPivot host plugins. */
+export interface SettingsScope<T> {
+  get(): T
+  watch(callback: (next: T, prev: T) => void | Promise<void>): () => void
+  update(patch: object): Promise<void>
+  replace(section: object): Promise<void>
+}
+
+/** Removed document-backed provider; retained so existing tests still compile. */
+export abstract class SettingsProvider extends Service {
+  constructor(ctx?: Context) {
+    super(ctx ?? new Context(), 'settings')
+  }
+
+  abstract readonly writable: boolean
+
+  get documentPath(): string | undefined {
+    return undefined
+  }
+
+  prepareDocument(): Promise<string> {
+    return Promise.reject(new Error('settings provider has no local document'))
+  }
+
+  async* [Service.init](): AsyncGenerator<() => Promise<void> | void, void, void> {
+    this.publish(await this.load())
+  }
+
+  protected abstract load(): Promise<Record<string, unknown>>
+
+  protected abstract persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void>
+
+  protected publish(_document: Record<string, unknown>): void {}
+}
+
+interface SettingsSectionHooks<T> {
+  setSource(source: () => T): void
+  onChange(): void
+  validate?: (value: T) => void
+}
+
+/**
+ * Compatibility helper from the pre-0.1.7 settings seam. Official settings now
+ * project live Config through profile forms, so this keeps the composition entry
+ * as the source instead of registering a durable namespace.
+ */
+export function installSettingsSection<T>(
+  _ctx: Context,
+  _ns: SettingsNamespace,
+  _schema: z<T>,
+  entry: T,
+  hooks: SettingsSectionHooks<T>,
+): void {
+  hooks.setSource(() => entry)
+  hooks.onChange()
+}
+
+
 /** One Loader entry's live Config fields. */
 export interface SettingsDescriptor {
   ns: SettingsNamespace
@@ -226,6 +299,7 @@ export class SettingsForms extends Service {
   private closed = false
   private scheduled = false
   private readonly presentations = new Map<Fiber, { auto?: boolean }>()
+  private readonly scopes = new Map<string, { value: unknown }>()
 
   constructor(private readonly ownerContext: Context) {
     super(ownerContext, 'settings')
@@ -274,6 +348,32 @@ export class SettingsForms extends Service {
       this.presentations.delete(fiber)
       this.invalidate()
     }
+  }
+
+  /**
+   * Fork-era namespace registration. Official 0.1.7 settings project live Config
+   * through profile forms, so this keeps an in-memory scope for StarPivot plugins
+   * that still call register/get.
+   */
+  register<T>(_ns: string, _schema: unknown, options?: { base?: Partial<T> }): SettingsScope<T> {
+    const ns = String(_ns)
+    const current = (options?.base ?? {}) as T
+    this.scopes.set(ns, { value: current })
+    return {
+      get: () => this.scopes.get(ns)?.value as T,
+      watch: () => () => {},
+      update: async (patch: object) => {
+        const prev = (this.scopes.get(ns)?.value ?? {}) as Record<string, unknown>
+        this.scopes.set(ns, { value: { ...prev, ...patch } })
+      },
+      replace: async (section: object) => {
+        this.scopes.set(ns, { value: section })
+      },
+    }
+  }
+
+  get<T>(ns: string): T | undefined {
+    return this.scopes.get(ns)?.value as T | undefined
   }
 
   private invalidate(): void {

@@ -2,7 +2,7 @@
  * Live busy-state delivery preference used by the Subagents Behavior group.
  */
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm, SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import {
   DEFAULT_SUBAGENT_BUSY_DELIVERY, JOB_BUSY_FIELD, REPORT_BUSY_FIELD, SETTLEMENT_BUSY_FIELD,
 } from '../delivery-settings.ts'
@@ -29,13 +29,13 @@ export class SubagentDeliveryPolicy {
   readonly jobBusy: SnapshotStore<SubagentBusyDelivery> = createSnapshotStore(DEFAULT_SUBAGENT_BUSY_DELIVERY)
   /** Whether the Host document currently accepts writes. */
   readonly writable: SnapshotStore<boolean> = createSnapshotStore(false)
-  private readonly host: SettingsScope<SubagentDeliverySettings> | undefined
+  private readonly host: SettingsScope<SubagentDeliverySettings> | ConfigForm<SubagentDeliverySettings> | undefined
 
   /**
    * @param host - durable preference scope owned by the providing plugin;
    * absent compositions stay process-local.
    */
-  constructor(host?: SettingsScope<SubagentDeliverySettings>) {
+  constructor(host?: SettingsScope<SubagentDeliverySettings> | ConfigForm<SubagentDeliverySettings>) {
     this.host = host
     if (host !== undefined) {
       host.subscribe(() => { this.adopt(host) })
@@ -59,7 +59,7 @@ export class SubagentDeliveryPolicy {
    * Adopt the scope's accepted durable section without writing it back.
    * @param host - the constructor-narrowed scope driving this adoption.
    */
-  private adopt(host: SettingsScope<SubagentDeliverySettings>): void {
+  private adopt(host: SettingsScope<SubagentDeliverySettings> | ConfigForm<SubagentDeliverySettings>): void {
     const snapshot = host.getSnapshot()
     if (this.writable.getSnapshot() !== snapshot.writable) this.writable.set(snapshot.writable)
     const section = snapshot.value

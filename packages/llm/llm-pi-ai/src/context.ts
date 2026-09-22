@@ -19,6 +19,21 @@ import { toPiAssistant } from './replay.ts'
 import { requestImageDimensions } from '@deepseek-ai/dsh-attachment'
 import { DEFAULT_REQUEST_IMAGE_MAX_BYTES, DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET } from './config.ts'
 
+const VIDEO_REQUEST_MARKER_SUFFIX = ']'
+
+/** Prefix every video request marker starts with, including its opening bracket. */
+export const VIDEO_REQUEST_MARKER_PREFIX = '[video attachment unavailable]'
+
+export function requestVideoMarker(attachmentId: string): string {
+  return VIDEO_REQUEST_MARKER_PREFIX + attachmentId + VIDEO_REQUEST_MARKER_SUFFIX
+}
+
+export function parseRequestVideoMarker(text: string): string | undefined {
+  if (!text.startsWith(VIDEO_REQUEST_MARKER_PREFIX) || !text.endsWith(VIDEO_REQUEST_MARKER_SUFFIX)) return undefined
+  const attachmentId = text.slice(VIDEO_REQUEST_MARKER_PREFIX.length, -VIDEO_REQUEST_MARKER_SUFFIX.length)
+  return attachmentId.length > 0 ? attachmentId : undefined
+}
+
 /** Join the text blocks of a harness message. */
 function flattenText(message: RequestMessage): string {
   return message.content

@@ -112,6 +112,8 @@ export interface MessageSourceMap {
   model: ModelMessageSource
   tool: ToolMessageSource
   'system-prompt': SystemPromptMessageSource
+  plugin: { kind: 'plugin'; plugin?: string }
+  automation: { kind: 'automation'; readonly ruleId: string }
 }
 
 /**

@@ -470,3 +470,7 @@ export class PlanModeController extends Service {
 }
 
 export default PlanModeController
+
+/** @deprecated Official 0.1.7 removed this kickoff constant; retained for fork tests. */
+export const PLAN_APPROVED_KICKOFF = 'plan-approved-kickoff'
+export const PLAN_APPROVED_RESULT = 'plan-approved-result'

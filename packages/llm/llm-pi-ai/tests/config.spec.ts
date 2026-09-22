@@ -151,7 +151,7 @@ describe('video modality and budget boundaries', () => {
           [field]: value,
         },
       },
-    } as unknown as Config
+    } as unknown as Options
     expect(() => {
       assertServiceable(programmatic)
     }).toThrow(new RegExp(`${field} must be a positive integer`))

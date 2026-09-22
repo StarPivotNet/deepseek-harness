@@ -207,7 +207,7 @@ export class WorkspaceController extends TypertRemoteService {
    */
   @Remote('addFolder')
   addFolder(request: WorkspaceFolderRequest): Promise<WorkspaceValue> {
-    return this.commands.addFolder(request)
+    return this.commands.addFolder(request.workspaceId, request.path)
   }
 
   /**
@@ -217,7 +217,7 @@ export class WorkspaceController extends TypertRemoteService {
    */
   @Remote('removeFolder')
   removeFolder(request: WorkspaceFolderRequest): Promise<WorkspaceValue> {
-    return this.commands.removeFolder(request)
+    return this.commands.removeFolder(request.workspaceId, request.path)
   }
 
   /**

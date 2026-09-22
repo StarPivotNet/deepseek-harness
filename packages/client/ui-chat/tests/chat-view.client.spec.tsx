@@ -232,7 +232,7 @@ function emptySessions() {
 
 function emptyWorkspaces() {
   const store = createSnapshotStore<WorkspaceSnapshot>({
-    items: [], archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null,
+    items: [], archivedSessionIds: [], pinnedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null,
   })
   return bindSnapshotSelector(store)
 }
@@ -405,8 +405,8 @@ function makeHarness(
   // SessionProvider seat arrives with the session-scope child declaration;
   // ChatView never invokes it (pass-through stub).
   const SessionProviderStub: ChatViewSlotProps['SessionProvider'] = ({ children }) => <>{children}</>
-  const props: ChatViewSlotProps = {
-    usePanelInfo: selector => selector({ activePanelId: null }),
+  const props = {
+    usePanelInfo: (selector: (s: { activePanelId: null }) => unknown) => selector({ activePanelId: null }),
     sessionId: SID,
     useSession: bindSnapshotSelector(session.source),
     useChat: bindSnapshotSelector(chatSource.source),
@@ -453,10 +453,11 @@ function makeHarness(
     loadImage: vi.fn(() => Promise.reject(new Error('not used'))),
     chatScroll,
     forkAt,
+    rewriteAt: () => {},
     // Absent-service default; mention tests override with a real resolver.
     fileMentions: () => undefined,
     t,
-  }
+  } as never
   const set = (next: HarnessUpdate): void => {
     const {
       chat: explicitChat, nodes, partial, runningCalls, turnTimings, turnEnds,
@@ -592,8 +593,8 @@ describe('Chat node rendering', () => {
       ],
       turnEnds: new Map([[1, 4]]),
     })
-    h.props.fileMentions = owner => ({
-      resolve: (value) => {
+    h.props.fileMentions = (owner: { seq: number }) => ({
+      resolve: (value: string) => {
         if (value !== 'report.html') return undefined
         return {
           open: () => { void h.openFile(`for-seq-${String(owner.seq)}/site/report.html`) },
@@ -937,7 +938,7 @@ describe('ChatView', () => {
     })
     translate.mockClear()
     act(() => { h.setTranscriptView('detailed') })
-    expect(translate.mock.calls.filter(([key]) => key.startsWith('message.stepProcess.'))).toHaveLength(0)
+    expect(translate.mock.calls.filter(call => String(call[0]).startsWith('message.stepProcess.'))).toHaveLength(0)
   })
 
   it('passes independently keyed group parts to business Node renderers', () => {

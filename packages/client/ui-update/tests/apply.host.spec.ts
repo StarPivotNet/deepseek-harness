@@ -57,9 +57,9 @@ describe('client-ui-update host', () => {
     })
     const handler = handlerRef.current
     if (handler === undefined) throw new Error('product-update RPC handler missing after apply')
-    const checked = await handler('check', { force: true }, new AbortController().signal)
+    const checked = await handler('check', { force: true }, new AbortController().signal, {} as never)
     expect(checked).toMatchObject({ ok: true, value: { available: true, currentVersion: '1.2.3' } })
-    const dismissed = await handler('dismiss', { tag: 'dsh-v1.2.4' }, new AbortController().signal)
+    const dismissed = await handler('dismiss', { tag: 'dsh-v1.2.4' }, new AbortController().signal, {} as never)
     expect(dismissed).toEqual({ ok: true, value: { ok: true } })
     expect((ctx.settings.get(ns) as { dismissedTag?: string }).dismissedTag).toBe('dsh-v1.2.4')
     await fiber.dispose()

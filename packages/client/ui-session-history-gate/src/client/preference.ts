@@ -3,7 +3,7 @@
  * one boolean scope bridged onto row-facing snapshot stores.
  */
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm, SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 
 /** Settings namespace owned by the host-side session-history gate plugin. */
 export const SESSION_HISTORY_TOOLS_NS = 'session-history-tools'
@@ -29,7 +29,7 @@ export class SessionHistoryGatePreference {
    * @param scope - bound `session-history-tools` settings scope; a namespace
    * the Host does not expose stays closed and read-only.
    */
-  constructor(private readonly scope: SettingsScope<SessionHistoryToolsSettings>) {
+  constructor(private readonly scope: SettingsScope<SessionHistoryToolsSettings> | ConfigForm<SessionHistoryToolsSettings>) {
     this.unsubscribe = scope.subscribe(() => { this.adopt() })
     this.adopt()
   }

@@ -62,7 +62,7 @@ const workspaces: WorkspaceSnapshot = {
     workspaceId: 'alpha' as WorkspaceId, path: '/projects/alpha', title: 'alpha', sessionIds: [one.id],
     createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
   }],
-  archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null,
+  archivedSessionIds: [], pinnedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null,
 }
 const noStatus: SessionStatusSnapshot = new Map()
 // Every fixture carries the resource hook the resources plugin merges into GlobalStandardProps.

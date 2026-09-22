@@ -1219,7 +1219,7 @@ describe('video input', () => {
       model: 'acme-text',
       messages: [createUserMessage({
         content: [{ type: 'video', attachment: VIDEO_REF }],
-        source: { kind: 'plugin', plugin: 'test' },
+        source: { kind: 'plugin', plugin: 'test' } as never,
       })],
     })).rejects.toThrow('pi-ai model "acme-text" does not support video input')
   })
@@ -1322,14 +1322,14 @@ describe('video input', () => {
       model: 'glm-5.3-flash',
       messages: [createUserMessage({
         content: [{
-          type: 'tool-result',
+          type: 'tool-result' as never,
           toolCallId: 'call-video' as never,
           content: [
             { type: 'text', text: 'Video sha256:bbb: clip.mp4 (video/mp4, 3 bytes)' },
             { type: 'video', attachment: VIDEO_REF },
           ],
-        }],
-        source: { kind: 'plugin', plugin: 'test' },
+        } as never],
+        source: { kind: 'plugin', plugin: 'test' } as never,
       })],
     })
 

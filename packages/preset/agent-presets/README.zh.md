@@ -151,7 +151,7 @@ agent-presets:
 - [系统提示词子系统](../../../docs/subsystems/system-prompt.zh.md)——preset 提示词段落如何注册与组装。
 - [会话包映射](../../session/README.zh.md)——preset 切换所追加的持久会话记录。
 - [生成的配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-agent-presets)——每个受支持配置字段及其源声明。
-- [按会话组装 agent preset 的 Agent Note](../../../.agents/notes/implemented/architecture/2026-08-03-per-session-agent-presets.zh.md)——设计理由与备选方案。
+- [按会话组装 agent preset 的 Agent Note](../../../.agents/notes/implemented/architecture/2026-08-03-per-session-agent-presets.md)——设计理由与备选方案。
 
 -----
 

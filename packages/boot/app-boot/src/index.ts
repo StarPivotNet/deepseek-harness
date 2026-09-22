@@ -48,12 +48,12 @@ declare module '@deepseek-ai/cordis' {
 
 export {
   packageExportsBundle,
+  provideProfile,
   runProfilePnpm,
   writeProfilePatches,
   type ProfileHandle,
-} from './profile.ts'
-
-export {
+  type ProfilePnpmResult,
+  type RunProfilePnpmOptions,
   composeEntries,
   createRuntimeResolution,
   DEFAULT_PROFILE_BUNDLES,

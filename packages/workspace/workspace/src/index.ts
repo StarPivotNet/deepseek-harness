@@ -8,13 +8,13 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, stat } from 'node:fs/promises'
 import { Context, Service } from '@deepseek-ai/cordis'
-import type { SessionEvent, SessionHeader, SessionId } from '@deepseek-ai/dsh-session'
+import type { SessionHeader, SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-session-persistence'
 import type { DomainGlobal, KvTable } from '@deepseek-ai/dsh-storage-domain'
 import { WorkspaceEntity } from './entity.ts'
 import type { WorkspaceEntityHost } from './entity.ts'
 
-export { WorkspaceMoveInvalidError } from './entity.ts'
+export { membershipHome, WorkspaceMoveInvalidError } from './entity.ts'
 import { defaultWorkspaceTitle, fullyQualifiedWorkspacePath, realpathNormalize } from './paths.ts'
 import { workspaceDomainSpec } from './spec.ts'
 import type { WorkspaceDomainState, WorkspaceRecord } from './spec.ts'
@@ -896,26 +896,6 @@ export class WorkspaceRegistry extends Service {
     }
   }
 
-  private async inspectSession(id: SessionId): Promise<
-    | { ok: true; header: SessionHeader; events: readonly SessionEvent[] }
-    | { ok: true; header?: undefined; events?: undefined }
-    | { ok: false; reason: string }
-  > {
-    const persistence = this.ctx.sessionPersistence
-    if (typeof persistence.open !== 'function') return { ok: true }
-    try {
-      const handle = await persistence.open(id, 'read')
-      try {
-        return { ok: true, header: handle.header, events: (await handle.read()).events }
-      } finally {
-        await handle.close()
-      }
-    } catch (error) {
-      return { ok: false, reason: error instanceof Error ? error.message : String(error) }
-    }
-  }
-
-  /** Every stored session's header, projected from the persistence snapshot listing. */
   private async listStoredHeaders(): Promise<SessionHeader[]> {
     const snapshots = await this.ctx.sessionPersistence.list()
     return snapshots.map(snapshot => snapshot.header)

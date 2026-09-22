@@ -36,7 +36,7 @@ async function liveAgent(ctx: Context, session: Session, initial: AgentStatus): 
     get status() { return status },
     ctx,
     send: () => {},
-    followup: () => {},
+    continueFromSurface: () => {}, followup: () => {},
     steer: () => {},
     inject: () => {},
     cancel: (cause, options) => { cancels.push([cause, options]) },

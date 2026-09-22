@@ -219,7 +219,8 @@ describe('hmr node half', () => {
     utimesSync(bundle, fixedTime, fixedTime)
     const baseline = statSync(bundle)
     const clientModuleHost = fakeClientModuleHost(new Map([['pkg-a', bundle]]))
-    const fiber = await mount(clientModuleHost, fakeHttpServer([]))
+    const mounted = await mount(clientModuleHost, fakeHttpServer([]))
+    const fiber = mounted.fiber
     try {
       expect(clientModuleHost.rebuiltCalls).toEqual([])
       // Filesystem ctime can advance more coarsely than Date.now(); the fixture needs a distinct value.
