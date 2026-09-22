@@ -39,7 +39,7 @@ export const inject = ['slots', 'locale', 'connection', 'remote', 'remote.settin
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-system-prompts: dictionaries')
 
-  const controller = new SystemPromptsStore(ctx.remote)
+  const controller = new SystemPromptsStore(ctx.remote as never)
   const t = ctx.locale.bind(NS)
   const injected = (): SystemPromptsSectionInjected => ({
     hooks: { systemPrompts: controller.store },

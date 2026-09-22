@@ -27,7 +27,13 @@ it('preserves unlisted child status through metadata updates and main view ackno
     } satisfies SessionFollowFrame)
   })
   const client = await start()
-  const sessions = client.ctx.sessions as never
+  const sessions = client.ctx.sessions as unknown as {
+    refresh(): Promise<void>
+    refreshProjections(id: SessionId): Promise<void>
+    list: { getSnapshot(): { ids: SessionId[]; byId: Record<string, { updatedAt?: number } | undefined> } }
+    binding(id: SessionId): unknown
+    retain(id: SessionId, opts: { source: string }): { ready: Promise<void>; release(): void; [Symbol.dispose](): void }
+  }
   const ui = client.ctx.uiSession
   await sessions.refresh()
   await sessions.refreshProjections(parentId)

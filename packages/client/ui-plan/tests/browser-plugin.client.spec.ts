@@ -117,7 +117,7 @@ describe('ui-plan browser apply', () => {
     })
     b.openResource.mockImplementation(controller.openResource.bind(controller))
     b.openResourceIn.mockImplementation(controller.openResourceIn.bind(controller))
-    b.subagentAddress.mockReturnValue({ parentSessionId: parent, childSessionId: child, mode: 'continuable' })
+    b.subagentAddress.mockReturnValue({ parentSessionId: parent, childSessionId: child, mode: 'continuable' } as never)
     const fiber = b.ctx.plugin({ inject: [...inject], apply })
     try {
       await fiber.await()
@@ -223,7 +223,7 @@ describe('ui-plan browser apply', () => {
       const pending = { id: 'review', question: 'Approve?', plan: plan.markdown, callId: plan.callId, approve: { label: 'Approve' } }
       reviewInjected.openReview(pending, 'question:1')
       expect(b.openResource).toHaveBeenLastCalledWith(address)
-      b.subagentAddress.mockReturnValue({ parentSessionId: 'parent' as SessionId, childSessionId: SID, mode: 'continuable' })
+      b.subagentAddress.mockReturnValue({ parentSessionId: 'parent' as SessionId, childSessionId: SID, mode: 'continuable' } as never)
       injected.openPlan(plan.callId)
       expect(b.openResource).toHaveBeenLastCalledWith('dsh-resource://plan/subagent/parent/s-plan/continuable/call')
       reviewInjected.openReview(pending, 'question:1')

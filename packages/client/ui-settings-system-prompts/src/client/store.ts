@@ -225,7 +225,7 @@ export class SystemPromptsStore {
   private registered: readonly RegisteredPromptSectionView[] = []
 
   /** @param api - Settings, registered-section, and model-catalog wire faces. */
-  constructor(private readonly api: { settings: SettingsWire; llm: LlmWire; systemPrompt?: SystemPromptWire }) {}
+  constructor(private readonly api: { settings: SettingsWire; llm: LlmWire; systemPrompt?: SystemPromptWire } | Record<string, unknown>) {}
 
   /**
    * Refresh the namespace and catalog. Latest request wins.
@@ -240,14 +240,15 @@ export class SystemPromptsStore {
       state.builtInError = null
     })
     try {
+      const settingsApi = this.api as unknown as { settings: SettingsWire; llm: LlmWire; systemPrompt?: SystemPromptWire }
       const [settingsResponse, modelsResponse, sectionsResponse] = await Promise.all([
-        this.api.settings.describe(),
-        this.api.llm.listProviders(),
-        this.api.systemPrompt?.list?.() ?? Promise.resolve({ ok: true, value: { sections: [] } }),
+        settingsApi.settings.describe(),
+        settingsApi.llm.listProviders(),
+        settingsApi.systemPrompt?.list?.() ?? Promise.resolve({ ok: true, value: { sections: [] } }),
       ])
       if (generation !== this.generation) return
-      if (!settingsResponse.ok) throw new Error(settingsResponse.error.message)
-      const view = settingsResponse.value.namespaces.find((entry: SettingsNamespaceView) => entry.ns === USER_SYSTEM_PROMPTS_NS)
+      if (!settingsResponse.ok) throw new Error(settingsResponse.error?.message ?? 'settings describe failed')
+      const view = settingsResponse.value?.namespaces.find((entry: SettingsNamespaceView) => entry.ns === USER_SYSTEM_PROMPTS_NS)
       if (view === undefined) {
         this.view = undefined
         this.store.update((state) => {
@@ -264,7 +265,7 @@ export class SystemPromptsStore {
       let catalog: CatalogModel[] = []
       let catalogError: string | null = null
       if (!modelsResponse.ok) {
-        catalogError = modelsResponse.error.message
+        catalogError = modelsResponse.error?.message ?? 'listProviders failed'
       } else {
         catalog = (modelsResponse.value as readonly { id: string; name?: string }[]).map(provider => ({
           provider: provider.id,
@@ -276,13 +277,13 @@ export class SystemPromptsStore {
       let registered: readonly RegisteredPromptSectionView[] = []
       let builtInError: string | null = null
       if (!sectionsResponse.ok) {
-        builtInError = sectionsResponse.error.message
+        builtInError = (sectionsResponse as { error?: { message?: string } }).error?.message ?? 'systemPrompt list failed'
       } else {
-        registered = asRegisteredSections(sectionsResponse.value.sections)
+        registered = asRegisteredSections(sectionsResponse.value?.sections)
       }
       this.accept(
         view,
-        settingsResponse.value.writable,
+        Boolean((settingsResponse.value as { writable?: boolean } | undefined)?.writable),
         catalog,
         catalogError,
         registered,
@@ -530,16 +531,16 @@ export class SystemPromptsStore {
     // discard the replace result and leave the draft stuck on saving.
     const generation = ++this.writeGeneration
     try {
-      const response = await this.api.settings.replace(
+      const response = await (this.api as unknown as { settings: SettingsWire }).settings.replace(
         USER_SYSTEM_PROMPTS_NS,
         section as never,
         view.revision,
       )
       if (generation !== this.writeGeneration) return
-      if (!response.ok) throw new Error(response.error.message)
+      if (!response.ok) throw new Error(response.error?.message ?? 'settings replace failed')
       const snapshot = this.store.getSnapshot()
       this.accept(
-        response.value,
+        response.value as SettingsNamespaceView,
         snapshot.writable,
         snapshot.catalog,
         snapshot.catalogError,

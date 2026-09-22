@@ -405,8 +405,8 @@ function makeHarness(
   // SessionProvider seat arrives with the session-scope child declaration;
   // ChatView never invokes it (pass-through stub).
   const SessionProviderStub: ChatViewSlotProps['SessionProvider'] = ({ children }) => <>{children}</>
-  const props = {
-    usePanelInfo: (selector: (s: { activePanelId: null }) => unknown) => selector({ activePanelId: null }),
+  const props: ChatViewSlotProps = {
+    usePanelInfo: selector => selector({ activePanelId: null } as never),
     sessionId: SID,
     useSession: bindSnapshotSelector(session.source),
     useChat: bindSnapshotSelector(chatSource.source),
@@ -457,7 +457,7 @@ function makeHarness(
     // Absent-service default; mention tests override with a real resolver.
     fileMentions: () => undefined,
     t,
-  } as never
+  }
   const set = (next: HarnessUpdate): void => {
     const {
       chat: explicitChat, nodes, partial, runningCalls, turnTimings, turnEnds,
