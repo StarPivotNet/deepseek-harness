@@ -387,8 +387,14 @@ async function main(): Promise<void> {
       recordPackagingEvent(run.directory, { type: 'macos-settings', packConcurrency: settings.packConcurrency,
         downloadProxyConfigured: settings.downloadProxy !== undefined,
         notarizationProxyConfigured: settings.notarizationProxy !== undefined })
-      await packagingStep(run.directory, 'macos-package', () => withMacOSSigningKeychain(environment,
-        signingEnvironment => packageTarget(invocation, signingEnvironment, run)), secrets)
+      const skipSigning = invocation.prepareOnly
+        || invocation.unsigned
+        || environment.DSH_DESKTOP_UNSIGNED_RUNTIME === '1'
+        || environment.DSH_DESKTOP_UNSIGNED === '1'
+      await packagingStep(run.directory, 'macos-package', () => skipSigning
+        ? packageTarget(invocation, environment, run)
+        : withMacOSSigningKeychain(environment,
+          signingEnvironment => packageTarget(invocation, signingEnvironment, run)), secrets)
     } else {
       await packagingStep(run.directory, 'windows-package', () => packageTarget(invocation, environment, run), secrets)
     }
