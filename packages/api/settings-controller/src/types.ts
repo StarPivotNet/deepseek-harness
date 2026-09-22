@@ -32,39 +32,3 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 export interface SettingsDocumentOpenValue {
   readonly opened: true
 }
-
-/** Result of opening or revealing one locally authored Agent preset directory. */
-export type AgentPresetDirectoryOpenValue =
-  | { readonly opened: true }
-  | { readonly opened: false; readonly path: string }
-
-/** Stable credential failure details returned by the `credentials` namespace. */
-export interface CredentialErrorDetailsMap {
-  /**
-   * The provider refused a valid write, for example because a read-only source
-   * shadows the reference. The details name only the reference, never the value.
-   */
-  'credential-rejected': { readonly ref: string }
-}
-
-/** Credential business failure carried by a rejected Remote call. */
-export type CredentialError = {
-  [Code in keyof CredentialErrorDetailsMap]: {
-    readonly code: Code
-    readonly message: string
-    readonly details: CredentialErrorDetailsMap[Code]
-  }
-}[keyof CredentialErrorDetailsMap]
-
-/** One registered prompt section with its text resolved for a listing. */
-export interface SystemPromptSectionView {
-  readonly name: string
-  readonly order: number
-  readonly text: string
-  readonly complete: boolean
-}
-
-/** Deployment-wide system-prompt registry listing. */
-export interface SystemPromptListValue {
-  readonly sections: readonly SystemPromptSectionView[]
-}

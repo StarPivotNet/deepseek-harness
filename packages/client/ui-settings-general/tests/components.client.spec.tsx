@@ -6,9 +6,10 @@ import { bindSnapshotSelector, RemoteError } from '@deepseek-ai/dsh-client-test-
 import type { GeneralSectionComponentProps } from '../src/client/GeneralSection.tsx'
 import { GeneralSection } from '../src/client/GeneralSection.tsx'
 import { CloseLabel, HeaderContent, TriggerContent } from '../src/client/chrome.tsx'
-import { HostStartMeta } from '../src/client/HostStartMeta.tsx'
 import type { TriggerContentProps } from '../src/client/chrome.tsx'
 import { SettingsDocumentAction } from '../src/client/SettingsDocumentAction.tsx'
+import { DeveloperToolsRow } from '../src/client/DeveloperToolsRow.tsx'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { SettingsDescribeMirror } from '@deepseek-ai/dsh-client-ui-settings/src/client/settings-mirror.ts'
 import { SettingsDocumentStore } from '../src/client/settings-document-store.ts'
 
@@ -21,20 +22,16 @@ function derivedDocumentStore(remote: object) {
   const ctx = { remote } as never
   return new SettingsDocumentStore(ctx, new SettingsDescribeMirror(ctx))
 }
-import { en } from '../src/client/locales.ts'
+import { en, zh } from '../src/client/locales.ts'
+import { CurrentVersionRow } from '../src/client/CurrentVersionRow.tsx'
 import { DesktopUpdateBadge } from '../src/client/DesktopUpdateIndicator.tsx'
-import type { DesktopUpdateView } from '../src/client/desktop-update-bridge.ts'
+import type { DesktopUpdateView } from '../src/types.ts'
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.unstubAllEnvs() })
 
 // The seat's key domain is settings ∪ common; the stub answers from the
 // package dictionary and falls back to the key like the real chain.
-const t: TriggerContentProps['t'] = (key, params) => {
-  const template = (en as Record<string, string>)[key] ?? key
-  if (params === undefined) return template
-  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
-    name in params ? String(params[name]) : match)
-}
+const t: TriggerContentProps['t'] = key => (en as Record<string, string>)[key] ?? key
 
 // Global standard kit stubs: none of these components consume the hooks.
 const unusedHook = (() => { throw new Error('unused by settings-general components') }) as never
@@ -47,7 +44,7 @@ const kit = {
 }
 
 describe('Desktop collapsed update badge', () => {
-  it('shows update status, marks failures, and yields to connection feedback', () => {
+  it('shows update and retry status and yields to connection feedback', () => {
     let state: DesktopUpdateView = { failed: false, opening: false }
     let connection: 'connected' | 'connecting' | 'disconnected' = 'connected'
     const props = { ...kit, t,
@@ -58,17 +55,17 @@ describe('Desktop collapsed update badge', () => {
     expect(screen.queryByRole('img')).toBeNull()
     state = { ...state, presentation: { phase: 'available', version: '1.0.1' } }
     view.rerender(<DesktopUpdateBadge {...props} />)
-    expect(screen.getByRole('img', { name: 'Update' }).getAttribute('data-error')).toBeNull()
+    expect(screen.getByRole('img', { name: 'Update' })).toBeTruthy()
     expect(screen.queryByRole('button')).toBeNull()
     state = { ...state, failed: true }
     view.rerender(<DesktopUpdateBadge {...props} />)
-    expect(screen.getByRole('img', { name: en['desktop.update.retry'] }).getAttribute('data-error')).toBe('true')
+    expect(screen.getByRole('img', { name: en['desktop.update.retry'] })).toBeTruthy()
     state = { failed: true, opening: false }
     view.rerender(<DesktopUpdateBadge {...props} />)
-    expect(screen.getByRole('img', { name: en['desktop.update.retry'] }).getAttribute('data-error')).toBe('true')
+    expect(screen.getByRole('img', { name: en['desktop.update.retry'] })).toBeTruthy()
     state = { failed: false, opening: false, presentation: { phase: 'error', failure: 'install' } }
     view.rerender(<DesktopUpdateBadge {...props} />)
-    expect(screen.getByRole('img', { name: en['desktop.update.retry'] }).getAttribute('data-error')).toBe('true')
+    expect(screen.getByRole('img', { name: en['desktop.update.retry'] })).toBeTruthy()
     for (const value of ['connecting', 'disconnected'] as const) {
       connection = value
       view.rerender(<DesktopUpdateBadge {...props} />)
@@ -77,49 +74,34 @@ describe('Desktop collapsed update badge', () => {
   })
 })
 
-function connectionGeneration(home?: string): TriggerContentProps['useConnectionGeneration'] {
-  return selector => selector(home === undefined ? undefined : { id: 1, host: { home } })
-}
+it('toggles developer tools using the accepted setting and disables duplicate writes', async () => {
+  const state = createSnapshotStore(false)
+  let finish!: () => void
+  const setEnabled = vi.fn((enabled: boolean) => new Promise<void>((resolve) => {
+    finish = () => { state.set(enabled); resolve() }
+  }))
+  render(<DeveloperToolsRow {...kit} t={t} useDeveloperTools={bindSnapshotSelector(state)} setEnabled={setEnabled} />)
+  const toggle = screen.getByRole('switch', { name: 'Developer tools' })
+  expect(toggle.getAttribute('aria-checked')).toBe('false')
+  fireEvent.click(toggle)
+  expect(setEnabled).toHaveBeenCalledWith(true)
+  expect(toggle.hasAttribute('disabled')).toBe(true)
+  finish()
+  await waitFor(() => { expect(toggle.getAttribute('aria-checked')).toBe('true') })
+  expect(toggle.hasAttribute('disabled')).toBe(false)
+})
 
 describe('chrome content', () => {
-  it('TriggerContent shows the account chip, name, and settings glyph in the wide column', () => {
-    const { container } = render(
-      <TriggerContent {...kit} wide t={t} useConnectionGeneration={connectionGeneration('/Users/cat7street')} />,
-    )
+  it('TriggerContent renders the icon with the label in the wide column', () => {
+    const { container } = render(<TriggerContent {...kit} wide t={t} />)
     expect(container.querySelector('svg')).toBeTruthy()
-    expect(screen.getByText('C')).toBeTruthy()
-    expect(screen.getByText('cat7street')).toBeTruthy()
     expect(screen.getByText('Settings')).toBeTruthy()
   })
 
-  it('TriggerContent paints only the account chip on the account part', () => {
-    const { container } = render(
-      <TriggerContent {...kit} wide part="account" t={t} useConnectionGeneration={connectionGeneration('/Users/cat7street')} />,
-    )
-    expect(container.querySelector('svg')).toBeNull()
-    expect(screen.getByText('C')).toBeTruthy()
-    expect(screen.getByText('cat7street')).toBeTruthy()
+  it('TriggerContent drops the label in the rail state', () => {
+    const { container } = render(<TriggerContent {...kit} wide={false} t={t} />)
+    expect(container.querySelector('svg')).toBeTruthy()
     expect(screen.queryByText('Settings')).toBeNull()
-  })
-
-  it('TriggerContent paints only the settings glyph on the settings part', () => {
-    const { container } = render(
-      <TriggerContent {...kit} wide part="settings" t={t} useConnectionGeneration={connectionGeneration('/Users/cat7street')} />,
-    )
-    expect(container.querySelector('svg')).toBeTruthy()
-    expect(screen.queryByText('C')).toBeNull()
-    expect(screen.queryByText('cat7street')).toBeNull()
-    expect(screen.getByText('Settings')).toBeTruthy()
-  })
-
-  it('TriggerContent falls back to Local when Host home is absent and hides the name on the rail', () => {
-    const { container } = render(
-      <TriggerContent {...kit} wide={false} t={t} useConnectionGeneration={connectionGeneration()} />,
-    )
-    expect(container.querySelector('svg')).toBeNull()
-    expect(screen.getByText('L')).toBeTruthy()
-    expect(screen.queryByText('Local')).toBeNull()
-    expect(screen.getByText('Settings')).toBeTruthy()
   })
 
   it('HeaderContent and CloseLabel render their translated text', () => {
@@ -127,16 +109,6 @@ describe('chrome content', () => {
     render(<CloseLabel {...kit} t={t} />)
     expect(screen.getByText('Settings')).toBeTruthy()
     expect(screen.getByText('Close')).toBeTruthy()
-  })
-
-  it('HostStartMeta stays empty until a ready start count exists', () => {
-    const { rerender } = render(<HostStartMeta meta={{ status: 'loading', startCount: 0 }} t={t} />)
-    expect(screen.queryByText(/launched/)).toBeNull()
-    rerender(<HostStartMeta
-      meta={{ status: 'ready', startCount: 2, startedAt: '2026-08-29T00:17:56.000Z' }}
-      t={t}
-    />)
-    expect(screen.getByText(/launched 2 times/).textContent).toContain('Started')
   })
 })
 
@@ -235,5 +207,42 @@ describe('SettingsDocumentAction', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Open configuration file' }))
     expect((await screen.findByRole('alert')).textContent).toBe('Could not open configuration file')
     expect(screen.getByRole('button', { name: 'Open configuration file' })).toBeTruthy()
+  })
+})
+
+it('reports a failed developer-tool write and allows retry', async () => {
+  const state = createSnapshotStore(false)
+  const setEnabled = vi.fn().mockRejectedValueOnce(new Error('offline')).mockImplementation(async (enabled: boolean) => { state.set(enabled) })
+  render(<DeveloperToolsRow {...kit} t={t} useDeveloperTools={bindSnapshotSelector(state)} setEnabled={setEnabled} />)
+  const toggle = screen.getByRole('switch', { name: 'Developer tools' })
+  fireEvent.click(toggle)
+  expect((await screen.findByRole('alert')).textContent).toBe('Could not save. Please try again.')
+  expect(toggle.hasAttribute('disabled')).toBe(false)
+  expect(toggle.getAttribute('aria-checked')).toBe('false')
+  fireEvent.click(toggle)
+  await waitFor(() => { expect(toggle.getAttribute('aria-checked')).toBe('true') })
+  expect(screen.queryByRole('alert')).toBeNull()
+})
+
+describe('current version', () => {
+  it.each([
+    ['Current version: 1.2.3-rc.4', en],
+    ['当前版本：1.2.3-rc.4', zh],
+  ])('renders the localized release label %s', (expected, dictionary) => {
+    vi.stubEnv('DSH_CLIENT_VERSION', '1.2.3-rc.4')
+    const translate: TriggerContentProps['t'] = (key, params) => {
+      let text = (dictionary as Record<string, string>)[key] ?? key
+      for (const [name, value] of Object.entries(params ?? {})) text = text.replace(`{${name}}`, String(value))
+      return text
+    }
+    render(<CurrentVersionRow {...kit} t={translate} />)
+    expect(screen.getByText(expected)).toBeTruthy()
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('omits the row when a partial build has no version metadata', () => {
+    vi.stubEnv('DSH_CLIENT_VERSION', undefined)
+    const view = render(<CurrentVersionRow {...kit} t={t} />)
+    expect(view.container.textContent).toBe('')
   })
 })

@@ -4,18 +4,17 @@ import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { Agent, ModelSelection as AgentModelSelection } from '@deepseek-ai/dsh-agent'
-import { mkdir, realpath, stat } from 'node:fs/promises'
-import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import { AttachmentError } from '@deepseek-ai/dsh-attachment'
 import type {
-  AttachmentAdmissionPart, FileAttachmentRef, ImageAttachmentRef, VideoAttachmentRef,
+  AttachmentAdmissionPart, FileAttachmentRef, ImageAttachmentRef,
 } from '@deepseek-ai/dsh-attachment'
 import type { FileUploadReceiptId } from '@deepseek-ai/dsh-client-file-upload/types'
 import type {} from '@deepseek-ai/dsh-client-file-upload'
 import {
   ReasoningEffortId, assistantStreamChunks, createUserMessage, freezeMessage,
 } from '@deepseek-ai/dsh-llm'
-import type { ContentBlock, MessageSource } from '@deepseek-ai/dsh-llm'
+import type { MessageSource } from '@deepseek-ai/dsh-llm'
+import { buildForkSeed } from '@deepseek-ai/dsh-session/fork'
 import { SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader, SessionId, UserMessage } from '@deepseek-ai/dsh-session'
 import { SessionQueryError, type SessionObservation } from '@deepseek-ai/dsh-session-query'
@@ -24,8 +23,6 @@ import { canonicalClientTimeZone } from '@deepseek-ai/dsh-util-time'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type { Workspace } from '@deepseek-ai/dsh-workspace'
-import { membershipHome } from '@deepseek-ai/dsh-workspace'
-import { setSessionHome } from '@deepseek-ai/dsh-sandbox-policy'
 import {
   ApiSessionAgentController,
   ApiSessionCwdConflict,
@@ -47,17 +44,13 @@ import type {
   SessionForkValue,
   SessionPromptRequest,
   SessionPromptValue,
-  SessionRehomeRequest,
-  SessionRehomeValue,
   SessionRenameRequest,
   SessionRenameValue,
-  SessionRequestId,
-  SessionRewriteRequest,
-  SessionRewriteValue,
   SessionSelectModelRequest,
   SessionSelectModelValue,
   SessionUpdateQueueRequest,
   SessionUpdateQueueValue,
+  SessionRequestId,
 } from './types.ts'
 
 interface SessionReadState {
@@ -72,6 +65,22 @@ type PromptContentCandidate =
 
 function hasPromptContent(content: readonly PromptContentCandidate[]): boolean {
   return content.some(part => part.type !== 'text' || part.text.trim().length > 0)
+}
+
+/**
+ * Resolve the omitted-`atSeq` default to the latest completed-turn prefix,
+ * including standalone events before the next turn begins.
+ */
+function latestCompletedPrefixBoundary(events: readonly SessionEvent[]): SessionSeq | undefined {
+  const lastTurnEnd = events.findLast(event => event.type === 'turn/end')
+  if (lastTurnEnd === undefined) return undefined
+  let boundary = lastTurnEnd.seq
+  for (const next of events.slice(boundary + 1)) {
+    if (next.type === 'turn/start' || (next.type === 'user/message' && next.surfaceOp === 'append')
+      || next.type === 'agent/inbox/spliced') break
+    boundary = next.seq
+  }
+  return boundary
 }
 
 /** Implements Session business commands delegated by the Session Controller Remote service. */
@@ -389,8 +398,10 @@ export class SessionCommandController {
   }
 
   /**
-   * Create a new ordinary Session from one completed-turn prefix.
-   * @param request - source Session and optional event anchor.
+   * Create a new ordinary Session from an exact event prefix. An explicit
+   * `atSeq` is the inclusive cut; an omitted value selects the latest
+   * completed-turn prefix. An open cut receives synthetic fork closers.
+   * @param request - source Session and optional exact event boundary.
    * @returns the new Session identity.
    */
   async fork(request: SessionForkRequest): Promise<SessionForkValue> {
@@ -417,24 +428,17 @@ export class SessionCommandController {
       )
     }
     using source = observed
-    const lastSeq = source.events.at(-1)?.seq ?? -1
-    const anchoredBoundary = atSeq === undefined
-      ? undefined
-      : source.events.find(event => event.type === 'turn/end' && event.seq >= atSeq)
-    const boundary = anchoredBoundary
-      ?? (atSeq === undefined || atSeq > lastSeq
-        ? source.events.findLast(event => event.type === 'turn/end')
-        : undefined)
-    if (boundary === undefined) {
+    const boundary = atSeq ?? latestCompletedPrefixBoundary(source.events)
+    if (boundary === undefined || source.events[boundary]?.seq !== boundary) {
       throw new RemoteError(
         'session/fork-unavailable',
-        atSeq !== undefined && atSeq <= lastSeq
-          ? `session "${request.sessionId}" has not completed the turn containing event ${String(atSeq)}`
-          : `session "${request.sessionId}" has no completed turn to fork from`,
+        request.atSeq === undefined
+          ? `session "${request.sessionId}" has no completed turn to fork from`
+          : `event ${String(request.atSeq)} does not exist in session "${request.sessionId}" (last seq: ${String(source.events.at(-1)?.seq ?? 'none')})`,
         { sessionId: request.sessionId },
       )
     }
-    const cut = SessionLogOffset(boundary.seq + 1)
+    const seed = buildForkSeed(source.events, boundary)
     let workspace: Workspace | undefined
     try {
       workspace = await this.forkWorkspace(source.header)
@@ -451,8 +455,8 @@ export class SessionCommandController {
       const { provider, model } = this.ctx.agentDefaultModel.currentSelection()
       await this.ctx.agents.create({
         sessionId: childId,
-        seed: source.events.slice(0, cut),
-        inheritedEventCount: cut,
+        seed,
+        inheritedEventCount: SessionLogOffset(boundary + 1),
         meta: {
           ...(source.header.cwd === undefined ? {} : { cwd: source.header.cwd }),
           parentSession: source.header.id,
@@ -524,7 +528,6 @@ export class SessionCommandController {
       ...(clientTimeZone === undefined ? {} : { clientTimeZone }),
     }
     const hasImage = request.content.some(part => part.type === 'image')
-    const hasVideo = request.content.some(part => part.type === 'video')
     const admit = async (): Promise<SessionPromptValue> => {
       try {
         if (hasImage) {
@@ -535,17 +538,6 @@ export class SessionCommandController {
               'session/attachment-invalid',
               `Model "${current.model}" does not support image input.`,
               { reason: 'MODEL_DOES_NOT_SUPPORT_IMAGES' },
-            )
-          }
-        }
-        if (hasVideo) {
-          const current = this.agents.selectionFor(agent).current
-          const model = await this.ctx.llm.resolveModelInfo(current.provider, current.model)
-          if (model.inputModalities !== undefined && !model.inputModalities.includes('video')) {
-            throw new RemoteError(
-              'session/attachment-invalid',
-              `Model "${current.model}" does not support video input.`,
-              { reason: 'MODEL_DOES_NOT_SUPPORT_VIDEOS' },
             )
           }
         }
@@ -575,7 +567,7 @@ export class SessionCommandController {
       }
       return { accepted: true }
     }
-    return (hasImage || hasVideo) ? this.agents.serializeImageAdmission(agent, admit) : admit()
+    return hasImage ? this.agents.serializeImageAdmission(agent, admit) : admit()
   }
 
   /**
@@ -597,23 +589,16 @@ export class SessionCommandController {
         {},
       )
     }
-    const found = referencedAttachment(source.events, String(request.attachmentId))
-    if (found === undefined) {
+    const ref = referencedImage(source.events, String(request.attachmentId))
+    if (ref === undefined) {
       throw new RemoteError(
         'session/attachment-invalid',
-        'Attachment is not referenced by this session.',
+        'Image is not referenced by this session.',
         { reason: 'ATTACHMENT_NOT_REFERENCED' },
       )
     }
     try {
-      if (found.kind === 'video') {
-        const stored = await this.ctx.attachments.readVideo(found.ref)
-        return {
-          attachment: stored.ref,
-          data: Buffer.from(stored.data).toString('base64'),
-        }
-      }
-      const stored = await this.ctx.attachments.readImage(found.ref)
+      const stored = await this.ctx.attachments.readImage(ref)
       return {
         attachment: stored.ref,
         data: Buffer.from(stored.data).toString('base64'),
@@ -622,7 +607,7 @@ export class SessionCommandController {
       if (error instanceof AttachmentError) {
         throw new RemoteError('session/attachment-invalid', error.message, { reason: error.code })
       }
-      throw new RemoteError('gateway/internal', 'Unable to read attachment.', {})
+      throw new RemoteError('gateway/internal', 'Unable to read image attachment.', {})
     }
   }
 
@@ -633,6 +618,7 @@ export class SessionCommandController {
    */
   async updateQueue(request: SessionUpdateQueueRequest): Promise<SessionUpdateQueueValue> {
     if (request.action.kind === 'edit') {
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- Remote callers can submit untyped JSON.
       if (request.action.content.some(block => block.type !== 'text')) {
         throw new RemoteError(
           'session/attachment-invalid',
@@ -733,6 +719,9 @@ export class SessionCommandController {
 
   private rejectCreation(sessionId: SessionId, error: unknown): never {
     if (remoteErrorOf(error) !== undefined) throw error
+    if (error instanceof Error && error.name === 'SessionAlreadyOwnedError') {
+      throw new RemoteError('session/writer-held', error.message, { sessionId })
+    }
     if (error instanceof ApiSessionPresetConflict) {
       throw new RemoteError('agent-preset/conflict', error.message, {
         sessionId: error.sessionId,
@@ -776,34 +765,6 @@ export class SessionCommandController {
   }
 }
 
-function mergeQueueEditText(
-  current: readonly ContentBlock[],
-  next: readonly ContentBlock[],
-): ContentBlock[] | null {
-  if (next.length !== 1 || next[0]?.type !== 'text') return null
-  const text = next[0].text
-  let replaced = false
-  const merged: ContentBlock[] = []
-  for (const block of current) {
-    if (block.type !== 'text') {
-      merged.push(block)
-      continue
-    }
-    if (!replaced) {
-      merged.push({ type: 'text', text })
-      replaced = true
-    }
-  }
-  if (!replaced) merged.push({ type: 'text', text })
-  return merged
-}
-
-async function ensureNoRepoDirectory(): Promise<string> {
-  const path = dshHomePath('no-repo')
-  await mkdir(path, { recursive: true })
-  return await realpath(path)
-}
-
 function resolvePromptFileReceipts(
   content: SessionPromptRequest['content'],
   stagedFile: (receiptId: FileUploadReceiptId) => FileAttachmentRef | undefined,
@@ -838,67 +799,79 @@ function hasPromptRequest(agent: Agent, requestId: SessionRequestId): boolean {
     return source.kind === 'user' && 'rpcId' in source && source.rpcId === requestId
   })
 }
-
-function mediaBlockIn(
+function imageBlockIn(
   content: unknown,
-  match: (kind: 'image' | 'video', ref: ImageAttachmentRef | VideoAttachmentRef) => boolean,
-): { kind: 'image'; ref: ImageAttachmentRef } | { kind: 'video'; ref: VideoAttachmentRef } | undefined {
+  match: (ref: ImageAttachmentRef) => boolean,
+): ImageAttachmentRef | undefined {
   if (!Array.isArray(content)) return undefined
   for (const value of content) {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) continue
-    const block = value as { readonly type?: unknown; readonly attachment?: unknown; readonly content?: unknown }
-    if ((block.type === 'image' || block.type === 'video')
-      && typeof block.attachment === 'object' && block.attachment !== null) {
-      const kind = block.type
-      const ref = block.attachment as ImageAttachmentRef | VideoAttachmentRef
-      if (match(kind, ref)) {
-        return kind === 'video'
-          ? { kind: 'video', ref: ref as VideoAttachmentRef }
-          : { kind: 'image', ref: ref as ImageAttachmentRef }
-      }
-    }
-    if (block.type === 'tool-result') {
-      const nested = mediaBlockIn(block.content, match)
-      if (nested !== undefined) return nested
+    const block = value as { readonly type?: unknown; readonly attachment?: unknown }
+    if (block.type === 'image' && typeof block.attachment === 'object' && block.attachment !== null) {
+      const ref = block.attachment as ImageAttachmentRef
+      if (match(ref)) return ref
     }
   }
   return undefined
 }
 
-function referencedAttachmentFromEvent(
+/** Read only first-party declared content fields; unknown event payloads stay opaque. */
+function imageInEvent(
   event: SessionEvent,
-  match: (kind: 'image' | 'video', ref: ImageAttachmentRef | VideoAttachmentRef) => boolean,
-): { kind: 'image'; ref: ImageAttachmentRef } | { kind: 'video'; ref: VideoAttachmentRef } | undefined {
+  match: (ref: ImageAttachmentRef) => boolean,
+): ImageAttachmentRef | undefined {
   const data = event.data as {
     readonly content?: unknown
     readonly message?: { readonly content?: unknown }
-    readonly inserted?: readonly { readonly content?: unknown }[]
+    readonly inserted?: unknown
+    readonly summary?: unknown
+    readonly rawOutput?: unknown
   }
-  const direct = mediaBlockIn(data.content, match)
-  if (direct !== undefined) return direct
-  const message = mediaBlockIn(data.message?.content, match)
-  if (message !== undefined) return message
-  for (const inserted of data.inserted ?? []) {
-    const found = mediaBlockIn(inserted.content, match)
-    if (found !== undefined) return found
-  }
-  if (event.type === 'assistant/message' || event.type === 'assistant/attempt') {
-    for (const chunk of assistantStreamChunks(event.data.stream, 'block-end')) {
-      const found = mediaBlockIn([chunk.block], match)
-      if (found !== undefined) return found
+  // First-party event payloads can be present without their producer plugin mounted.
+  const type: string = event.type
+  switch (type) {
+    case 'user/message':
+    case 'tool/ptc-dispatch':
+      return imageBlockIn(data.content, match)
+    case 'system/message':
+    case 'developer/message':
+    case 'tool/result':
+    case 'team/message/queued':
+      return imageBlockIn(data.message?.content, match)
+    case 'agent/inbox/spliced': {
+      const messages = data.inserted
+      if (!Array.isArray(messages)) return undefined
+      for (const message of messages as readonly unknown[]) {
+        if (typeof message !== 'object' || message === null || Array.isArray(message)) continue
+        const found = imageBlockIn((message as { readonly content?: unknown }).content, match)
+        if (found !== undefined) return found
+      }
+      return undefined
     }
+    case 'compaction/summary':
+      return imageBlockIn(data.summary, match) ?? imageBlockIn(data.rawOutput, match)
+    case 'assistant/message': {
+      const found = imageBlockIn(data.message?.content, match)
+      if (found !== undefined) return found
+      break
+    }
+    case 'assistant/attempt': break
+    default: return undefined
+  }
+  const assistant = event as SessionEvent<'assistant/message' | 'assistant/attempt'>
+  for (const chunk of assistantStreamChunks(assistant.data.stream, 'block-end')) {
+    const found = imageBlockIn([chunk.block], match)
+    if (found !== undefined) return found
   }
   return undefined
 }
 
-function referencedAttachment(
+function referencedImage(
   events: readonly SessionEvent[],
   attachmentId: string,
-): { kind: 'image'; ref: ImageAttachmentRef } | { kind: 'video'; ref: VideoAttachmentRef } | undefined {
-  const match = (_kind: 'image' | 'video', ref: ImageAttachmentRef | VideoAttachmentRef) =>
-    String(ref.attachmentId) === attachmentId
+): ImageAttachmentRef | undefined {
   for (const event of events) {
-    const found = referencedAttachmentFromEvent(event, match)
+    const found = imageInEvent(event, ref => String(ref.attachmentId) === attachmentId)
     if (found !== undefined) return found
   }
   return undefined

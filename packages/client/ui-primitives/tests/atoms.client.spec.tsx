@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+import { useState } from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Button, ConnectionIndicator, Input, Menu, Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, ConnectionIndicator, Input, Menu, MenuItemButton, Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
 import { POINTER_GRACE_MS } from '../src/pointer-grace.ts'
 
 afterEach(cleanup)
@@ -74,6 +75,42 @@ describe('Menu', () => {
       <Menu open anchor={<span>trigger</span>} items={items} selectedId="a" onSelect={onSelect} onClose={() => {}} />)
     fireEvent.click(screen.getByRole('menuitem', { name: 'Alpha' }))
     expect(onSelect).toHaveBeenCalledWith('a')
+  })
+
+  it('walks component rows with the data rows and returns focus to the trigger after one is activated', async () => {
+    const onAction = vi.fn()
+    function Harness() {
+      const [open, setOpen] = useState(true)
+      return (
+        <Menu
+          open={open}
+          anchor={<button type="button">trigger</button>}
+          items={[{ id: 'a', label: 'Alpha' }]}
+          onSelect={() => {}}
+          onClose={() => { setOpen(false) }}
+        >
+          <MenuItemButton separatorBefore onSelect={() => { onAction(); setOpen(false) }}>Publish</MenuItemButton>
+        </Menu>
+      )
+    }
+    render(<Harness />)
+    const trigger = screen.getByRole('button', { name: 'trigger' })
+    expect(screen.getAllByRole('menuitem').map(item => item.textContent)).toEqual(['Alpha', 'Publish'])
+    // The component row starts a group: one hairline, between the data row and it.
+    const publishWrap = screen.getByRole('menuitem', { name: 'Publish' }).parentElement
+    expect(screen.getByRole('separator').nextElementSibling).toBe(screen.getByRole('menuitem', { name: 'Publish' }))
+    expect(publishWrap?.contains(screen.getByRole('separator'))).toBe(true)
+    const publish = screen.getByRole('menuitem', { name: 'Publish' })
+    trigger.focus()
+    fireEvent.keyDown(trigger, { key: 'End' })
+    expect(document.activeElement).toBe(publish)
+    fireEvent.keyDown(publish, { key: 'ArrowUp' })
+    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Alpha' }))
+    fireEvent.click(publish)
+    expect(onAction).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('menu')).toBeNull()
+    await act(async () => { await Promise.resolve() })
+    expect(document.activeElement).toBe(trigger)
   })
 
   it('disabled item does not select; Escape and outside pointerdown close', () => {
@@ -362,21 +399,30 @@ describe('Menu', () => {
     expect(rowClick).not.toHaveBeenCalled()
   })
 
-  it('renders a trailing shortcut on a submenu row', () => {
+  it('closes an open submenu when the pointer or focus reaches a component row', () => {
     render(
       <Menu
         open
         anchor={<span>trigger</span>}
-        items={[{
-          id: 'zoom',
-          label: 'Zoom',
-          submenu: [{ id: 'in', label: 'Zoom in', shortcut: '⌘ +' }],
-        }]}
+        items={[{ id: 'p', label: 'Parent', submenu: [{ id: 's', label: 'Sub' }] }]}
         onSelect={() => {}}
         onClose={() => {}}
-      />)
-    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Zoom' }).parentElement as HTMLElement)
-    expect(screen.getByRole('menuitem', { name: 'Zoom in⌘ +' })).toBeTruthy()
+      >
+        <MenuItemButton onSelect={() => {}}>Row</MenuItemButton>
+      </Menu>,
+    )
+    const parent = screen.getByRole('menuitem', { name: 'Parent' })
+    fireEvent.focus(parent)
+    expect(screen.getByRole('menuitem', { name: 'Sub' })).toBeDefined()
+    // Rows inside the card are not top-level rows: focusing one keeps it open.
+    fireEvent.focus(screen.getByRole('menuitem', { name: 'Sub' }))
+    expect(screen.getByRole('menuitem', { name: 'Sub' })).toBeDefined()
+    fireEvent.focus(screen.getByRole('menuitem', { name: 'Row' }))
+    expect(screen.queryByRole('menuitem', { name: 'Sub' })).toBeNull()
+    fireEvent.mouseEnter(parent.parentElement as HTMLElement)
+    expect(screen.getByRole('menuitem', { name: 'Sub' })).toBeDefined()
+    fireEvent.mouseOver(screen.getByRole('menuitem', { name: 'Row' }))
+    expect(screen.queryByRole('menuitem', { name: 'Sub' })).toBeNull()
   })
 
   it('opens a submenu on hover and selects a nested item', () => {
@@ -403,7 +449,6 @@ describe('Menu', () => {
     fireEvent.mouseEnter(plain.parentElement as HTMLElement)
     fireEvent.focus(plain)
     const parent = screen.getByRole('menuitem', { name: 'New Workspace' })
-    expect(parent.querySelector('svg')).toBeTruthy()
     const wrap = parent.parentElement as HTMLElement
     fireEvent.click(parent)
     expect(onSelect).not.toHaveBeenCalled()
@@ -448,6 +493,34 @@ describe('Menu', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
+  it('follows an anchor moving without scroll or resize and stops tracking when closed or unmounted', () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame'] })
+    let rect = new DOMRect(40, 100, 32, 28)
+    const getAnchorRect = vi.fn(() => rect)
+    const props = { portal: true, anchor: null, items, getAnchorRect, onClose: () => {} }
+    try {
+      const view = render(<Menu {...props} open />)
+      rect = new DOMRect(140, 180, 32, 28)
+      act(() => { vi.advanceTimersToNextFrame() })
+      expect(screen.getByRole('menu').style.left).toBe('140px')
+      expect(screen.getByRole('menu').style.top).toBe('212px')
+
+      view.rerender(<Menu {...props} open={false} />)
+      getAnchorRect.mockClear()
+      act(() => { vi.advanceTimersToNextFrame() })
+      expect(getAnchorRect).not.toHaveBeenCalled()
+
+      view.rerender(<Menu {...props} open />)
+      view.unmount()
+      getAnchorRect.mockClear()
+      act(() => { vi.advanceTimersToNextFrame() })
+      expect(getAnchorRect).not.toHaveBeenCalled()
+    } finally {
+      cleanup()
+      vi.useRealTimers()
+    }
+  })
+
   it('portal mode renders the list under body, positions it fixed, and still closes on outside pointerdown', () => {
     const onSelect = vi.fn()
     const onClose = vi.fn()
@@ -469,23 +542,6 @@ describe('Menu', () => {
     expect(onClose).not.toHaveBeenCalled()
     fireEvent.pointerDown(document.body)
     expect(onClose).toHaveBeenCalledTimes(1)
-  })
-
-  it('portal mode keeps the placed left/top across a later React render', () => {
-    const { rerender } = render(
-      <Menu portal open anchor={<span>trigger</span>} items={items} onSelect={() => {}} onClose={() => {}} />)
-    const menu = screen.getByRole('menu')
-    const left = menu.style.left
-    const top = menu.style.top
-    expect(left).not.toBe('')
-    expect(top).not.toBe('')
-    expect(menu.hasAttribute('data-placed')).toBe(true)
-    rerender(
-      <Menu portal open anchor={<span>trigger</span>} items={[...items, { id: 'c', label: 'Gamma' }]} onSelect={() => {}} onClose={() => {}} />)
-    const again = screen.getByRole('menu')
-    expect(again.style.left).toBe(left)
-    expect(again.style.top).toBe(top)
-    expect(again.hasAttribute('data-placed')).toBe(true)
   })
 
   it('portal mode resolves align=end / side=top to clamped left/top coordinates', () => {
@@ -596,8 +652,9 @@ describe('ConnectionIndicator', () => {
     expect(reconnect).toHaveBeenCalledOnce()
 
     rerender(<ConnectionIndicator state="connecting" {...labels} />)
-    expect(screen.getByRole('button', { name: 'Connecting, restart now' }).textContent)
-      .toContain('Connecting...')
+    const connecting = screen.getByRole('button', { name: 'Connecting, restart now' })
+    expect(connecting.textContent).toContain('Connecting...')
+    expect(connecting.querySelector('[data-state="ongoing"]')).not.toBeNull()
 
     rerender(<ConnectionIndicator state="recovered" {...labels} />)
     expect(screen.queryByRole('button')).toBeNull()

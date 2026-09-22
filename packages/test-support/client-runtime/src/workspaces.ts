@@ -1,7 +1,7 @@
 /** Test-owned workspaces face: the renderer standard-kit observable plus recorded actions. */
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type {
-  IWorkspaces, WorkspaceId, WorkspaceSnapshot, WorkspaceView,
+  IWorkspaces, WorkspaceId, WorkspaceInitializeDefaultRequest, WorkspaceSnapshot, WorkspaceView,
 } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
@@ -79,6 +79,18 @@ export class TestWorkspaces implements IWorkspaces {
       folders: [],
       sessionIds: [],
     } as unknown as WorkspaceView
+  }
+
+  /**
+   * Initialize the default Workspace through a test stub; defaults to an ineligible first use.
+   * @param request - initial directory name and title.
+   * @param signal - caller lifetime.
+   * @returns the stubbed Workspace, or undefined when initialization is ineligible.
+   */
+  async initializeDefault(request: WorkspaceInitializeDefaultRequest, signal?: AbortSignal): Promise<WorkspaceView | undefined> {
+    this.calls.push({ method: 'initializeDefault', args: [request, signal] })
+    const stub = this.stubs.get('initializeDefault')
+    return await (stub?.(request, signal) as Promise<WorkspaceView | undefined> | undefined)
   }
 
   /**
@@ -204,6 +216,26 @@ export class TestWorkspaces implements IWorkspaces {
   }
 
   /**
+   * Pin a session (recorded). The default mirrors the production face's
+   * observable effect: the id leads the list state's pin set.
+   * @param sessionId - session to pin.
+   */
+  async pinSession(sessionId: SessionId): Promise<void> {
+    this.calls.push({ method: 'pinSession', args: [sessionId] })
+    const stub = this.stubs.get('pinSession')
+    if (stub !== undefined) {
+      await (stub(sessionId) as Promise<void>)
+      return
+    }
+    await this.update((draft) => {
+      draft.pinnedSessionIds = [
+        sessionId,
+        ...draft.pinnedSessionIds.filter(id => id !== sessionId),
+      ]
+    })
+  }
+
+  /**
    * Hide a Workspace (recorded). The default mirrors the production face:
    * the id joins the list state's hidden set.
    * @param workspaceId - Workspace to hide.
@@ -218,6 +250,23 @@ export class TestWorkspaces implements IWorkspaces {
     await this.update((draft) => {
       if (draft.hiddenWorkspaceIds.includes(workspaceId)) return
       draft.hiddenWorkspaceIds = [...draft.hiddenWorkspaceIds, workspaceId]
+    })
+  }
+
+  /**
+   * Unpin a session (recorded). The default mirrors the production face's
+   * observable effect: the id leaves the list state's pin set.
+   * @param sessionId - session to unpin.
+   */
+  async unpinSession(sessionId: SessionId): Promise<void> {
+    this.calls.push({ method: 'unpinSession', args: [sessionId] })
+    const stub = this.stubs.get('unpinSession')
+    if (stub !== undefined) {
+      await (stub(sessionId) as Promise<void>)
+      return
+    }
+    await this.update((draft) => {
+      draft.pinnedSessionIds = draft.pinnedSessionIds.filter(id => id !== sessionId)
     })
   }
 

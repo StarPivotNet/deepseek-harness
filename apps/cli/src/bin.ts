@@ -64,6 +64,11 @@ export async function runCli(): Promise<void> {
       )
       break
     }
+    case 'dump-config-schema': {
+      const { runDumpConfigSchema } = await import('./dump-config-schema.ts')
+      await runDumpConfigSchema(invocation.profile, invocation.patches, invocation.fromDefaultProfile)
+      break
+    }
     case 'desktop': {
       const { runDesktop } = await import('./desktop.ts')
       process.exit(await runDesktop(invocation.args))

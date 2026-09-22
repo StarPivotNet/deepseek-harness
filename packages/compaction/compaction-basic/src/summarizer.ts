@@ -5,9 +5,10 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { contentHasImage, createUserMessage, BlockAssembler, LlmError } from '@deepseek-ai/dsh-llm'
+import { contentHasImage, BlockAssembler, LlmError } from '@deepseek-ai/dsh-llm'
+import { deepFreeze } from '@deepseek-ai/dsh-util-values'
 import type {
-  ContentBlock, FinishReason, GenerateOptions, Message, ReasoningEffortId, TokenUsage, ToolSchema,
+  ContentBlock, FinishReason, GenerateOptions, Message, RequestMessage, TokenUsage, ToolSchema,
 } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 
@@ -139,14 +140,13 @@ export async function summarizeWithLlm(
       'no provider/model available for summarization: set both BasicCompactionConfig summarization fields, route one request, or set both AgentOptions fields',
     )
   }
-  const reasoningEffort = sameRouteReasoningEffort(target, latest, agent.options)
 
   const assembler = new BlockAssembler()
-  const messages: Message[] = [
+  const messages: RequestMessage[] = [
     ...input.messages,
-    createUserMessage({
+    deepFreeze({
+      role: 'user',
       content: [{ type: 'text', text: COMPACTION_INSTRUCTION }],
-      source: { kind: 'plugin', plugin: 'dsh-compaction-basic' },
     }),
   ]
   const options: GenerateOptions = {
@@ -157,7 +157,6 @@ export async function summarizeWithLlm(
     maxTokens: config.maxTokens,
     sessionId: agent.session.id,
     purpose: 'compaction',
-    ...reasoningEffort === undefined ? {} : { reasoningEffort },
     ...signal === undefined ? {} : { signal },
   }
   for await (const chunk of ctx.llm.stream(options)) assembler.push(chunk)
@@ -191,29 +190,6 @@ export function frameSummary(summary: readonly ContentBlock[]): ContentBlock[] {
     ...summary,
     { type: 'text', text: SUMMARY_CLOSE_TAG },
   ]
-}
-
-/**
- * Copy the conversation's same-route effort onto the summarizer call.
- * A configured or otherwise different provider/model pair keeps effort unset
- * so that route's adapter default applies.
- * @param target - resolved summarizer provider/model.
- * @param logged - latest conversation `request/header` config, when one exists.
- * @param options - agent creation options used only when no same-route header exists.
- * @returns the conversation effort when the summarizer stays on that route.
- */
-function sameRouteReasoningEffort(
-  target: Pick<GenerateOptions, 'provider' | 'model'>,
-  logged: Pick<GenerateOptions, 'provider' | 'model' | 'reasoningEffort'> | undefined,
-  options: Pick<Agent['options'], 'provider' | 'model' | 'reasoningEffort'>,
-): ReasoningEffortId | undefined {
-  if (logged?.provider === target.provider && logged.model === target.model) {
-    return logged.reasoningEffort
-  }
-  if (options.provider === target.provider && options.model === target.model) {
-    return options.reasoningEffort
-  }
-  return undefined
 }
 
 /** Map a terminal summarization finish to its fail-closed error. */

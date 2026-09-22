@@ -1,7 +1,8 @@
 /** Prepare the target Electron distribution and pinned pnpm CLI. */
 
+import { packagingStep } from './packaging-step.mjs'
 import { execFileSync } from 'node:child_process'
-import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
@@ -22,12 +23,6 @@ function preparePnpm(): string {
   const destination = join(RUNTIME_ROOT, 'pnpm')
   rmSync(destination, { recursive: true, force: true })
   cpSync(packageDir, destination, { recursive: true })
-  // In-Host profile management (plugin marketplace installs) resolves pnpm
-  // from PATH by executable name; the npm package only ships JS entries.
-  const binDir = join(destination, 'bin')
-  const unixEntry = join(binDir, 'pnpm')
-  writeFileSync(unixEntry, '#!/bin/sh\nexec "$(dirname "$0")/../../node/node" "$(dirname "$0")/pnpm.cjs" "$@"\n', { mode: 0o755 })
-  writeFileSync(join(binDir, 'pnpm.cmd'), '@echo off\r\n"%~dp0..\\..\\node\\node.exe" "%~dp0pnpm.cjs" %*\r\n')
   return manifest.version
 }
 
@@ -38,13 +33,11 @@ async function main(): Promise<void> {
   const arch = target.endsWith('arm64') ? 'arm64' : 'x64'
   const require = createRequire(import.meta.url)
   const { version } = require('electron/package.json') as { version: string }
-  const archive = await downloadArtifact({ version, platform, arch, artifactName: 'electron', cacheRoot: BUILD_PATHS.downloads })
+  const archive = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'download:electron',
+    () => downloadArtifact({ version, platform, arch, artifactName: 'electron', cacheRoot: BUILD_PATHS.downloads }))
   rmSync(BUILD_PATHS.electron, { recursive: true, force: true })
-  await extractZip(archive, { dir: BUILD_PATHS.electron })
-  const executable = join(
-    BUILD_PATHS.electron,
-    platform === 'win32' ? 'electron.exe' : platform === 'linux' ? 'electron' : 'Electron.app/Contents/MacOS/Electron',
-  )
+  await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'extract:electron', () => extractZip(archive, { dir: BUILD_PATHS.electron }))
+  const executable = join(BUILD_PATHS.electron, platform === 'win32' ? 'electron.exe' : platform === 'linux' ? 'electron' : 'Electron.app/Contents/MacOS/Electron')
   const nodeVersion = execFileSync(executable, ['-p', 'process.versions.node'], {
     encoding: 'utf8', env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
   }).trim()
@@ -58,21 +51,8 @@ async function main(): Promise<void> {
     node: nodeVersion,
     pnpm: pnpmVersion,
   }, undefined, 2)}\n`)
-  await preparePrimaryRuntime({ deferSmoke: values['defer-primary-runtime-smoke'] })
-  mkdirSync(join(RUNTIME_ROOT, 'node'), { recursive: true })
-  const packedNode = join(
-    RUNTIME_ROOT,
-    'primary-runtime',
-    'dependencies',
-    'node',
-    'bin',
-    platform === 'win32' ? 'node.exe' : 'node',
-  )
-  const dest = join(RUNTIME_ROOT, 'node', platform === 'win32' ? 'node.exe' : 'node')
-  if (!existsSync(dest)) {
-    cpSync(existsSync(packedNode) ? packedNode : process.execPath, dest)
-    if (platform !== 'win32') chmodSync(dest, 0o755)
-  }
+  await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'prepare:primary-runtime',
+    () => preparePrimaryRuntime({ deferSmoke: values['defer-primary-runtime-smoke'] }))
 }
 
 await main()

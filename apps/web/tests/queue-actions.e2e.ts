@@ -1,7 +1,7 @@
 // Keyless browser coverage for pending queue actions through the shipped Web
 // composition and real HTTP/SSE wire. Replay overrides park consecutive turns
-// so the page can edit, remove, and reorder exact occurrences, then stop the
-// active turn while proving the preserved Queue advances in the new order.
+// so the page can edit and remove exact occurrences, then stop the active turn
+// while proving the preserved Queue advances in FIFO order.
 import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -34,6 +34,10 @@ const MODE = webSnapshotMode()
 const ACTIVE_PROMPT = 'Reply with a one-sentence description of event sourcing, then stop.'
 const REMOVE = 'Queue item to remove'
 const EDIT = 'Queue item to edit'
+// The edited value is deliberately multi-line: the inline editor must keep the
+// line breaks through the queue mutation and into the model-bound user message.
+const EDITED_CONTENT = 'Edited\nqueue item'
+// The dock preview flattens the queued text, so row locators match this form.
 const EDITED = 'Edited queue item'
 const TAIL = 'Queue item preserved after stop'
 const WAKE = 'Wake the preserved queue'
@@ -187,12 +191,28 @@ describe('web e2e: queue row actions', () => {
     const editRow = page.locator('[data-queue-dock] li', { hasText: EDIT })
     await editRow.getByRole('button', { name: 'Edit queued message' }).click()
     const editor = page.getByRole('textbox', { name: 'Edit queued message' })
-    await editor.fill(EDITED)
-    await page.getByRole('button', { name: 'Save queued message' }).hover()
-    await page.getByRole('tooltip', { name: 'Save queued message', exact: true }).waitFor()
+    await editor.fill(EDITED_CONTENT)
+    const save = page.getByRole('button', { name: 'Save queued message' })
+    await save.hover()
+    const saveTooltip = page.getByRole('tooltip', { name: 'Save queued message', exact: true })
+    await saveTooltip.waitFor()
+    const tooltipGeometry = await page.evaluate(() => {
+      const element = document.querySelector<HTMLElement>('[role="tooltip"]')
+      if (element === null) return null
+      const tooltip = element.getBoundingClientRect()
+      return {
+        declaredLeft: Number.parseFloat(element.style.left),
+        declaredTop: Number.parseFloat(element.style.top),
+        tooltipCenter: tooltip.left + tooltip.width / 2,
+        tooltipTop: tooltip.top,
+      }
+    })
+    expect(tooltipGeometry).not.toBeNull()
+    expect(Math.abs(tooltipGeometry!.tooltipCenter - tooltipGeometry!.declaredLeft)).toBeLessThan(2)
+    expect(Math.abs(tooltipGeometry!.tooltipTop - tooltipGeometry!.declaredTop)).toBeLessThan(2)
     const editingSnapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(EDITING_EXPECTED, editingSnapshot, MODE)
-    await settleQueueAction(() => page.getByRole('button', { name: 'Save queued message' }).click(), EDITED)
+    await settleQueueAction(() => save.click(), EDITED)
     await page.getByText(EDITED, { exact: true }).waitFor()
 
     const removeRow = page.locator('[data-queue-dock] li', { hasText: REMOVE })
@@ -275,22 +295,6 @@ describe('web e2e: queue row actions', () => {
 
     // The disabled Send button must dismiss the active Stop tooltip without mouseleave.
     await expect.poll(() => page.getByRole('tooltip').count()).toBe(0)
-    const sessions = scaffold.ctx.sessions.list()
-    expect(sessions).toHaveLength(1)
-    const agent = scaffold.ctx.agents.get(sessions[0]!.id)
-    expect(agent).toBeDefined()
-    const queued = agent!.inbox.nextTurn
-    expect(queued.map(message => message.content.flatMap(block => block.type === 'text' ? [block.text] : [])))
-      .toEqual([[EDITED], [TAIL]])
-    expect(agent!.inbox.move(queued[1]!.id, queued[0]!.id)).toBe(true)
-    await expect.poll(async () => {
-      const texts = await page.locator('[data-queue-dock] li').evaluateAll(rows =>
-        rows.map(row => row.querySelector('[class*="preview"]')?.textContent ?? ''))
-      return texts
-    }, { timeout: 10_000 }).toEqual([TAIL, EDITED])
-    await expect.poll(() => page.locator('[data-queue-dock] li').first().getAttribute('draggable'))
-      .toBe('true')
-
     const preservedSnapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(PRESERVED_EXPECTED, preservedSnapshot, MODE)
     const expanded = await captureExpandedTurnProcessAria(
@@ -308,7 +312,7 @@ describe('web e2e: queue row actions', () => {
       .toEqual(['aborted', 'completed', 'completed', 'completed'])
     expect(sessionEvents.flatMap(event => event.type === 'user/message' && event.data.source.kind === 'user'
       ? event.data.content.flatMap(block => block.type === 'text' ? [block.text] : [])
-      : [])).toEqual([ACTIVE_PROMPT, TAIL, EDITED, WAKE])
+      : [])).toEqual([ACTIVE_PROMPT, EDITED_CONTENT, TAIL, WAKE])
     await expect.poll(() => page.locator('[data-queue-dock]').count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])

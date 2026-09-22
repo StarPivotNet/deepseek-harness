@@ -45,3 +45,9 @@ export const EVENTS_ENDPOINT = '/plugins/events'
 
 /** POST endpoint that reloads every watched client plugin entry. */
 export const RELOAD_ENDPOINT = '/plugins/reload'
+
+/**
+ * Document-relative form of {@link EVENTS_ENDPOINT} used by the browser half.
+ * See .agents/notes/implemented/architecture/2026-09-14-web-document-relative-app-routes.md.
+ */
+export const EVENTS_ROUTE = EVENTS_ENDPOINT.slice(1)

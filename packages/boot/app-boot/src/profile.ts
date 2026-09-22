@@ -7,55 +7,29 @@
  * `dsh.profile` with its ordered `bundles` list) and a `cordis.patch.yml`
  * (the user's own patch layer, applied after every bundle layer). Bundles are
  * npm packages whose manifest declares
- * `"dsh": { "bundle": { "patch": "./cordis.patch.yml" } }`; the tree is
- * composed by applying each bundle's patch list in `dsh.profile.bundles` order over
- * an empty entry list, then the profile's own patches, then any launcher
- * layers (`--patch` files and flag-derived patches).
+ * `"dsh": { "bundle": { "patch": "./cordis.patch.yml" } }` (one file, or an
+ * ordered list of files); the tree is composed by applying each bundle's patch
+ * lists in `dsh.profile.bundles` order over an empty entry list, then the
+ * profile's own patches, then any launcher layers (`--patch` files and
+ * flag-derived patches).
  *
  * Module resolution is two-anchor by construction: a bundle name resolves
  * first from the dsh installation (the launcher's own package), then from the
  * profile directory. Pnpm-managed entries in the profile's `node_modules`
- * resolve first. Dsh-owned links add packages carried only by selected
- * bundles, while `$DSH_HOME/profiles/node_modules` supplies the installation
- * dependency closure through Node's ordinary parent-walk. Plain Node uses
- * symlinks for that shared fallback; packaged executables use ESM proxies so
- * external plugins retain the installation's module instances.
+ * resolve first. The runtime resolution supplies packages carried by the
+ * installation and selected bundles to Node's ESM and CommonJS resolvers.
  * @module @deepseek-ai/dsh-app-boot/profile
  */
 
-import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
-import {
-  existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, rmSync, statSync,
-  symlinkSync, unlinkSync, writeFileSync,
-} from 'node:fs'
-import { homedir } from 'node:os'
-import { basename, delimiter, dirname, join, relative, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
-import type { Context } from '@deepseek-ai/cordis'
-import { withFileLock } from '@deepseek-ai/dsh-atomic-write'
+import { existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import { applyEntryPatches, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
-import type { DshPackageManifest } from '@deepseek-ai/dsh-package-manifest'
-import { resolve as resolvePackage, type Package as ResolvePackageManifest } from 'resolve.exports'
-import * as yaml from 'js-yaml'
-import { loadOptionalPatches, loadOverlayPatches } from './index.ts'
-import {
-  canonicalLinkPath,
-  isPackagedExecutable,
-  isProfileModuleFallbackLink,
-  PROFILE_MODULE_FALLBACK_DIR,
-  realModuleDirectory,
-  symlinkPointsTo,
-} from './profile-resolution/legacy-links.ts'
-
-declare module '@deepseek-ai/cordis' {
-  interface Context {
-    /** The booted profile's name, directory, and installation resolution anchor. */
-    profile?: ProfileHandle
-  }
-}
+import type { DshBundleManifest, DshPackageManifest } from '@deepseek-ai/dsh-package-manifest'
+import { loadOverlayPatches } from './index.ts'
+import { realModuleDirectory } from './profile-resolution/legacy-links.ts'
 
 /** Directory under the Harness home holding every profile. */
 export const PROFILES_DIR = 'profiles'
@@ -72,15 +46,41 @@ export interface ProfileTemplate {
 /** Package metadata accepted by the profile reader; local profiles need no published identity. */
 export type ProfileManifest = Partial<DshPackageManifest>
 
+/**
+ * The patch files a bundle declares, as written: one file for a string
+ * `patch`, the listed files in order for an array.
+ * @param bundle - the bundle's `dsh.bundle` declaration, as read from package.json.
+ * @returns the package-relative patch file paths in application order.
+ * @throws {Error} when `patch` is neither a string nor a list of strings.
+ */
+export function bundlePatchFiles(bundle: DshBundleManifest): string[] {
+  const declared = typeof bundle.patch === 'string' ? [bundle.patch] : bundle.patch
+  if (!Array.isArray(declared) || !declared.every(file => typeof file === 'string')) {
+    throw new Error('dsh.bundle.patch must be a file path or a list of file paths')
+  }
+  return declared
+}
+
+/**
+ * Resolve a bundle declaration to its ordered absolute patch files.
+ * @param packageDir - absolute directory of the bundle package.
+ * @param bundle - the bundle's `dsh.bundle` declaration, as read from package.json.
+ * @returns the absolute patch file paths in application order.
+ * @throws {Error} when `patch` is neither a string nor a list of strings.
+ */
+export function bundlePatchPaths(packageDir: string, bundle: DshBundleManifest): string[] {
+  return bundlePatchFiles(bundle).map(file => join(packageDir, file))
+}
+
 /** One resolved bundle layer of a profile. */
 export interface ProfileLayer {
   /** The bundle's package name, as listed in `dsh.profile.bundles`. */
   packageName: string
   /** Absolute directory of the resolved bundle package. */
   packageDir: string
-  /** Absolute path of the bundle's patch file. */
-  patchPath: string
-  /** The parsed patch list. */
+  /** Absolute paths of the bundle's patch files, in application order. */
+  patchPaths: readonly string[]
+  /** The parsed patch lists of every file, concatenated in application order. */
   patches: PatchOptions[]
 }
 
@@ -98,8 +98,8 @@ export interface Profile {
   patches: PatchOptions[]
 }
 
-/** One package selected by the profile module-fallback rules. */
-export interface ProfileResolutionEntry {
+/** One package the runtime resolution supplies at the interception layer. */
+export interface RuntimeResolutionEntry {
   /** Bare package name. */
   readonly name: string
   /** Package directory selected by the existing dependency traversal. */
@@ -108,24 +108,34 @@ export interface ProfileResolutionEntry {
   readonly version: string | undefined
   /** Manifest whose dependency edge selected this package. */
   readonly declarer: string
-  /** Whether every profile or only the active profile receives this fallback. */
+  /** Whether every profile or only the active profile receives this entry. */
   readonly scope: 'installation' | 'profile'
 }
 
-/** Complete immutable fallback table for one profile launch. */
-export interface ProfileResolutionGeneration {
-  /** Directory containing every profile and the shared fallback position. */
-  readonly profilesDir: string
-  /** Active profile directory, when bundle-only fallbacks were included. */
-  readonly profileDir: string | undefined
-  /** Profile-declared packages already installed before the fallback position. */
-  readonly localPackageNames: readonly string[]
-  /** Installation entries followed by bundle-only entries in precedence order. */
-  readonly entries: readonly ProfileResolutionEntry[]
+/**
+ * A profile node_modules entry linked to a directory outside the shared profiles tree and the active profile.
+ * Importers below `realPath` use Node's real ancestor chain, with peer mappings read at each node_modules position.
+ */
+export interface LinkedRoot {
+  /** Package name of the profile `node_modules` entry, including its scope. */
+  readonly name: string
+  /** Real directory outside the shared profiles tree and active profile; a package.json is optional. */
+  readonly realPath: string
 }
 
-/** Startup backend selection for one computed profile resolution generation. */
-export type ProfileResolutionMode = 'link' | 'dual' | 'runtime'
+/** Complete immutable package table for one profile launch. */
+export interface RuntimeResolution {
+  /** Directory containing every profile; its node_modules is the interception layer. */
+  readonly profilesDir: string
+  /** Active profile directory, when profile-scope entries were included. */
+  readonly profileDir: string | undefined
+  /** Profile-declared packages installed in the profile's own node_modules. */
+  readonly localPackageNames: readonly string[]
+  /** Installation-scope entries followed by profile-scope entries in precedence order. */
+  readonly entries: readonly RuntimeResolutionEntry[]
+  /** Active profile links to external directories, sorted by name. */
+  readonly linkedRoots: readonly LinkedRoot[]
+}
 
 /**
  * Resolve a profile's directory under the Harness home.
@@ -135,7 +145,7 @@ export type ProfileResolutionMode = 'link' | 'dual' | 'runtime'
  */
 export function resolveProfileDir(name: string, home: string = resolveDshHome()): string {
   if (name === '' || name.includes('/') || name.includes('\\') || name === '.' || name === '..'
-    // The launcher-maintained flat module fallback lives at this sibling path.
+    // Node reserves this name for dependency lookup.
     || name === 'node_modules') {
     throw new Error(`dsh: invalid profile name ${JSON.stringify(name)}`)
   }
@@ -176,8 +186,8 @@ export const DEFAULT_PROFILE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-bas
  * manager ([rationale](../../../../.agents/notes/implemented/process/2026-09-15-shipped-optional-bundles.md)).
  */
 export const OPTIONAL_BUNDLES: readonly string[] = [
+  '@deepseek-ai/dsh-experimental-voice-input-bundle',
   '@deepseek-ai/dsh-experimental-agent-team-profile',
-  '@deepseek-ai/dsh-experimental-agent-team-web-profile',
 ]
 
 const PROFILE_PATCH_TEMPLATE = `# Your patch layer for this dsh profile, applied after every bundle layer:
@@ -187,8 +197,7 @@ const PROFILE_PATCH_TEMPLATE = `# Your patch layer for this dsh profile, applied
 `
 
 // The hoisted linker gives out-of-tree plugins a flat node_modules whose
-// missing peers (cordis and friends) fall through to the healed
-// profiles/node_modules installation fallback, so every plugin shares the
+// missing peers (cordis and friends) use the runtime resolution, so every plugin shares the
 // installation's single cordis instance instead of a duplicate. pnpm ≥10
 // reads its settings from pnpm-workspace.yaml, not .npmrc.
 const PROFILE_PNPM_WORKSPACE = `packages:
@@ -226,249 +235,95 @@ export function initProfile(
   if (!existsSync(workspacePath)) writeFileSync(workspacePath, PROFILE_PNPM_WORKSPACE)
 }
 
-function readModuleProxyRecord(link: string): ModuleProxyRecord | undefined {
-  try {
-    return JSON.parse(readFileSync(join(link, 'package.json'), 'utf8')) as ModuleProxyRecord
-  } catch {
-    // Missing or invalid metadata is not managed state; callers reject it.
-    return undefined
+/** Directory where the link backend of the dsh 0.1.5 releases projected bundle-carried packages into a profile. */
+const LINK_PROJECTION_DIR = '.dsh-module-fallback'
+
+/**
+ * Remove the package projections a link-backend launch left in a profile.
+ * Only symlinks under the profile's `node_modules` whose target lies inside
+ * `<profile>/.dsh-module-fallback/node_modules` are unlinked, then that directory is removed;
+ * pnpm-installed packages and every other symlink stay. A profile without the directory is untouched.
+ * @param dir - the profile directory.
+ */
+export function removeLinkProjections(dir: string): void {
+  const owned = join(dir, LINK_PROJECTION_DIR)
+  if (!existsSync(owned)) return
+  const ownedModules = join(owned, 'node_modules')
+  for (const link of symlinksUnder(join(dir, 'node_modules'))) {
+    if (pointsInto(link, ownedModules)) unlinkSync(link)
   }
+  rmSync(owned, { recursive: true, force: true })
 }
 
-/** Ensure `link` is a symlink to `target`, replacing a wrong link or a dsh-managed packaged proxy. */
-function ensureSymlink(link: string, target: string): void {
-  let stat
-  try {
-    stat = lstatSync(link)
-  } catch {
-    // Missing link (first run) — created below. Any other lstat failure on a
-    // path we just created the parent of would resurface on symlinkSync.
-    stat = undefined
-  }
-  if (stat !== undefined) {
-    if (!stat.isSymbolicLink()) {
-      const existing = stat.isDirectory() ? readModuleProxyRecord(link) : undefined
-      if (existing?.dsh?.moduleFallback?.targets === undefined) {
-        throw new Error(`dsh: ${link} exists and is not a symlink or dsh-managed module proxy; remove it so dsh can manage the installation fallback`)
+/** Top-level and scoped entries under a node_modules directory that are symlinks or junctions. */
+function symlinksUnder(modules: string): string[] {
+  const links: string[] = []
+  if (!existsSync(modules)) return links
+  for (const entry of readdirSync(modules, { withFileTypes: true })) {
+    const path = join(modules, entry.name)
+    if (entry.isSymbolicLink()) {
+      links.push(path)
+    } else if (entry.name.startsWith('@') && entry.isDirectory()) {
+      for (const child of readdirSync(path, { withFileTypes: true })) {
+        if (child.isSymbolicLink()) links.push(join(path, child.name))
       }
-      rmSync(link, { recursive: true })
-      stat = undefined
-    }
-    if (stat !== undefined) {
-      if (symlinkPointsTo(link, target)) return
-      // unlink deletes the reparse point itself on Windows too; rmSync treats a
-      // junction as a directory and throws EISDIR unless recursive.
-      unlinkSync(link)
     }
   }
-  try {
-    symlinkSync(target, link, 'junction')
-  } catch (error) {
-    // Concurrent launches heal the same fallback; losing the race to a
-    // process writing the identical link is success, anything else is not.
-    // The window between the lstat miss above and this write cannot be
-    // staged deterministically from the public API.
-    /* v8 ignore next 4 */
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST'
-      || !lstatSync(link).isSymbolicLink() || !symlinkPointsTo(link, target)) {
-      throw error
-    }
-  }
-}
-
-/** Add one profile-owned fallback link without replacing a pnpm-managed entry. */
-function ensureProfileSymlink(link: string, target: string): void {
-  try {
-    lstatSync(link)
-    return
-  } catch (error) {
-    /* v8 ignore next -- a non-ENOENT lstat failure requires a host filesystem fault */
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-  }
-  ensureSymlink(link, target)
-}
-
-/** Package names represented by owned symlinks below one fallback node_modules. */
-function ownedPackageNames(modulesDir: string): string[] {
-  return readdirSync(modulesDir, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.name.startsWith('@') && entry.isDirectory()) {
-      return readdirSync(join(modulesDir, entry.name), { withFileTypes: true })
-        .filter(child => child.isSymbolicLink())
-        .map(child => `${entry.name}/${child.name}`)
-    }
-    return entry.isSymbolicLink() ? [entry.name] : []
-  })
-}
-
-/** Remove an obsolete owned target and its profile projection when still connected. */
-function removeProfileSymlink(profileModulesDir: string, ownedModulesDir: string, packageName: string): void {
-  const ownedLink = join(ownedModulesDir, packageName)
-  const profileLink = join(profileModulesDir, packageName)
-  try {
-    if (lstatSync(profileLink).isSymbolicLink() && symlinkPointsTo(profileLink, ownedLink)) unlinkSync(profileLink)
-  } catch (error) {
-    /* v8 ignore next -- a non-ENOENT lstat failure requires a host filesystem fault */
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-  }
-  try {
-    unlinkSync(ownedLink)
-  } catch (error) {
-    /* v8 ignore next -- concurrent identical cleanup may remove the link first */
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-  }
-}
-
-interface ModuleProxyManifest {
-  name: string
-  version: string
-  private: true
-  type: 'module'
-  exports: Record<string, string>
-  dsh: { moduleFallback: { targets: Record<string, string> } }
-}
-
-interface ModuleProxyRecord {
-  version?: unknown
-  dsh?: { moduleFallback?: { targets?: unknown } }
-}
-
-/** Resolve one available explicit package export under Node ESM import conditions. */
-function packageEntryFromPackage(
-  packageName: string,
-  packageDir: string,
-  declared: ResolvePackageManifest['exports'],
-  subpath: string,
-): string | undefined {
-  let candidates: string[] | void
-  try {
-    candidates = resolvePackage({ name: packageName, exports: declared }, subpath)
-  } catch (error) {
-    if ((error as Error).message.startsWith('No known conditions for ')) return undefined
-    const specifier = subpath === '.' ? packageName : packageName + subpath.slice(1)
-    throw new Error(`dsh: cannot resolve ESM export ${specifier} from installed package ${packageName}`, { cause: error })
-  }
-  for (const candidate of candidates ?? []) {
-    const target = candidate
-    const entry = resolve(packageDir, target)
-    const relativeEntry = relative(packageDir, entry)
-    if (!target.startsWith('./') || /^\.\.(?:[\\/]|$)/u.test(relativeEntry)) {
-      throw new Error(`dsh: installed package ${packageName} export ${subpath} resolves outside its package: ${target}`)
-    }
-    if (existsSync(entry) && statSync(entry).isFile()) return pathToFileURL(entry).href
-  }
-  return undefined
-}
-
-/** Resolve every explicit ESM runtime export that an out-of-tree plugin can import. */
-function packageProxySource(
-  packageName: string,
-  packageDir: string,
-): { version: string; targets: Record<string, string> } {
-  const manifest = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')) as {
-    bin?: unknown
-    exports?: unknown
-    main?: unknown
-    types?: unknown
-    typings?: unknown
-    version?: unknown
-  }
-  if (typeof manifest.version !== 'string' || manifest.version.length === 0) {
-    throw new Error(`dsh: installed package ${packageName} must declare a non-empty version`)
-  }
-  const declared = manifest.exports
-  if (declared === undefined) {
-    const main = typeof manifest.main === 'string' && manifest.main.length > 0 ? manifest.main : undefined
-    const entry = join(packageDir, main ?? 'index')
-    try {
-      const resolved = createRequire(join(packageDir, 'package.json')).resolve(entry)
-      return { version: manifest.version, targets: { '.': pathToFileURL(resolved).href } }
-    } catch (error) {
-      if (main === undefined
-        && (manifest.bin !== undefined || manifest.types !== undefined || manifest.typings !== undefined)) {
-        return { version: manifest.version, targets: {} }
-      }
-      throw new Error(`dsh: installed package ${packageName} main entry is missing at ${entry}`, { cause: error })
-    }
-  }
-  const subpaths = declared !== null && typeof declared === 'object' && !Array.isArray(declared)
-    && Object.keys(declared).some(key => key.startsWith('.'))
-    ? Object.keys(declared).filter(key => key === '.' || (
-      key.startsWith('./') && !key.includes('*') && !key.endsWith('/') && key !== './package.json'
-    ))
-    : ['.']
-  const targets: Record<string, string> = {}
-  for (const subpath of subpaths) {
-    const target = packageEntryFromPackage(
-      packageName,
-      packageDir,
-      declared as ResolvePackageManifest['exports'],
-      subpath,
-    )
-    if (target !== undefined) targets[subpath] = target
-  }
-  return { version: manifest.version, targets }
+  return links
 }
 
 /**
- * Materialize a real package proxy whose exports retain pkg's virtual module
- * URL. Files outside the executable cannot traverse a symlink into
- * `/snapshot`, while an ESM re-export can import that URL and preserves the
- * executable's single module instance for out-of-tree plugin peers.
+ * Active profile `node_modules` entries linked outside the shared profiles tree and the active profile.
+ * Missing targets and files are not linked roots; invalid link chains retain Node's diagnostic.
  */
-function ensureModuleProxy(
-  link: string,
-  packageName: string,
-  version: string,
-  targets: Record<string, string>,
-): void {
-  const proxyExports = Object.fromEntries(
-    Object.keys(targets).map((subpath, index) => [subpath, `./entry-${index}.js`]),
-  )
-  const manifest: ModuleProxyManifest = {
-    name: packageName,
-    version,
-    private: true,
-    type: 'module',
-    exports: proxyExports,
-    dsh: { moduleFallback: { targets } },
-  }
-  let stat
+function linkedProfileRoots(profile: Profile, profilesDir: string): LinkedRoot[] {
+  const modules = join(profile.dir, 'node_modules')
+  const links = symlinksUnder(modules)
+  if (links.length === 0) return []
+  let tree: string
   try {
-    stat = lstatSync(link)
-  } catch {
-    stat = undefined
+    tree = realModuleDirectory(profilesDir) + sep
+  } catch (error) {
+    // A profiles tree that is not materialized yet holds no links.
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    tree = resolve(profilesDir) + sep
   }
-  if (stat?.isSymbolicLink()) {
-    unlinkSync(link)
-    stat = undefined
-  }
-  if (stat !== undefined) {
-    const existing = readModuleProxyRecord(link)
-    if (existing?.dsh?.moduleFallback?.targets === undefined) {
-      throw new Error(`dsh: ${link} exists and is not a dsh-managed module proxy; remove it so dsh can manage the installation fallback`)
+  const excludedTrees = [tree, realModuleDirectory(profile.dir) + sep]
+  const roots: LinkedRoot[] = []
+  for (const linkPath of links) {
+    let realPath: string
+    try {
+      realPath = realModuleDirectory(linkPath)
+    } catch (error) {
+      // A dangling link is not a package Node can load from the profile.
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      continue
     }
-    if (existing.version === version
-      && JSON.stringify(existing.dsh.moduleFallback.targets) === JSON.stringify(targets)
-      && Object.keys(targets).every((_, index) => existsSync(join(link, `entry-${index}.js`)))) return
-    rmSync(link, { recursive: true })
+    if (excludedTrees.some(prefix => realPath + sep === prefix || realPath.startsWith(prefix))
+      || !statSync(realPath).isDirectory()) continue
+    roots.push({ name: relative(modules, linkPath).split(sep).join('/'), realPath })
   }
-  mkdirSync(link, { recursive: true })
-  writeFileSync(join(link, 'package.json'), JSON.stringify(manifest, undefined, 2) + '\n')
-  for (const [index, target] of Object.values(targets).entries()) {
-    const specifier = JSON.stringify(target)
-    writeFileSync(
-      join(link, `entry-${index}.js`),
-      `export * from ${specifier}\nimport * as target from ${specifier}\nexport default target.default\n`,
-    )
+  return roots.sort((left, right) => left.name.localeCompare(right.name))
+}
+
+/** Whether a symlink's target directory is `root` or lies below it. */
+function pointsInto(link: string, root: string): boolean {
+  try {
+    const target = resolve(dirname(link), readlinkSync(link))
+    const parent = realpathSync.native(dirname(target))
+    const rootPath = realpathSync.native(root)
+    return parent === rootPath || parent.startsWith(rootPath + sep)
+  } catch (error) {
+    // A target whose parent no longer exists cannot be one of the projections this launch owns.
+    /* v8 ignore next 2 -- a non-ENOENT realpath failure requires a host filesystem fault */
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
+    /* v8 ignore next -- see the host-filesystem exception above */
+    throw error
   }
 }
 
-type ModuleFallbackEntry =
-  | { kind: 'symlink'; packageName: string; packageDir: string }
-  | { kind: 'proxy'; packageName: string; version: string; targets: Record<string, string> }
-
-/** Read one package manifest used while traversing a module-fallback dependency graph. */
-function readModuleFallbackManifest(anchor: string): ProfileManifest {
+/** Read one package manifest while traversing a dependency graph. */
+function readPackageManifest(anchor: string): ProfileManifest {
   return JSON.parse(readFileSync(anchor, 'utf8')) as ProfileManifest
 }
 
@@ -477,29 +332,32 @@ function profileDependencyNames(manifest: ProfileManifest): string[] {
   return [...Object.keys(manifest.dependencies ?? {}), ...Object.keys(manifest.peerDependencies ?? {})]
 }
 
-/** Resolve the installation generation that every profile must find through the fallback directory. */
-function resolveModuleFallbackEntries(
-  installAnchor: string, materialize = true,
+/** Resolve the installation packages that the runtime resolver supplies to every profile. */
+function collectInstallationScopePackages(
+  installAnchor: string, skippedBundles: ReadonlySet<string>,
 ): {
-  entries: ModuleFallbackEntry[]
   packageNames: ReadonlySet<string>
   packageDirs: ReadonlyMap<string, string>
   declarers: ReadonlyMap<string, string>
   versions: ReadonlyMap<string, string | undefined>
 } {
-  const appManifest = readModuleFallbackManifest(installAnchor)
+  // Real declaring paths keep workspace symlinks under node_modules from disabling tsx path mappings.
+  const canonicalAnchor = join(realModuleDirectory(dirname(installAnchor)), basename(installAnchor))
+  const appManifest = readPackageManifest(canonicalAnchor)
   const links = new Map<string, string>()
   const declarers = new Map<string, string>()
   const versions = new Map<string, string | undefined>()
   /* v8 ignore next -- a real app manifest always declares its name */
   if (appManifest.name !== undefined) {
+    // The CLI derives the installation anchor from import.meta.url (already real) and the Desktop Host from its
+    // runtime directory (not a symlink); the directory is kept as given rather than canonicalized here.
     links.set(appManifest.name, dirname(installAnchor))
-    declarers.set(appManifest.name, installAnchor)
+    declarers.set(appManifest.name, canonicalAnchor)
     versions.set(appManifest.name, appManifest.version)
   }
   // BFS over the resolvable dependency graph; the visited set is the link
   // map itself (first resolution wins, matching Node's own nearest-wins).
-  const queue: { anchor: string; manifest: ProfileManifest }[] = [{ anchor: installAnchor, manifest: appManifest }]
+  const queue: { anchor: string; manifest: ProfileManifest }[] = [{ anchor: canonicalAnchor, manifest: appManifest }]
   for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
     // Peer dependencies participate: Service Definition packages (dsh-subprocess,
     // dsh-compaction, ...) are peers of their implementations, never plain
@@ -511,98 +369,60 @@ function resolveModuleFallbackEntries(
       // A declared-but-uninstalled dependency cannot be a loader-visible
       // plugin; skip it rather than fail the whole boot.
       if (dir === undefined) continue
+      const manifestPath = join(realModuleDirectory(dir), 'package.json')
+      let manifest: ProfileManifest
+      try {
+        manifest = skippedBundles.has(dep) ? readProfileManifest('dsh', dir) : readPackageManifest(manifestPath)
+      } catch (error) {
+        if (!skippedBundles.has(dep)) throw error
+        continue
+      }
       links.set(dep, dir)
       declarers.set(dep, next.anchor)
-      const manifestPath = join(dir, 'package.json')
-      const manifest = readModuleFallbackManifest(manifestPath)
       versions.set(dep, manifest.version)
       queue.push({ anchor: manifestPath, manifest })
     }
   }
-  const entries = !materialize
-    ? []
-    : !isPackagedExecutable()
-      ? [...links].map(([packageName, packageDir]) => ({ kind: 'symlink' as const, packageName, packageDir }))
-      : [...links].flatMap(([packageName, packageDir]) => {
-        const source = packageProxySource(packageName, packageDir)
-        return Object.keys(source.targets).length === 0
-          ? []
-          : [{ kind: 'proxy' as const, packageName, version: source.version, targets: source.targets }]
-      })
-  return { entries, packageNames: new Set(links.keys()), packageDirs: links, declarers, versions }
+  return { packageNames: new Set(links.keys()), packageDirs: links, declarers, versions }
 }
 
-/** Return whether one existing fallback entry already matches its resolved installation generation. */
-function moduleFallbackEntryCurrent(modulesDir: string, entry: ModuleFallbackEntry): boolean {
-  const link = join(modulesDir, entry.packageName)
-  try {
-    const stat = lstatSync(link)
-    if (entry.kind === 'symlink') {
-      return stat.isSymbolicLink() && readlinkSync(link) === entry.packageDir
-    }
-    if (!stat.isDirectory()) return false
-    const existing = readModuleProxyRecord(link)
-    return existing?.version === entry.version
-      && JSON.stringify(existing.dsh?.moduleFallback?.targets) === JSON.stringify(entry.targets)
-      && Object.keys(entry.targets).every((_, index) => existsSync(join(link, `entry-${index}.js`)))
-  } catch {
-    return false
-  }
-}
-
-/** Return whether every required fallback entry is already ready for this installation. */
-function moduleFallbackCurrent(modulesDir: string, entries: readonly ModuleFallbackEntry[]): boolean {
-  return entries.every(entry => moduleFallbackEntryCurrent(modulesDir, entry))
-}
-
-/** Inputs for {@link healProfilesModuleFallback}. */
-export interface ProfileModuleFallbackOptions {
+/** Inputs for {@link createRuntimeResolution}. */
+export interface RuntimeResolutionOptions {
   /** Absolute package.json path of the running dsh installation. */
   installAnchor: string
   /** Loaded profile whose selected bundles may carry profile-local plugins. */
   profile?: Profile
   /** Harness home; defaults to {@link resolveDshHome}. */
   home?: string
-  /** Whether to materialize the computed generation; defaults to true. */
-  materialize?: boolean
 }
 
 /**
- * Maintain module fallbacks for one profile launch. The shared
- * `$DSH_HOME/profiles/node_modules` mirrors the dsh installation dependency
- * closure. Plain Node writes symlinks; a packaged executable writes ESM
- * proxies under a cross-process lock because operating-system links cannot
- * enter pkg's virtual filesystem. Missing packages carried only by selected
- * bundles are linked through a profile-owned directory into that profile's
- * `node_modules`; pnpm-managed entries remain authoritative, and another
- * profile's links cannot change its resolution.
+ * Compute the runtime resolution without writing module-resolution files.
  * @param options - installation anchor, optional loaded profile, and Harness home.
- * @returns the computed fallback generation after optional materialization.
+ * @returns the complete immutable runtime resolution.
  */
-export async function healProfilesModuleFallback(
-  options: ProfileModuleFallbackOptions,
-): Promise<ProfileResolutionGeneration> {
-  const { installAnchor, profile, home = resolveDshHome(), materialize = true } = options
+export async function createRuntimeResolution(
+  options: RuntimeResolutionOptions,
+): Promise<RuntimeResolution> {
+  const { installAnchor, profile, home = resolveDshHome() } = options
   const profilesDir = join(home, PROFILES_DIR)
-  const modulesDir = join(profilesDir, 'node_modules')
-  if (materialize) mkdirSync(modulesDir, { recursive: true })
-  const { entries, packageNames, packageDirs, declarers, versions } = resolveModuleFallbackEntries(installAnchor, materialize)
-  if (materialize && !moduleFallbackCurrent(modulesDir, entries)) {
-    await withFileLock(modulesDir, () => {
-      if (!moduleFallbackCurrent(modulesDir, entries)) healProfilesModuleFallbackLocked(entries, modulesDir)
-      return Promise.resolve()
-    })
-  }
+  const manifest = readOptionalProfileManifest(profile)
+  const { packageNames, packageDirs, declarers, versions } = collectInstallationScopePackages(
+    installAnchor, skippedProfileBundles(profile, manifest),
+  )
   const profileDeclarers = new Map<string, string>()
   const profileVersions = new Map<string, string | undefined>()
-  const localPackageNames = profile === undefined ? [] : installedProfilePackageNames(profile)
+  const localPackageNames = profile === undefined ? [] : installedProfilePackageNames(profile, manifest)
   const profilePackages: ReadonlyMap<string, string> = profile === undefined
     ? new Map<string, string>()
-    : healProfileModuleFallback(profile, packageNames, materialize, profileDeclarers, profileVersions)
-  return Object.freeze({
+    : collectProfileScopePackages(profile, packageNames, profileDeclarers, profileVersions)
+  const linkedRoots = profile === undefined ? [] : linkedProfileRoots(profile, profilesDir)
+  // The Promise return type is the pre-stable API; construction has no asynchronous step.
+  return await Promise.resolve(Object.freeze({
     profilesDir,
     profileDir: profile?.dir,
     localPackageNames: Object.freeze(localPackageNames),
+    linkedRoots: Object.freeze(linkedRoots.map(root => Object.freeze(root))),
     entries: Object.freeze([
       ...[...packageDirs].map(([name, packageDir]) => Object.freeze({
         name, packageDir, version: versions.get(name),
@@ -613,78 +433,42 @@ export async function healProfilesModuleFallback(
         declarer: profileDeclarers.get(name) as string, scope: 'profile' as const,
       })),
     ]),
-  })
+  }))
+}
+
+/** Synthetic profiles used by direct callers may have no on-disk manifest. */
+function readOptionalProfileManifest(profile: Profile | undefined): ProfileManifest | undefined {
+  if (profile === undefined) return undefined
+  try {
+    return readPackageManifest(join(profile.dir, 'package.json'))
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    throw error
+  }
+}
+
+/**
+ * Identify selected bundles that did not produce a loaded layer.
+ * @param profile - loaded profile, when present.
+ * @param manifest - its parsed manifest, when present.
+ * @returns selected bundle names missing from the loaded layers, for resolution and diagnostics.
+ */
+export function skippedProfileBundles(profile: Profile | undefined, manifest: ProfileManifest | undefined): ReadonlySet<string> {
+  const selected = manifest?.dsh?.profile?.bundles ?? []
+  const loaded = new Set(profile?.layers.map(layer => layer.packageName))
+  return new Set(selected.filter(name => !loaded.has(name)))
 }
 
 /** Return installed direct dependencies that Node resolves before profile fallback. */
-function installedProfilePackageNames(profile: Profile): string[] {
-  let manifest: ProfileManifest
-  try {
-    manifest = readModuleFallbackManifest(join(profile.dir, 'package.json'))
-  } catch (error) {
-    // Direct helper callers can supply a synthetic Profile without its on-disk manifest.
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
-    throw error
-  }
-  return profileDependencyNames(manifest).filter((name) => {
-    const candidate = join(profile.dir, 'node_modules', name)
-    if (!existsSync(join(candidate, 'package.json'))) return false
-    return !isProfileModuleFallbackLink(profile.dir, name)
-  })
-}
-
-/**
- * Compute a profile resolution generation without materializing links or proxies.
- * @param options - installation anchor, profile, and optional Harness home.
- * @returns the complete immutable generation.
- */
-export function createProfileResolutionGeneration(
-  options: Omit<ProfileModuleFallbackOptions, 'materialize'>,
-): Promise<ProfileResolutionGeneration> {
-  return healProfilesModuleFallback({ ...options, materialize: false })
-}
-
-/**
- * Supply an application-owned profile with filesystem packages from its installation and selected bundles.
- * All fallback links belong to the profile; no shared Harness-home directory is written.
- * Existing pnpm-managed packages remain authoritative. The caller serializes profile mutations.
- * @param options - owning installation package.json and the loaded application profile.
- */
-export function healIsolatedProfileModuleFallback(options: { installAnchor: string; profile: Profile }): void {
-  const installationLinks = resolveModuleFallbackEntries(options.installAnchor, false).packageDirs
-  healProfileModuleFallback(options.profile, new Set(installationLinks.keys()), true, undefined, undefined, installationLinks)
-}
-
-/**
- * Detach this profile's fallback links before a package-manager mutation.
- * Installed packages and links replaced by pnpm remain untouched; the next profile launch restores fallbacks.
- * @param profileDir - profile directory whose package mutation is serialized by the caller.
- */
-export function unlinkProfileModuleFallback(profileDir: string): void {
-  const ownedModulesDir = join(profileDir, PROFILE_MODULE_FALLBACK_DIR, 'node_modules')
-  if (!existsSync(ownedModulesDir)) return
-  for (const name of ownedPackageNames(ownedModulesDir)) {
-    removeProfileSymlink(join(profileDir, 'node_modules'), ownedModulesDir, name)
-  }
-}
-
-/** Heal one module-fallback generation while the cross-process writer lock is held. */
-function healProfilesModuleFallbackLocked(entries: readonly ModuleFallbackEntry[], modulesDir: string): void {
-  for (const entry of entries) {
-    const link = join(modulesDir, entry.packageName)
-    mkdirSync(dirname(link), { recursive: true })
-    if (entry.kind === 'proxy') {
-      ensureModuleProxy(link, entry.packageName, entry.version, entry.targets)
-    } else {
-      ensureSymlink(link, entry.packageDir)
-    }
-  }
+function installedProfilePackageNames(profile: Profile, manifest: ProfileManifest | undefined): string[] {
+  if (manifest === undefined) return []
+  return profileDependencyNames(manifest)
+    .filter(name => existsSync(join(profile.dir, 'node_modules', name, 'package.json')))
 }
 
 /** Collect the first resolvable package directory for each dependency name. */
 function dependencyClosure(
   anchors: readonly string[], reserved: ReadonlySet<string>,
-  exclude: (candidate: string, packageName: string) => boolean,
   declarers?: Map<string, string>,
   versions?: Map<string, string | undefined>,
 ): Map<string, string> {
@@ -692,7 +476,7 @@ function dependencyClosure(
   const visited = new Set(reserved)
   for (const anchor of anchors) {
     const canonicalAnchor = join(realModuleDirectory(dirname(anchor)), basename(anchor))
-    const manifest = readModuleFallbackManifest(canonicalAnchor)
+    const manifest = readPackageManifest(canonicalAnchor)
     /* v8 ignore next -- an installable package manifest always declares its name */
     if (manifest.name === undefined) continue
     if (!visited.has(manifest.name)) {
@@ -707,14 +491,14 @@ function dependencyClosure(
       /* v8 ignore next -- an installable package manifest always declares dependencies or peers */
       for (const dep of profileDependencyNames(next.manifest)) {
         if (visited.has(dep)) continue
-        const dir = packageDirFromAnchor(next.anchor, dep, exclude)
+        const dir = packageDirFromAnchor(next.anchor, dep)
         // A declared-but-uninstalled dependency cannot be loader-visible.
         if (dir === undefined) continue
         visited.add(dep)
         links.set(dep, dir)
         declarers?.set(dep, next.anchor)
-        const manifestPath = join(dir, 'package.json')
-        const dependencyManifest = readModuleFallbackManifest(manifestPath)
+        const manifestPath = join(realModuleDirectory(dir), 'package.json')
+        const dependencyManifest = readPackageManifest(manifestPath)
         versions?.set(dep, dependencyManifest.version)
         queue.push({ anchor: manifestPath, manifest: dependencyManifest })
       }
@@ -723,51 +507,18 @@ function dependencyClosure(
   return links
 }
 
-/** Reconcile packages carried only by selected bundles into one profile. */
-function healProfileModuleFallback(
-  profile: Profile, installationPackageNames: ReadonlySet<string>, materialize = true,
+/** Collect packages carried by the profile's selected bundles that the installation does not supply. */
+function collectProfileScopePackages(
+  profile: Profile, installationPackageNames: ReadonlySet<string>,
   declarers?: Map<string, string>,
   versions?: Map<string, string | undefined>,
-  installationLinks: ReadonlyMap<string, string> = new Map(),
 ): Map<string, string> {
-  const profileModulesDir = join(profile.dir, 'node_modules')
-  const ownedModulesDir = join(profile.dir, PROFILE_MODULE_FALLBACK_DIR, 'node_modules')
-  if (materialize) {
-    mkdirSync(profileModulesDir, { recursive: true })
-    mkdirSync(ownedModulesDir, { recursive: true })
-  }
   const bundleAnchors = profile.layers
     .filter(layer => !installationPackageNames.has(layer.packageName))
     .map(layer => join(layer.packageDir, 'package.json'))
-  const bundleLinks = dependencyClosure(bundleAnchors, installationPackageNames, (candidate, packageName) => {
-    const profileLink = join(profileModulesDir, packageName)
-    if (canonicalLinkPath(candidate) !== canonicalLinkPath(profileLink)) return false
-    try {
-      return lstatSync(profileLink).isSymbolicLink()
-        && symlinkPointsTo(profileLink, join(ownedModulesDir, packageName))
-    } catch (error) {
-      // A concurrent cleanup may remove the projection after package discovery.
-      /* v8 ignore next 2 -- a non-ENOENT lstat failure requires a host filesystem fault */
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true
-      /* v8 ignore next -- see the host-filesystem exception above */
-      throw error
-    }
-  }, declarers, versions)
+  const bundleLinks = dependencyClosure(bundleAnchors, installationPackageNames, declarers, versions)
   for (const layer of profile.layers) bundleLinks.delete(layer.packageName)
-  const links = new Map([...installationLinks, ...bundleLinks])
-  if (!materialize) return links
-  for (const packageName of ownedPackageNames(ownedModulesDir)) {
-    if (!links.has(packageName)) removeProfileSymlink(profileModulesDir, ownedModulesDir, packageName)
-  }
-  for (const [packageName, target] of links) {
-    const ownedLink = join(ownedModulesDir, packageName)
-    mkdirSync(dirname(ownedLink), { recursive: true })
-    ensureSymlink(ownedLink, target)
-    const profileLink = join(profileModulesDir, packageName)
-    mkdirSync(dirname(profileLink), { recursive: true })
-    ensureProfileSymlink(profileLink, ownedLink)
-  }
-  return links
+  return bundleLinks
 }
 
 /**
@@ -839,15 +590,12 @@ function normalizeShippedProfile(name: string, dir: string, manifest: ProfileMan
  * matches what the Loader would import from the same anchor, and
  * `existsSync` follows the symlinks pnpm's isolated layout uses.
  */
-function packageDirFromAnchor(
-  anchor: string, packageName: string,
-  exclude: (candidate: string, packageName: string) => boolean = () => false,
-): string | undefined {
+function packageDirFromAnchor(anchor: string, packageName: string): string | undefined {
   // resolve.paths returns null only for builtins, which no bundle name is.
   /* v8 ignore next */
   for (const searchPath of createRequire(anchor).resolve.paths(packageName) ?? []) {
     const candidate = join(searchPath, packageName)
-    if (existsSync(join(candidate, 'package.json')) && !exclude(candidate, packageName)) return candidate
+    if (existsSync(join(candidate, 'package.json'))) return candidate
   }
   return undefined
 }
@@ -881,11 +629,12 @@ export function resolveBundleDir(
  * Load an already initialized profile directory without resolving it through
  * the shared Harness home. This is used by application-owned profiles whose
  * package project and lifecycle belong to that application.
+ * Unreadable bundles are reported on stderr and skipped without changing the manifest.
  * @param binName - the diagnostic prefix on thrown errors.
  * @param dir - absolute profile package directory.
  * @param installAnchor - absolute path of the owning dsh app's package.json.
  * @param options - `userLayer: false` skips reading `cordis.patch.yml`.
- * @returns the resolved bundle layers and optional user patch layer.
+ * @returns the successfully loaded bundle layers and optional user patch layer.
  */
 export function loadProfileDirectory(
   binName: string,
@@ -895,16 +644,22 @@ export function loadProfileDirectory(
 ): Profile {
   const manifest = readProfileManifest(binName, dir)
   const bundles = manifest.dsh?.profile?.bundles ?? []
-  const layers = bundles.map((packageName): ProfileLayer => {
-    const packageDir = resolveBundleDir(binName, packageName, installAnchor, dir)
-    const bundleManifest = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')) as ProfileManifest
-    const declared = bundleManifest.dsh?.bundle?.patch
-    if (declared === undefined) {
-      throw new Error(`${binName}: profile bundle ${JSON.stringify(packageName)} declares no dsh.bundle in its package.json`)
+  const layers: ProfileLayer[] = []
+  for (const packageName of bundles) {
+    try {
+      const packageDir = resolveBundleDir(binName, packageName, installAnchor, dir)
+      const bundleManifest = readProfileManifest(binName, packageDir)
+      const bundle = bundleManifest.dsh?.bundle
+      if (bundle === undefined) {
+        throw new Error(`${binName}: profile bundle ${JSON.stringify(packageName)} declares no dsh.bundle in its package.json`)
+      }
+      const patchPaths = bundlePatchPaths(packageDir, bundle)
+      const patches = patchPaths.flatMap(patchPath => loadOverlayPatches(binName, patchPath))
+      layers.push({ packageName, packageDir, patchPaths, patches })
+    } catch (error) {
+      process.stderr.write(`${binName}: skipping profile bundle ${JSON.stringify(packageName)}: ${String(error)}\n`)
     }
-    const patchPath = join(packageDir, declared)
-    return { packageName, packageDir, patchPath, patches: loadOverlayPatches(binName, patchPath) }
-  })
+  }
   const patchPath = join(dir, PROFILE_PATCH_FILENAME)
   const patches = options.userLayer !== false && existsSync(patchPath)
     ? loadOverlayPatches(binName, patchPath)
@@ -914,9 +669,8 @@ export function loadProfileDirectory(
 
 /**
  * Load a profile: resolve every `dsh.profile.bundles` entry to its patch
- * layer and parse the profile's own patch file. A listed bundle without a
- * `dsh.bundle` manifest fails loud — naming a bundle-less package as a layer
- * is a misconfiguration, not "no patches".
+ * layer and parse the profile's own patch file. Unreadable bundles are reported
+ * on stderr and skipped; profile manifest and user patch errors still throw.
  * @param binName - the diagnostic prefix on thrown errors.
  * @param name - the profile name.
  * @param installAnchor - absolute path of the dsh app's package.json (first resolution anchor).
@@ -940,6 +694,7 @@ export function loadProfile(
     }
     initProfile(dir, template.bundles)
   }
+  removeLinkProjections(dir)
   normalizeShippedProfile(name, dir, readProfileManifest(binName, dir))
   return loadProfileDirectory(binName, dir, installAnchor, options)
 }
@@ -959,252 +714,4 @@ export function composeEntries(
     let index = 0
     warn(message.replace(/%C/g, () => JSON.stringify(args[index++])))
   })
-}
-
-export interface ProfileHandle {
-  /** The profile name (its directory basename). */
-  readonly name: string
-  /** Absolute profile directory. */
-  readonly dir: string
-  /** Absolute path of the dsh app's package.json (first bundle-resolution anchor). */
-  readonly installAnchor: string
-}
-
-/**
- * Provide the booted profile on a host context before any tree entry mounts.
- * @param ctx - the host context the tree will mount under.
- * @param handle - the profile's name, directory, and installation anchor.
- */
-export function provideProfile(ctx: Context, handle: ProfileHandle): void {
-  ctx.provide('profile', Object.freeze({
-    name: handle.name,
-    dir: handle.dir,
-    installAnchor: handle.installAnchor,
-  }))
-}
-
-/**
- * Whether a package resolved from the two profile anchors declares `dsh.bundle`.
- * An unresolvable name is not a bundle — the same as a package whose manifest
- * omits the declaration.
- * @param binName - the diagnostic prefix on a resolution error (unused when unresolved).
- * @param packageName - the package name to inspect.
- * @param installAnchor - absolute path of the dsh app's package.json.
- * @param profileDir - the profile directory (second resolution anchor).
- * @returns true when the resolved package declares `dsh.bundle.patch`.
- */
-export function packageExportsBundle(
-  binName: string, packageName: string, installAnchor: string, profileDir: string,
-): boolean {
-  let dir: string
-  try {
-    dir = resolveBundleDir(binName, packageName, installAnchor, profileDir)
-  } catch {
-    return false
-  }
-  return readProfileManifest(binName, dir).dsh?.bundle?.patch !== undefined
-}
-
-/** Arguments for {@link reconcileProfilePlugins}. */
-export interface ReconcileProfilePluginsOptions {
-  /** Diagnostic prefix on warnings and manifest errors. */
-  binName: string
-  /** Absolute path of the dsh app's package.json. */
-  installAnchor: string
-  /** Absolute profile directory. */
-  profileDir: string
-  /** Manifest captured before the pnpm mutation. */
-  before: ProfileManifest
-  /** Sink for the one-line bundle-less-dependency warning; defaults to stderr. */
-  warn?: (line: string) => void
-}
-
-/**
- * Reconcile `dsh.profile.bundles` against the installed state: a dependency that
- * resolves to a `dsh.bundle`-declaring package joins the layer stack (appended
- * in dependency order); a dependency-listed name that no longer does — removed,
- * or the installed version dropped the declaration — leaves it. In-box bundles
- * from the profile template are not dependencies and are never touched. Warns
- * once per newly-added bundle-less dependency.
- * @param options - the profile, the pre-mutation manifest, and the installation anchor.
- */
-export function reconcileProfilePlugins(options: ReconcileProfilePluginsOptions): void {
-  const { binName, installAnchor, profileDir, before } = options
-  const warn = options.warn ?? ((line: string) => { process.stderr.write(`${line}\n`) })
-  const after = readProfileManifest(binName, profileDir)
-  const beforeDeps = new Set(Object.keys(before.dependencies ?? {}))
-  const dependencies = Object.keys(after.dependencies ?? {})
-  const plugins = after.dsh?.profile?.bundles ?? []
-  let changed = false
-  for (const packageName of dependencies) {
-    const isBundle = packageExportsBundle(binName, packageName, installAnchor, profileDir)
-    if (isBundle && !plugins.includes(packageName)) {
-      plugins.push(packageName)
-      changed = true
-    } else if (!isBundle && !beforeDeps.has(packageName)) {
-      warn(
-        `${binName}: warning: ${packageName} declares no dsh.bundle — installed as a plain dependency, not a profile layer `
-        + '(a later update that gains one activates it automatically)',
-      )
-    }
-  }
-  const dependencySet = new Set(dependencies)
-  for (const packageName of [...plugins]) {
-    const wasDependency = beforeDeps.has(packageName) || dependencySet.has(packageName)
-    const stillBundle = dependencySet.has(packageName)
-      && packageExportsBundle(binName, packageName, installAnchor, profileDir)
-    if (wasDependency && !stillBundle) {
-      plugins.splice(plugins.indexOf(packageName), 1)
-      changed = true
-    }
-  }
-  if (!changed) return
-  after.dsh = { ...after.dsh, profile: { ...after.dsh?.profile, bundles: plugins } }
-  writeProfileManifest(profileDir, after)
-}
-
-/** Arguments for {@link runProfilePnpm}. */
-export interface RunProfilePnpmOptions {
-  /** Absolute profile directory; becomes pnpm's cwd. */
-  profileDir: string
-  /** pnpm arguments, already path-anchored by the caller if needed. */
-  args: readonly string[]
-  /**
-   * `inherit` streams pnpm onto the caller's stdio (the CLI forwarder).
-   * `pipe` captures stdout and stderr (a Host plugin that must not write them).
-   */
-  stdio?: 'inherit' | 'pipe'
-  /** Override well-known fallback directories; tests pin an empty list. */
-  searchDirs?: readonly string[]
-  /** Look for Corepack next to this Node after PATH and searchDirs. */
-  includeCorepack?: boolean
-}
-
-/** Outcome of one {@link runProfilePnpm} invocation. */
-export interface ProfilePnpmResult {
-  /** True when `pnpm` was not on PATH; `exitCode` is then 127. */
-  missingPnpm: boolean
-  /** pnpm's exit status, or 1 when the process was killed. */
-  exitCode: number
-  /** Captured stdout when `stdio` is `pipe`; otherwise empty. */
-  stdout: string
-  /** Captured stderr when `stdio` is `pipe`; otherwise empty. */
-  stderr: string
-}
-
-const PNPM_BIN = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-
-/**
- * Directories a GUI-short PATH still misses on a machine that already has pnpm.
- * PATH itself is searched first; these are fallbacks, in this order.
- * @returns unique existing-candidate directories.
- */
-export function profilePnpmSearchDirs(): string[] {
-  const home = homedir()
-  const nodeDir = dirname(process.execPath)
-  const dirs = [
-    process.env.PNPM_HOME,
-    join(home, 'Library', 'pnpm'),
-    join(home, '.local', 'share', 'pnpm'),
-    join(home, '.npm-global', 'bin'),
-    '/usr/local/bin',
-    '/opt/homebrew/bin',
-    join(home, '.volta', 'bin'),
-    join(home, '.asdf', 'shims'),
-    nodeDir,
-  ]
-  return [...new Set(dirs.filter((dir): dir is string => dir !== undefined && dir.length > 0))]
-}
-
-/**
- * Locate a host pnpm: PATH first, then well-known install directories, then
- * Corepack next to this Node. Returns undefined when none exist.
- * @returns the absolute pnpm executable, or undefined.
- */
-export function resolveProfilePnpm(
-  searchDirs: readonly string[] = profilePnpmSearchDirs(),
-  includeCorepack = true,
-): string | undefined {
-  const pathDirs = (process.env.PATH ?? '').split(delimiter).filter(dir => dir.length > 0)
-  for (const dir of [...pathDirs, ...searchDirs]) {
-    const candidate = join(dir, PNPM_BIN)
-    if (existsSync(candidate)) return candidate
-  }
-  if (!includeCorepack) return undefined
-  const corepackName = process.platform === 'win32' ? 'corepack.cmd' : 'corepack'
-  const corepack = join(dirname(process.execPath), corepackName)
-  if (existsSync(corepack)) return corepack
-  return undefined
-}
-
-/**
- * Run `pnpm <args>` in a profile directory. Windows resolves pnpm through its
- * `.cmd` shim, which `spawn` refuses without a shell since the CVE-2024-27980
- * hardening. A missing `pnpm` is a structured result, not a throw; every other
- * spawn failure throws. Finder and desktop launches inherit a short GUI PATH,
- * so resolution also searches well-known install directories.
- * @param options - the profile directory, pnpm arguments, and stdio mode.
- * @returns the process outcome, with `missingPnpm` set when pnpm is absent.
- */
-export function runProfilePnpm(options: RunProfilePnpmOptions): ProfilePnpmResult {
-  const stdio = options.stdio ?? 'inherit'
-  const pnpm = resolveProfilePnpm(
-    options.searchDirs ?? profilePnpmSearchDirs(),
-    options.includeCorepack ?? true,
-  )
-  if (pnpm === undefined) {
-    return { missingPnpm: true, exitCode: 127, stdout: '', stderr: '' }
-  }
-  const extraPath = profilePnpmSearchDirs().join(delimiter)
-  const path = process.env.PATH === undefined || process.env.PATH.length === 0
-    ? extraPath
-    : `${process.env.PATH}${delimiter}${extraPath}`
-  const args = pnpm.endsWith('corepack') || pnpm.endsWith('corepack.cmd')
-    ? ['pnpm', ...options.args]
-    : [...options.args]
-  const result = spawnSync(pnpm, args, {
-    cwd: options.profileDir,
-    stdio,
-    env: { ...process.env, PATH: path },
-    ...stdio === 'pipe' ? { encoding: 'utf8' as const } : {},
-    shell: process.platform === 'win32',
-  })
-  if (result.error !== undefined) {
-    if ((result.error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return { missingPnpm: true, exitCode: 127, stdout: '', stderr: '' }
-    }
-    throw result.error
-  }
-  return {
-    missingPnpm: false,
-    exitCode: result.status ?? 1,
-    stdout: typeof result.stdout === 'string' ? result.stdout : '',
-    stderr: typeof result.stderr === 'string' ? result.stderr : '',
-  }
-}
-
-/**
- * Read a profile's user patch layer. A missing file is an empty list so a
- * first enablement write can create it; a present unreadable or invalid file
- * throws — the same fail-loud rule as {@link loadOptionalPatches}.
- * @param binName - the diagnostic prefix on the thrown error.
- * @param dir - the profile directory.
- * @returns the parsed patches, or `[]` when the file does not exist.
- */
-export function readProfilePatches(binName: string, dir: string): PatchOptions[] {
-  return loadOptionalPatches(binName, join(dir, PROFILE_PATCH_FILENAME)) ?? []
-}
-
-/**
- * Write a profile's user patch layer (include YAML dialect, trailing newline).
- * Replaces the whole file; comments and ordering outside the dumped list are
- * not preserved.
- * @param dir - the profile directory.
- * @param patches - the patch list to persist.
- */
-export function writeProfilePatches(dir: string, patches: readonly PatchOptions[]): void {
-  writeFileSync(
-    join(dir, PROFILE_PATCH_FILENAME),
-    yaml.dump([...patches], { schema: entryListSchema, noRefs: true }).trimEnd() + '\n',
-  )
 }

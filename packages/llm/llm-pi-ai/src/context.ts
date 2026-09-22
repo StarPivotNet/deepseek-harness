@@ -6,7 +6,7 @@
 
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { contentHasImage, IMAGE_OFFLOAD_REQUIRED_CODE, LlmError, offloadedImageText, projectOffloadedImages, requestImageHandleText, requiredImageOffload } from '@deepseek-ai/dsh-llm'
-import type { ContentBlock, GenerateOptions, ImageAttachmentAccessResolver, Message, ToolCallId } from '@deepseek-ai/dsh-llm'
+import type { ContentBlock, GenerateOptions, ImageAttachmentAccessResolver, Message, RequestMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
 import type {
   AttachmentId,
   AttachmentStore,
@@ -19,37 +19,8 @@ import { toPiAssistant } from './replay.ts'
 import { requestImageDimensions } from '@deepseek-ai/dsh-attachment'
 import { DEFAULT_REQUEST_IMAGE_MAX_BYTES, DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET } from './config.ts'
 
-/** Prefix every video request marker starts with, including its opening bracket. */
-export const VIDEO_REQUEST_MARKER_PREFIX = '[dsh-video-request:'
-/** Suffix every video request marker ends with. */
-const VIDEO_REQUEST_MARKER_SUFFIX = ']'
-
-/**
- * Stable model-facing marker standing in for one video while the request
- * travels through pi-ai, which has no video content vocabulary. The harness
- * fetch pipeline recognizes the marker on the OpenAI-compatible wire and
- * replaces it with the provider's `video_url` content item.
- * @param attachmentId - durable video attachment the marker names.
- * @returns the exact marker text the pipeline recognizes.
- */
-export function requestVideoMarker(attachmentId: string): string {
-  return `${VIDEO_REQUEST_MARKER_PREFIX}${attachmentId}${VIDEO_REQUEST_MARKER_SUFFIX}`
-}
-
-/**
- * Extract the attachment id from a complete video request marker.
- * @param text - one content item's text.
- * @returns the named attachment id, or undefined when the text is not exactly one marker.
- */
-export function parseRequestVideoMarker(text: string): string | undefined {
-  if (!text.startsWith(VIDEO_REQUEST_MARKER_PREFIX) || !text.endsWith(VIDEO_REQUEST_MARKER_SUFFIX)) return undefined
-  const attachmentId = text.slice(VIDEO_REQUEST_MARKER_PREFIX.length, -VIDEO_REQUEST_MARKER_SUFFIX.length)
-  return attachmentId.length > 0 ? attachmentId : undefined
-}
-
-
 /** Join the text blocks of a harness message. */
-function flattenText(message: Message): string {
+function flattenText(message: RequestMessage): string {
   return message.content
     .filter(block => block.type === 'text')
     .map(block => block.text)
@@ -57,17 +28,33 @@ function flattenText(message: Message): string {
 }
 
 
-/** Flatten text recursively inside one tool result. */
-function toolResultText(blocks: readonly ContentBlock[]): string {
-  return blocks.map(block => block.type === 'text'
-    ? block.text
-    : block.type === 'tool-result' ? toolResultText(block.content) : '').join('')
+/** Recover the pi-ai toolResult message for one harness tool-role message. */
+function toolResultOf(
+  message: Extract<Message, { role: 'tool' }>,
+  toolNames: Map<ToolCallId, string>,
+  content: string | (TextContent | ImageContent)[],
+): PiMessage {
+  return {
+    role: 'toolResult',
+    toolCallId: message.toolCallId,
+    toolName: toolNames.get(message.toolCallId) ?? 'unknown',
+    content: typeof content === 'string'
+      ? [{ type: 'text', text: content || '(no output)' }]
+      : content,
+    isError: message.isError ?? false,
+    timestamp: 0,
+  }
 }
 
-/** Reject image roles that pi-ai cannot replay before request-size offloading can replace them. */
-function assertSupportedImageRoles(messages: readonly Message[]): void {
+/** Reject unsupported roles, tool-change blocks, and image roles before replay or image offloading. */
+function assertSupportedHistory(messages: readonly RequestMessage[]): void {
   for (const message of messages) {
-    if (message.role !== 'user' && contentHasImage(message.content)) {
+    // Developer history is persisted for V4; provider serialization is intentionally deferred.
+    if (message.role === 'developer') throw new LlmError('Developer messages are not supported yet', 'UNSUPPORTED_CONTENT')
+    if (message.content.some(block => block.type === 'tool-addition' || block.type === 'tool-removal')) {
+      throw new LlmError('Tool-change blocks require developer role', 'UNSUPPORTED_CONTENT')
+    }
+    if (message.role !== 'user' && message.role !== 'tool' && contentHasImage(message.content)) {
       throw new LlmError(
         `pi-ai cannot represent an image in an in-history ${message.role} message`,
         'UNSUPPORTED_CONTENT',
@@ -76,11 +63,11 @@ function assertSupportedImageRoles(messages: readonly Message[]): void {
   }
 }
 
-async function userContent(
+function userContent(
   blocks: readonly ContentBlock[],
   requestImages: ReadonlyMap<AttachmentId, RequestImageAttachment>,
   resolveImageAccess: ImageAttachmentAccessResolver,
-): Promise<string | (TextContent | ImageContent)[]> {
+): string | (TextContent | ImageContent)[] {
   const content: (TextContent | ImageContent)[] = []
   for (const block of blocks) {
     switch (block.type) {
@@ -100,22 +87,6 @@ async function userContent(
         })
         break
       }
-      case 'video':
-        content.push({
-          type: 'text',
-          text: requestVideoMarker(String(block.attachment.attachmentId)),
-        })
-        break
-      case 'tool-result':
-        {
-          const nested = await userContent(block.content, requestImages, resolveImageAccess)
-          if (typeof nested === 'string') {
-            if (nested.length > 0) content.push({ type: 'text', text: nested })
-          } else {
-            content.push(...nested)
-          }
-        }
-        break
       default:
         // Other merge-extensible blocks are not user-input vocabulary for pi-ai.
         break
@@ -132,14 +103,12 @@ function collectImageRefs(
   for (const block of blocks) {
     if (block.type === 'image') {
       if (block.offloaded !== true) refs.set(block.attachment.attachmentId, block.attachment)
-    } else if (block.type === 'tool-result') {
-      collectImageRefs(block.content, refs)
     }
   }
 }
 
 async function prepareRequestImages(
-  messages: readonly Message[],
+  messages: readonly RequestMessage[],
   attachments: AttachmentStore,
   budget: PiImageRequestBudget,
   signal?: AbortSignal,
@@ -158,6 +127,10 @@ async function prepareRequestImages(
 }
 
 function toolsOf(options: GenerateOptions): PiTool[] | undefined {
+  // Deferred definitions are persisted for V4; provider loading is intentionally deferred.
+  if (options.tools?.some(tool => tool.deferLoading === true)) {
+    throw new LlmError('Deferred tool loading is not supported yet', 'UNSUPPORTED_CONTENT')
+  }
   return options.tools?.map(tool => ({
     name: tool.name,
     description: tool.description,
@@ -172,7 +145,7 @@ interface SystemPromptSplit {
   /** Text for pi-ai's `systemPrompt`; `undefined` sends no system prompt. */
   systemPrompt: string | undefined
   /** History messages that convert to pi-ai `messages`. */
-  messages: readonly Message[]
+  messages: readonly RequestMessage[]
 }
 
 /**
@@ -201,7 +174,7 @@ function piContext(systemPrompt: string | undefined, options: GenerateOptions, m
 }
 
 function appendAssistant(
-  message: Message,
+  message: Extract<Message, { role: 'assistant' }>,
   messages: PiMessage[],
   toolNames: Map<ToolCallId, string>,
   onReplayDegrade?: (reason: string) => void,
@@ -213,8 +186,28 @@ function appendAssistant(
   messages.push(assistant)
 }
 
+/** Append the system and assistant roles both context builders treat identically; true when consumed. */
+function appendSystemOrAssistant(
+  message: RequestMessage,
+  messages: PiMessage[],
+  toolNames: Map<ToolCallId, string>,
+  onReplayDegrade?: (reason: string) => void,
+): boolean {
+  if (message.role === 'system') {
+    // pi-ai has a single systemPrompt slot; a system message that did not
+    // supply it folds into a user message to preserve order.
+    messages.push({ role: 'user', content: flattenText(message), timestamp: 0 })
+    return true
+  }
+  if (message.role === 'assistant') {
+    appendAssistant(message, messages, toolNames, onReplayDegrade)
+    return true
+  }
+  return false
+}
+
 function textOnlyContext(options: GenerateOptions, onReplayDegrade?: (reason: string) => void): PiContext {
-  assertSupportedImageRoles(options.messages)
+  assertSupportedHistory(options.messages)
   const split = splitSystemPrompt(options)
   const toolNames = new Map<ToolCallId, string>()
   const messages: PiMessage[] = []
@@ -222,32 +215,12 @@ function textOnlyContext(options: GenerateOptions, onReplayDegrade?: (reason: st
     if (contentHasImage(message.content)) {
       throw new LlmError('pi-ai image conversion requires the durable attachment service', 'UNSUPPORTED_CONTENT')
     }
-    if (message.role === 'system') {
-      // pi-ai has a single systemPrompt slot; a system message that did not
-      // supply it folds into a user message to preserve order.
-      messages.push({ role: 'user', content: flattenText(message), timestamp: 0 })
+    if (appendSystemOrAssistant(message, messages, toolNames, onReplayDegrade)) continue
+    if (message.role === 'tool') {
+      messages.push(toolResultOf(message, toolNames, flattenText(message)))
       continue
     }
-    if (message.role === 'assistant') {
-      appendAssistant(message, messages, toolNames, onReplayDegrade)
-      continue
-    }
-    const text = flattenText(message)
-    const results = message.content.filter(block => block.type === 'tool-result')
-    if (text.length > 0 || results.length === 0) messages.push({ role: 'user', content: text, timestamp: 0 })
-    for (const result of results) {
-      messages.push({
-        role: 'toolResult',
-        toolCallId: result.toolCallId,
-        toolName: toolNames.get(result.toolCallId) ?? 'unknown',
-        content: [{
-          type: 'text',
-          text: toolResultText(result.content) || '(no output)',
-        }],
-        isError: result.isError ?? false,
-        timestamp: 0,
-      })
-    }
+    messages.push({ role: 'user', content: flattenText(message), timestamp: 0 })
   }
   return piContext(split.systemPrompt, options, messages)
 }
@@ -328,7 +301,7 @@ async function toPiContextWithImages(
     maxPixels: DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET,
     maxBytes: DEFAULT_REQUEST_IMAGE_MAX_BYTES,
   }
-  assertSupportedImageRoles(options.messages)
+  assertSupportedHistory(options.messages)
   const split = splitSystemPrompt(options)
   const requestImages = await prepareRequestImages(split.messages, attachments, requestImagePolicy, options.signal)
   if (maxRequestImageBytes !== undefined) {
@@ -353,38 +326,13 @@ async function toPiContextWithImages(
   const messages: PiMessage[] = []
 
   for (const message of exactMessages) {
-    if (message.role === 'system') {
-      // pi-ai has a single systemPrompt slot; a system message that did not
-      // supply it folds into a user message to preserve order.
-      messages.push({ role: 'user', content: flattenText(message), timestamp: 0 })
+    if (appendSystemOrAssistant(message, messages, toolNames, onReplayDegrade)) continue
+    if (message.role === 'tool') {
+      messages.push(toolResultOf(message, toolNames, userContent(message.content, requestImages, resolveImageAccess)))
       continue
     }
-    if (message.role === 'assistant') {
-      appendAssistant(message, messages, toolNames, onReplayDegrade)
-      continue
-    }
-    // user role: text + tool results (each result becomes its own message).
-    const regular = message.content.filter(block => block.type !== 'tool-result')
-    const content = await userContent(regular, requestImages, resolveImageAccess)
-    const results = message.content.filter((block): block is Extract<ContentBlock, { type: 'tool-result' }> => (
-      block.type === 'tool-result'
-    ))
-    if (content.length > 0 || results.length === 0) {
-      messages.push({ role: 'user', content, timestamp: 0 })
-    }
-    for (const result of results) {
-      const resultContent = await userContent(result.content, requestImages, resolveImageAccess)
-      messages.push({
-        role: 'toolResult',
-        toolCallId: result.toolCallId,
-        toolName: toolNames.get(result.toolCallId) ?? 'unknown',
-        content: typeof resultContent === 'string'
-          ? [{ type: 'text', text: resultContent || '(no output)' }]
-          : resultContent,
-        isError: result.isError ?? false,
-        timestamp: 0,
-      })
-    }
+    const content = userContent(message.content, requestImages, resolveImageAccess)
+    messages.push({ role: 'user', content, timestamp: 0 })
   }
 
   return piContext(split.systemPrompt, options, messages)

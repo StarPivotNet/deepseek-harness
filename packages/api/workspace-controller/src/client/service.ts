@@ -4,7 +4,7 @@ import { Service, type Context } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { RemoteFailure } from '@deepseek-ai/dsh-typert-protocol'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
-import type { WorkspaceView } from '../types.ts'
+import type { WorkspaceInitializeDefaultRequest, WorkspaceView } from '../types.ts'
 import type { ClientWorkspaceModel, WorkspaceSnapshot } from './model.ts'
 
 /** Structured create failure for callers that distinguish Host business errors. */
@@ -14,6 +14,20 @@ export class WorkspaceCreateError extends Error {
   /** @param rpcError - Host business or folded carrier failure. */
   constructor(readonly rpcError: RemoteFailure) {
     super(`workspace create failed: ${rpcError.code}: ${rpcError.message}`)
+  }
+}
+
+/**
+ * Archive failed on the Host. `rpcError.code` distinguishes the active-session
+ * refusal (`workspace/session-active`, whose details name what still runs)
+ * from a missing session or a carrier fault.
+ */
+export class WorkspaceArchiveError extends Error {
+  override readonly name = 'WorkspaceArchiveError'
+
+  /** @param rpcError - Host business or folded carrier failure. */
+  constructor(readonly rpcError: RemoteFailure) {
+    super(`workspace session archive failed: ${rpcError.code}: ${rpcError.message}`)
   }
 }
 
@@ -33,69 +47,19 @@ export interface WorkspaceSource {
 export interface IWorkspaces {
   /** Host-authoritative Workspace rows, order, archive set, and follow lifecycle. */
   readonly list: WorkspaceSource
-  /**
-   * Register an existing path as a Workspace.
-   * @param input - Host create payload.
-   * @returns the created or idempotently resolved Workspace.
-   */
   create(input: { path: string }): Promise<WorkspaceView>
-  /**
-   * Rename a Workspace.
-   * @param workspaceId - target Workspace.
-   * @param title - new display title.
-   * @returns the renamed Workspace.
-   */
+  initializeDefault(request: WorkspaceInitializeDefaultRequest, signal?: AbortSignal): Promise<WorkspaceView | undefined>
   rename(workspaceId: WorkspaceId, title: string): Promise<WorkspaceView>
-  /**
-   * Delete a Workspace registration without deleting Sessions or files.
-   * @param workspaceId - target Workspace.
-   */
   delete(workspaceId: WorkspaceId): Promise<void>
-  /**
-   * Move a Workspace within the Host registry order.
-   * @param workspaceId - Workspace to move.
-   * @param beforeWorkspaceId - anchor Workspace; omitted appends.
-   */
   insertBefore(workspaceId: WorkspaceId, beforeWorkspaceId?: WorkspaceId): Promise<void>
-  /**
-   * Archive a Session from Workspace grouping surfaces.
-   * @param sessionId - Session to archive.
-   */
-  archiveSession(sessionId: SessionId): Promise<void>
-  /**
-   * Unarchive a Session from the archived Session list.
-   * @param sessionId - Session to unarchive.
-   */
+  archiveSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void>
   unarchiveSession(sessionId: SessionId): Promise<void>
-  /**
-   * Append one existing directory as an additional Workspace folder.
-   * @param workspaceId - owning Workspace.
-   * @param path - existing directory to add.
-   */
-  addFolder(workspaceId: WorkspaceId, path: string): Promise<WorkspaceView>
-  /**
-   * Remove one additional Workspace folder.
-   * @param workspaceId - owning Workspace.
-   * @param path - additional folder to drop.
-   */
-  removeFolder(workspaceId: WorkspaceId, path: string): Promise<WorkspaceView>
-  /**
-   * Hide a Workspace from grouping surfaces without ungrouping Sessions.
-   * @param workspaceId - Workspace to hide.
-   */
+  pinSession(sessionId: SessionId): Promise<void>
+  unpinSession(sessionId: SessionId): Promise<void>
   hide(workspaceId: WorkspaceId): Promise<void>
-  /**
-   * Show a hidden Workspace in grouping surfaces.
-   * @param workspaceId - Workspace to show.
-   */
   show(workspaceId: WorkspaceId): Promise<void>
-  /**
-   * Move a Session within one Workspace account.
-   * @param workspaceId - owning Workspace.
-   * @param sessionId - Session to move.
-   * @param beforeSessionId - anchor Session; omitted appends.
-   * @returns the changed Workspace.
-   */
+  addFolder(workspaceId: WorkspaceId, path: string): Promise<WorkspaceView>
+  removeFolder(workspaceId: WorkspaceId, path: string): Promise<WorkspaceView>
   insertSessionBefore(
     workspaceId: WorkspaceId,
     sessionId: SessionId,
@@ -107,10 +71,6 @@ export interface IWorkspaces {
 export class WorkspaceController extends Service implements IWorkspaces {
   readonly list: WorkspaceSource
 
-  /**
-   * @param ctx - Client root Context.
-   * @param model - Remote-backed Workspace state model.
-   */
   constructor(ctx: Context, private readonly model: ClientWorkspaceModel) {
     super(ctx, 'workspaces')
     this.list = model
@@ -120,6 +80,12 @@ export class WorkspaceController extends Service implements IWorkspaces {
     const result = await this.model.create(input)
     if (!result.ok) throw new WorkspaceCreateError(result.error)
     return result.value.workspace
+  }
+
+  async initializeDefault(request: WorkspaceInitializeDefaultRequest, signal?: AbortSignal): Promise<WorkspaceView | undefined> {
+    const result = await this.model.initializeDefault(request, signal)
+    if (!result.ok) throw new WorkspaceCreateError(result.error)
+    return result.value?.workspace
   }
 
   async rename(workspaceId: WorkspaceId, title: string): Promise<WorkspaceView> {
@@ -138,9 +104,9 @@ export class WorkspaceController extends Service implements IWorkspaces {
     if (!result.ok) throw commandError('reorder', result.error)
   }
 
-  async archiveSession(sessionId: SessionId): Promise<void> {
-    const result = await this.model.archiveSession(sessionId)
-    if (!result.ok) throw commandError('session archive', result.error)
+  async archiveSession(sessionId: SessionId, options: { readonly stopActivity?: boolean } = {}): Promise<void> {
+    const result = await this.model.archiveSession(sessionId, options)
+    if (!result.ok) throw new WorkspaceArchiveError(result.error)
   }
 
   async unarchiveSession(sessionId: SessionId): Promise<void> {
@@ -148,16 +114,14 @@ export class WorkspaceController extends Service implements IWorkspaces {
     if (!result.ok) throw commandError('session unarchive', result.error)
   }
 
-  async addFolder(workspaceId: WorkspaceId, path: string): Promise<WorkspaceView> {
-    const result = await this.model.addFolder(workspaceId, path)
-    if (!result.ok) throw commandError('add folder', result.error)
-    return result.value.workspace
+  async pinSession(sessionId: SessionId): Promise<void> {
+    const result = await this.model.pinSession(sessionId)
+    if (!result.ok) throw commandError('session pin', result.error)
   }
 
-  async removeFolder(workspaceId: WorkspaceId, path: string): Promise<WorkspaceView> {
-    const result = await this.model.removeFolder(workspaceId, path)
-    if (!result.ok) throw commandError('remove folder', result.error)
-    return result.value.workspace
+  async unpinSession(sessionId: SessionId): Promise<void> {
+    const result = await this.model.unpinSession(sessionId)
+    if (!result.ok) throw commandError('session unpin', result.error)
   }
 
   async hide(workspaceId: WorkspaceId): Promise<void> {
@@ -168,6 +132,18 @@ export class WorkspaceController extends Service implements IWorkspaces {
   async show(workspaceId: WorkspaceId): Promise<void> {
     const result = await this.model.show(workspaceId)
     if (!result.ok) throw commandError('show', result.error)
+  }
+
+  async addFolder(workspaceId: WorkspaceId, path: string): Promise<WorkspaceView> {
+    const result = await this.model.addFolder(workspaceId, path)
+    if (!result.ok) throw commandError('addFolder', result.error)
+    return result.value.workspace
+  }
+
+  async removeFolder(workspaceId: WorkspaceId, path: string): Promise<WorkspaceView> {
+    const result = await this.model.removeFolder(workspaceId, path)
+    if (!result.ok) throw commandError('removeFolder', result.error)
+    return result.value.workspace
   }
 
   async insertSessionBefore(

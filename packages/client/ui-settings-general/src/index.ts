@@ -1,6 +1,6 @@
 /** Host loader entry for the browser implementation exported from `./client`. */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import {
@@ -32,6 +32,17 @@ export {
 const ONBOARDING_SETTINGS_NAMESPACE = 'ui-onboarding'
 const HOST_NAMESPACE = settingsNamespace(HOST_LIFETIME_SETTINGS_NAMESPACE)
 
+/** Runtime preferences projected to the browser. */
+export interface Config {
+  /** Last acknowledged welcome notice version. */
+  welcomeNoticeVersion: Volatile<string | undefined>
+}
+
+/** Live welcome preference. */
+export const Config = z.object({
+  welcomeNoticeVersion: z.string().volatile(),
+})
+
 interface OnboardingSettings {
   /** Last version acknowledged by the current product welcome step. */
   welcomeNoticeVersion?: string
@@ -57,7 +68,7 @@ function recordHostProcessStart(scope: { get(): HostLifetimeSettings; update(pat
   void scope.update({ [HOST_STARTED_AT_FIELD]: startedAt })
 }
 
-/** Register onboarding and Host-lifetime sections when a settings provider exists. */
+/** Register onboarding, Host-lifetime, and welcome configuration projection. */
 export function apply(ctx: Context): void {
   ctx.inject(['settings'], (settingsCtx) => {
     settingsCtx.settings.register(
@@ -66,5 +77,6 @@ export function apply(ctx: Context): void {
     )
     const lifetime = settingsCtx.settings.register(HOST_NAMESPACE, HostLifetimeSettingsSchema)
     recordHostProcessStart(lifetime)
+    settingsCtx.effect(() => settingsCtx.settings.configure({ auto: false }, ctx.fiber))
   })
 }

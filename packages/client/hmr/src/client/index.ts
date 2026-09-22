@@ -1,7 +1,7 @@
 /** Web SSE transport for page-owned client entry reconciliation and rebuilt code replacement. */
 import type { Context } from '@deepseek-ai/cordis'
 import type { PluginsEventParseResult } from '../events.ts'
-import { EVENTS_ENDPOINT, RELOAD_ENDPOINT, parsePluginsEventFrame } from '../events.ts'
+import { EVENTS_ROUTE, RELOAD_ENDPOINT, parsePluginsEventFrame } from '../events.ts'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
@@ -12,7 +12,7 @@ import { ClientHmrReloadPolicy } from './reload-policy.ts'
 import { CLIENT_HMR_SETTINGS_NAMESPACE, type ClientHmrSettings } from '../hmr-settings.ts'
 
 export type { PluginsEventFrame } from '../events.ts'
-export { EVENTS_ENDPOINT, RELOAD_ENDPOINT } from '../events.ts'
+export { EVENTS_ENDPOINT, EVENTS_ROUTE, RELOAD_ENDPOINT } from '../events.ts'
 export type { ReloadRowInjected, ReloadRowProps } from './ReloadRow.tsx'
 export type { HmrSettingsKey } from './locales.ts'
 export {
@@ -73,7 +73,7 @@ export function apply(ctx: Context): void {
   }
 
   ctx.effect(() => {
-    const source = new EventSource(EVENTS_ENDPOINT)
+    const source = new EventSource(EVENTS_ROUTE)
     source.addEventListener('message', (event: MessageEvent<string>) => {
       let value: unknown
       try {

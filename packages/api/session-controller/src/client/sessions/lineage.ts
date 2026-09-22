@@ -22,6 +22,10 @@ export interface SessionListEntry {
   /** Latest durable turn was crash/reload-interrupted and no later turn started. Absent = false. */
   interrupted?: boolean
   /** Empty-log bit mirrored from the summary; lists hide blank sessions (filtering stays with the consumer). */
+  /**
+   * New Session presentation and reuse eligibility, reconciled with
+   * `sessionListMetadata`; lists hide blank sessions (filtering stays with the consumer).
+   */
   blank: boolean
   /** Manager-owned completion reminder for the sidebar Completed section. */
   completed: boolean
@@ -69,8 +73,9 @@ export function flattenLineage(
       return
     }
     visited.add(s.sessionId)
+    const { agentAvailable: _agentAvailable, ...row } = s
     out.push({
-      ...s,
+      ...row,
       completed: completed?.has(s.sessionId) ?? false,
       depth,
     })

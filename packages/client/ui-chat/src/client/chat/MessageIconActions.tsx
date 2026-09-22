@@ -1,11 +1,9 @@
 // Shared IconActions chrome for user and assistant messages: copy
-// live, optional same-session edit, optional branch wiring, and an optional
-// date-aware clock. Turn usage sits in usageAction (TurnUsagePanel).
+// live, optional branch wiring, and an optional date-aware clock.
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import {
-  IconBranchOutline16, IconCheckOutline16, IconCloseOutline16, IconCopyOutline16, IconEditOutline16,
-  Tooltip, writeClipboard,
+  IconBranchOutlineRegular, IconCheckOutlineRegular, IconCopyOutlineRegular, Tooltip, writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
 import { formatMessageClock } from './message-chrome.ts'
@@ -19,14 +17,6 @@ export interface MessageIconActionsProps {
   time?: number | undefined
   /** Clock before icons (user) or after (assistant). */
   clock: 'start' | 'end'
-  /** Open in-place editing for this settled user prompt; omission hides the edit action. */
-  onEdit?: (() => void) | undefined
-  /** Save the in-place edit and resend; presence switches the row to save/cancel. */
-  onSaveEdit?: (() => void) | undefined
-  /** Cancel the in-place edit without rewriting history. */
-  onCancelEdit?: (() => void) | undefined
-  /** Whether the in-place save control is available. */
-  saveDisabled?: boolean | undefined
   /** Fork the session at this message; omission hides the branch action. */
   onBranch?: (() => void) | undefined
   /** The message is not a completed transcript tail, so branch stays visible but unavailable. */
@@ -48,13 +38,12 @@ export interface MessageIconActionsProps {
 }
 
 /**
- * Copy / edit / branch (/ clock) IconActions row shared by user and assistant chrome.
- * @param props - Copy text, event time, clock side, edit/branch callbacks, className.
+ * Copy / branch (/ clock) IconActions row shared by user and assistant chrome.
+ * @param props - Copy text, event time, clock side, branch callback, className.
  * @returns The actions row element.
  */
 export function MessageIconActions({
-  text, time, clock, onEdit, onSaveEdit, onCancelEdit, saveDisabled = false,
-  onBranch, branchUnavailable = false, className,
+  text, time, clock, onBranch, branchUnavailable = false, className,
   extraActions, usageAction, t,
 }: MessageIconActionsProps) {
   const day = useCalendarDay()
@@ -91,40 +80,13 @@ export function MessageIconActions({
     </span>
   )
   return (
-    <div className={className === undefined ? css.actions : `${css.actions} ${className}`}>
+    <div className={className === undefined ? css.actions : `${css.actions} ${className}`} data-clock={clock}>
       {clock === 'start' ? clockEl : null}
       <Tooltip label={copied ? t('copied') : t('copy')} side="bottom">
         <button type="button" className={css.action} aria-label={copied ? t('copied') : t('copy')} onClick={onCopy}>
-          {copied ? <IconCheckOutline16 /> : <IconCopyOutline16 />}
+          {copied ? <IconCheckOutlineRegular /> : <IconCopyOutlineRegular />}
         </button>
       </Tooltip>
-      {onEdit !== undefined && (
-        <Tooltip label={t('message.edit')} side="bottom">
-          <button type="button" className={css.action} aria-label={t('message.edit')} onClick={onEdit}>
-            <IconEditOutline16 />
-          </button>
-        </Tooltip>
-      )}
-      {onSaveEdit !== undefined && (
-        <Tooltip label={t('message.saveEdit')} side="bottom">
-          <button
-            type="button"
-            className={css.action}
-            aria-label={t('message.saveEdit')}
-            disabled={saveDisabled}
-            onClick={onSaveEdit}
-          >
-            <IconCheckOutline16 />
-          </button>
-        </Tooltip>
-      )}
-      {onCancelEdit !== undefined && (
-        <Tooltip label={t('message.cancelEdit')} side="bottom">
-          <button type="button" className={css.action} aria-label={t('message.cancelEdit')} onClick={onCancelEdit}>
-            <IconCloseOutline16 />
-          </button>
-        </Tooltip>
-      )}
       {extraActions}
       {onBranch !== undefined && (
         <Tooltip label={branchUnavailable ? t('message.branchUnavailable') : t('message.branch')} side="bottom">
@@ -138,15 +100,16 @@ export function MessageIconActions({
             data-unavailable={branchUnavailable || undefined}
             onClick={branchUnavailable ? undefined : onBranch}
           >
-            <IconBranchOutline16 />
+            <IconBranchOutlineRegular />
           </button>
         </Tooltip>
       )}
       {onBranch !== undefined && branchUnavailable && (
         <span id={reasonId} className={css.visuallyHidden}>{t('message.branchUnavailable')}</span>
       )}
-      {usageAction}
-      {clock === 'end' ? clockEl : null}
+      {clock === 'end'
+        ? <span className={css.endInfo}>{usageAction}{clockEl}</span>
+        : usageAction}
     </div>
   )
 }
