@@ -798,12 +798,12 @@ export class SessionManager {
         ...(projectionValues === undefined ? {} : { projectionValues }),
       }
     })
-    const fresh = flattenLineage(merged)
+    const fresh = flattenLineage(merged, this.completedNotifications)
     const items = fresh.map((entry) => {
       const prev = this.entryCache.get(entry.sessionId)
       if (
         prev !== undefined && prev.updatedAt === entry.updatedAt && prev.running === entry.running
-        && prev.blank === entry.blank
+        && prev.blank === entry.blank && prev.completed === entry.completed
         && prev.parentSessionId === entry.parentSessionId && prev.cwd === entry.cwd
         && prev.origin === entry.origin && prev.title === entry.title && prev.depth === entry.depth
         && prev.projectionValues === entry.projectionValues

@@ -9,7 +9,7 @@ import { useEffect } from 'react'
 import type {
   AssistantMessageNode, ChatNode, ChatNodeHookContext, ChatNodeOwnerProps, ChatSnapshot,
   ChatViewSlotProps, CommandNode, CompactionSummaryNode, ContextMessageNode, ConversationNode,
-  LegacyConversationSlice, ModelRetryNode, RunningToolCall, SteeringMessageNode,
+  LegacyConversationSlice, ModelRetryNode, StartedToolCall, SteeringMessageNode,
   ToolCallBlock, ToolResultNode, TurnErrorNode, TurnMaxTokensNode, UseChatNodeTurnData,
   TranscriptViewMode, UserMessageNode,
 } from '@deepseek-ai/dsh-client-ui-chat/client'
@@ -206,8 +206,8 @@ const toolResult = (seq: number, callId: string, name = 'bash'): ToolResultNode 
   callTime: seq * 1_000 - 500,
   content: [], isError: false, subCalls: [],
 })
-const runningCall = (callId: string, name = 'bash'): RunningToolCall => ({
-  callId, name, argsRaw: `{"command":"cmd-${callId}"}`, turn: 2, step: 1, time: 1_000, subCalls: [],
+const runningCall = (callId: string, name = 'bash'): StartedToolCall => ({
+  phase: 'start' as const, callId, name, argsRaw: `{"command":"cmd-${callId}"}`, turn: 2, step: 1, time: 1_000, subCalls: [],
 })
 const command = (over: Partial<CommandNode> = {}): CommandNode => ({
   kind: 'command', seq: 5, time: 5_000, commandId: 'cmd-1' as CommandNode['commandId'],
@@ -682,7 +682,7 @@ describe('ChatView', () => {
     expect(parent?.tagName).toBe('DIV')
     fireEvent.change(input, { target: { value: 'retained local input' } })
     const observe = vi.spyOn(ResizeObserver.prototype, 'observe')
-    for (const mode of ['detailed', 'expanded', 'compact'] as const) {
+    for (const mode of ['standard', 'detailed', 'compact'] as const) {
       act(() => { h.setTranscriptView(mode) })
       expect(view.getByRole('textbox', { name: inside.key })).toBe(input)
       expect(input.value).toBe('retained local input')
@@ -691,7 +691,7 @@ describe('ChatView', () => {
     }
     fireEvent.click(groupHeader)
     expect(groupHeader.getAttribute('aria-expanded')).toBe('false')
-    act(() => { h.setTranscriptView('expanded') })
+    act(() => { h.setTranscriptView('detailed') })
     expect(view.getByRole('textbox', { name: inside.key })).toBe(input)
     act(() => { h.setTranscriptView('compact') })
     expect(view.queryByRole('textbox', { name: inside.key })).toBeNull()
@@ -738,10 +738,10 @@ describe('ChatView', () => {
     expect(bodies.map(body => body.hasAttribute('hidden'))).toEqual([true, true, true])
     fireEvent.click(headers[0]!)
 
-    for (const mode of ['detailed', 'expanded', 'compact', 'expanded'] as const) {
+    for (const mode of ['standard', 'detailed', 'compact', 'detailed'] as const) {
       act(() => { h.setTranscriptView(mode) })
-      expect(bodies.map(body => body.hasAttribute('hidden'))).toEqual([false, true, mode !== 'expanded'])
-      expect(headers.map(header => header.closest('[hidden]') !== null)).toEqual([false, false, mode === 'expanded'])
+      expect(bodies.map(body => body.hasAttribute('hidden'))).toEqual([false, true, mode !== 'detailed'])
+      expect(headers.map(header => header.closest('[hidden]') !== null)).toEqual([false, false, mode === 'detailed'])
       expect([...view.container.querySelectorAll('[data-chat-group-key]')]).toEqual(roots)
     }
 
@@ -754,6 +754,16 @@ describe('ChatView', () => {
     expect(bodies[2]!.hasAttribute('hidden')).toBe(true)
     expect(bodies[0]!.hasAttribute('hidden')).toBe(false)
     expect(bodies[1]!.hasAttribute('hidden')).toBe(true)
+
+    act(() => { h.setTranscriptView('verbose') })
+    expect(roots.every(root => root.closest('[hidden]') === null)).toBe(true)
+    expect(headers.every(header => header.closest('[hidden]') !== null)).toBe(true)
+    expect(bodies.every(body => !body.hasAttribute('hidden'))).toBe(true)
+    expect(control.disabled).toBe(true)
+    expect(control.textContent).toContain(h.props.t('message.turnProcess.took', { duration: formatRunDuration(3_000, h.props.t) }))
+    fireEvent.click(control)
+    expect(bodies.every(body => !body.hasAttribute('hidden'))).toBe(true)
+    expect([...view.container.querySelectorAll<HTMLElement>('[data-chat-group-key]')]).toEqual(roots)
   })
 
   it.each([
@@ -919,7 +929,7 @@ describe('ChatView', () => {
     expect(headers).toHaveLength(40)
     const titles = headers.map(header => header.textContent)
 
-    for (const mode of ['detailed', 'expanded', 'compact'] as const) {
+    for (const mode of ['standard', 'detailed', 'compact'] as const) {
       translate.mockClear()
       act(() => { h.setTranscriptView(mode) })
       expect(translate.mock.calls.filter(([key]) => key === 'message.stepProcess.thinking')).toHaveLength(0)
@@ -937,8 +947,8 @@ describe('ChatView', () => {
       groupStore.publish()
     })
     translate.mockClear()
-    act(() => { h.setTranscriptView('detailed') })
-    expect(translate.mock.calls.filter(call => String(call[0]).startsWith('message.stepProcess.'))).toHaveLength(0)
+    act(() => { h.setTranscriptView('standard') })
+    expect(translate.mock.calls.filter(([key]) => key.startsWith('message.stepProcess.'))).toHaveLength(0)
   })
 
   it('passes independently keyed group parts to business Node renderers', () => {
@@ -1320,9 +1330,9 @@ describe('ChatView', () => {
   })
 
   it.each([
-    { mode: 'compact', anchor: 'group' }, { mode: 'detailed', anchor: 'group' },
-    { mode: 'expanded', anchor: 'group' },
-    { mode: 'compact', anchor: 'node' }, { mode: 'detailed', anchor: 'node' }, { mode: 'expanded', anchor: 'node' },
+    { mode: 'compact', anchor: 'group' }, { mode: 'standard', anchor: 'group' },
+    { mode: 'detailed', anchor: 'group' },
+    { mode: 'compact', anchor: 'node' }, { mode: 'standard', anchor: 'node' }, { mode: 'detailed', anchor: 'node' },
   ] as const)(
     'keeps the first visible item in place when paging inserts a steering boundary ($mode, $anchor)', ({ mode, anchor }) => {
       const tool = (seq: number, id: string) => ({ ...toolResult(seq, id), turn: 1 })
@@ -1388,14 +1398,14 @@ describe('ChatView', () => {
 
   it.each([
     { mode: 'compact', hasProcess: false, hasSteering: false },
+    { mode: 'standard', hasProcess: false, hasSteering: false },
     { mode: 'detailed', hasProcess: false, hasSteering: false },
-    { mode: 'expanded', hasProcess: false, hasSteering: false },
     { mode: 'compact', hasProcess: true, hasSteering: false },
+    { mode: 'standard', hasProcess: true, hasSteering: false },
     { mode: 'detailed', hasProcess: true, hasSteering: false },
-    { mode: 'expanded', hasProcess: true, hasSteering: false },
     { mode: 'compact', hasProcess: false, hasSteering: true },
+    { mode: 'standard', hasProcess: false, hasSteering: true },
     { mode: 'detailed', hasProcess: false, hasSteering: true },
-    { mode: 'expanded', hasProcess: false, hasSteering: true },
   ] as const)('keeps the loaded message anchored when paging exposes steering inside a closed Turn ($mode, process=$hasProcess, steer=$hasSteering)', ({ mode, hasProcess, hasSteering }) => {
     const tool = (seq: number, id: string) => ({ ...toolResult(seq, id), turn: 1 })
     const initial = {
@@ -1717,7 +1727,7 @@ describe('ChatView', () => {
     expect(view.getAllByText('即发即显')).toHaveLength(1)
   })
 
-  it.each(['compact', 'detailed', 'expanded'] as const)(
+  it.each(['compact', 'standard', 'detailed'] as const)(
     'keeps the opening echo above a new Turn title and steering below it (%s)', (mode) => {
       const opening = {
         requestId: 'opening' as never, placement: 'transcript' as const,
@@ -1826,7 +1836,7 @@ describe('ChatView', () => {
     expect(view.getByLabelText('回到底部')).toBeTruthy()
   })
 
-  it.each(['compact', 'detailed', 'expanded'] as const)(
+  it.each(['compact', 'standard', 'detailed'] as const)(
     'hides an admitted local steer while its Inbox claim projection is delayed (%s)', (mode) => {
       const pending: InboxState['next-step'] = ['first', 'second'].map(text => ({
         id: text as never, role: 'user', source: { kind: 'user', rpcId: text as never },
@@ -2346,7 +2356,7 @@ describe('ChatView', () => {
     expect(answer?.hasAttribute('data-turn-process-answer')).toBe(false)
   })
 
-  it.each(['compact', 'detailed', 'expanded'] as const)(
+  it.each(['compact', 'standard', 'detailed'] as const)(
     'preserves steering-separated process groups in %s mode after Turn completion', (mode) => {
       const nodes = [
         userInTurn(1, 'question', 1),
@@ -2390,7 +2400,7 @@ describe('ChatView', () => {
         view.getByText('second direction').closest('[data-chat-flow-kind]'),
         roots[2], view.getByText('final answer').closest('[data-chat-flow-kind]'),
       ])
-      for (const next of ['compact', 'detailed', 'expanded', mode] as const) {
+      for (const next of ['compact', 'standard', 'detailed', mode] as const) {
         act(() => { h.setTranscriptView(next) })
         expect(visibleOrder()).toEqual(order)
         expect([...view.container.querySelectorAll('[data-chat-group-key]')]).toEqual(roots)
@@ -2477,14 +2487,14 @@ describe('ChatView', () => {
     expect(processRow.getAttribute('hidden')).toBe('until-found')
 
     const toggle = turnProcessControl(view.container)!
-    for (const mode of ['detailed', 'expanded', 'compact'] as const) {
+    for (const mode of ['standard', 'detailed', 'compact'] as const) {
       act(() => { h.setTranscriptView(mode) })
       expect(turnProcessControl(view.container)).toBe(toggle)
       expect(toggle.getAttribute('aria-expanded')).toBe('false')
       expect(processRow.getAttribute('hidden')).toBe('until-found')
     }
     fireEvent.click(toggle)
-    for (const mode of ['detailed', 'expanded', 'compact'] as const) {
+    for (const mode of ['standard', 'detailed', 'compact'] as const) {
       act(() => { h.setTranscriptView(mode) })
       expect(turnProcessControl(view.container)).toBe(toggle)
       expect(toggle.getAttribute('aria-expanded')).toBe('true')
@@ -2675,7 +2685,7 @@ describe('ChatView', () => {
     const toggle = view.getByRole('button', { name: h.props.t('message.turnProcess.worked') })
     let row = view.container.querySelector<HTMLElement>('[data-chat-node-key="fixture:tool:partial"]')!
     let group = view.container.querySelector<HTMLElement>('[data-chat-group-key]')
-    for (const mode of ['compact', 'detailed', 'expanded'] as const) {
+    for (const mode of ['compact', 'standard', 'detailed'] as const) {
       act(() => { h.setTranscriptView(mode) })
       expect(toggle.getAttribute('aria-expanded')).toBe('false')
       expect(row.getAttribute('hidden')).toBe('until-found')
@@ -2690,7 +2700,7 @@ describe('ChatView', () => {
     const beforePageGroup = group
     const groupToggle = group?.querySelector<HTMLButtonElement>('[data-process-activity]')
     if (grouped && manualOpen) {
-      act(() => { h.setTranscriptView('detailed') })
+      act(() => { h.setTranscriptView('standard') })
       fireEvent.click(groupToggle!)
       expect(groupToggle?.getAttribute('aria-expanded')).toBe('true')
     }

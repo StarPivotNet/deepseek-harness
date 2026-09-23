@@ -183,8 +183,28 @@ export class WorkspaceRegistry extends Service {
     table: () => this.requireTable(),
     sessionPath: id => this.sessionPaths.get(id),
     readSessionHeader: id => this.readSessionHeader(id),
-    liveSessionEvents: () => undefined,
-    inspectSession: async () => undefined,
+    liveSessionEvents: (id) => {
+      const live = this.ctx.get('sessions')?.get(id)
+      return live === undefined ? undefined : live.snapshotEvents()
+    },
+    inspectSession: async (id) => {
+      const persistence = this.ctx.sessionPersistence
+      if (typeof persistence.open !== 'function') return undefined
+      let handle: Awaited<ReturnType<typeof persistence.open>>
+      try {
+        handle = await persistence.open(id, 'read')
+      } catch {
+        return undefined
+      }
+      try {
+        const { events } = await handle.read()
+        return { header: handle.header, events }
+      } catch {
+        return undefined
+      } finally {
+        await handle.close()
+      }
+    },
     rememberSessionPath: (id, path) => {
       this.sessionPaths.set(id, path)
       this.invalidSessionPaths.delete(id)

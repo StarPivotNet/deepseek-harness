@@ -32,6 +32,8 @@ import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import type { Context } from '@deepseek-ai/cordis'
 import * as yaml from 'js-yaml'
 import type { DshBundleManifest, DshPackageManifest } from '@deepseek-ai/dsh-package-manifest'
+import { evaluatePluginCompatibility, pluginCompatibilityWarning } from './plugin-compatibility.ts'
+import { readProfileVersionExemptions } from './profile-compatibility.ts'
 import { loadOverlayPatches } from './index.ts'
 import { realModuleDirectory } from './profile-resolution/legacy-links.ts'
 
@@ -633,7 +635,8 @@ export function resolveBundleDir(
  * Load an already initialized profile directory without resolving it through
  * the shared Harness home. This is used by application-owned profiles whose
  * package project and lifecycle belong to that application.
- * Unreadable bundles are reported on stderr and skipped without changing the manifest.
+ * Unreadable bundles, and bundles whose own dsh peers the profile does not exempt, are reported
+ * on stderr and skipped without changing the manifest.
  * @param binName - the diagnostic prefix on thrown errors.
  * @param dir - absolute profile package directory.
  * @param installAnchor - absolute path of the owning dsh app's package.json.
@@ -649,6 +652,7 @@ export function loadProfileDirectory(
   const manifest = readProfileManifest(binName, dir)
   const bundles = manifest.dsh?.profile?.bundles ?? []
   const layers: ProfileLayer[] = []
+  const exemptions = bundles.length === 0 ? {} : readProfileVersionExemptions(dir)
   for (const packageName of bundles) {
     try {
       const packageDir = resolveBundleDir(binName, packageName, installAnchor, dir)
@@ -657,6 +661,9 @@ export function loadProfileDirectory(
       if (bundle === undefined) {
         throw new Error(`${binName}: profile bundle ${JSON.stringify(packageName)} declares no dsh.bundle in its package.json`)
       }
+      // A bundle is not a plugin row, so row admission never reads its own peers.
+      const issue = evaluatePluginCompatibility(bundleManifest, exemptions)
+      if (issue !== undefined && !issue.exempted) throw new Error(pluginCompatibilityWarning(issue))
       const patchPaths = bundlePatchPaths(packageDir, bundle)
       const patches = patchPaths.flatMap(patchPath => loadOverlayPatches(binName, patchPath))
       layers.push({ packageName, packageDir, patchPaths, patches })
@@ -673,8 +680,8 @@ export function loadProfileDirectory(
 
 /**
  * Load a profile: resolve every `dsh.profile.bundles` entry to its patch
- * layer and parse the profile's own patch file. Unreadable bundles are reported
- * on stderr and skipped; profile manifest and user patch errors still throw.
+ * layer and parse the profile's own patch file. Unreadable or incompatible bundles
+ * are reported on stderr and skipped; profile manifest and user patch errors still throw.
  * @param binName - the diagnostic prefix on thrown errors.
  * @param name - the profile name.
  * @param installAnchor - absolute path of the dsh app's package.json (first resolution anchor).
