@@ -11,6 +11,7 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
   >
     <div
       class="logoRow"
+      data-window-drag="true"
     >
       <button
         aria-label="Open sidebar"
@@ -39,17 +40,34 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
       class="newSession"
       type="button"
     >
-      <svg
-        aria-hidden="true"
-        data-content="47b5e433"
-        fill="none"
-        height="16"
-        stroke-width="1"
-        viewBox="0 0 16 16"
-        width="16"
-        xmlns="http://www.w3.org/2000/svg"
-      />
+      <span
+        class="newSessionLabelMask"
+      >
+        <span
+          class="newSessionContent"
+        >
+          <svg
+            aria-hidden="true"
+            data-content="47b5e433"
+            fill="none"
+            height="16"
+            stroke-width="1"
+            viewBox="0 0 16 16"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          />
+        </span>
+      </span>
     </button>
+    <div
+      class="automationArea"
+      data-dsh-sidebar-actions=""
+    >
+      <div
+        data-slot="sidebar.automation"
+        style="display: contents;"
+      />
+    </div>
     <div
       class="regionArea"
     >
@@ -93,6 +111,7 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
   >
     <div
       class="logoRow"
+      data-window-drag="true"
     >
       <button
         aria-label="New session"
@@ -168,22 +187,39 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
       class="newSession"
       type="button"
     >
-      <svg
-        aria-hidden="true"
-        data-content="47b5e433"
-        fill="none"
-        height="14"
-        stroke-width="1.3"
-        viewBox="0 0 16 16"
-        width="14"
-        xmlns="http://www.w3.org/2000/svg"
-      />
       <span
-        class="newSessionLabel wide"
+        class="newSessionLabelMask"
       >
-        New Session
+        <span
+          class="newSessionContent"
+        >
+          <svg
+            aria-hidden="true"
+            data-content="47b5e433"
+            fill="none"
+            height="14"
+            stroke-width="1.3"
+            viewBox="0 0 16 16"
+            width="14"
+            xmlns="http://www.w3.org/2000/svg"
+          />
+          <span
+            class="newSessionLabel wide"
+          >
+            New Session
+          </span>
+        </span>
       </span>
     </button>
+    <div
+      class="automationArea"
+      data-dsh-sidebar-actions=""
+    >
+      <div
+        data-slot="sidebar.automation"
+        style="display: contents;"
+      />
+    </div>
     <div
       class="regionArea"
     >
@@ -227,6 +263,7 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
   >
     <div
       class="logoRow"
+      data-window-drag="true"
     >
       <button
         aria-label="Open sidebar"
@@ -271,19 +308,26 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
     <button
       aria-label="New session"
       class="newSession"
-      data-dsh-sidebar-new-session=""
       type="button"
     >
-      <svg
-        aria-hidden="true"
-        data-content="47b5e433"
-        fill="none"
-        height="18"
-        stroke-width="1"
-        viewBox="0 0 16 16"
-        width="18"
-        xmlns="http://www.w3.org/2000/svg"
-      />
+      <span
+        class="newSessionLabelMask"
+      >
+        <span
+          class="newSessionContent"
+        >
+          <svg
+            aria-hidden="true"
+            data-content="47b5e433"
+            fill="none"
+            height="18"
+            stroke-width="1"
+            viewBox="0 0 16 16"
+            width="18"
+            xmlns="http://www.w3.org/2000/svg"
+          />
+        </span>
+      </span>
     </button>
     <div
       class="automationArea"
@@ -337,6 +381,7 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
   >
     <div
       class="logoRow"
+      data-window-drag="true"
     >
       <button
         aria-label="New session"
@@ -410,23 +455,30 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
     <button
       aria-label="New session"
       class="newSession"
-      data-dsh-sidebar-new-session=""
       type="button"
     >
-      <svg
-        aria-hidden="true"
-        data-content="47b5e433"
-        fill="none"
-        height="14"
-        stroke-width="1.3"
-        viewBox="0 0 16 16"
-        width="14"
-        xmlns="http://www.w3.org/2000/svg"
-      />
       <span
-        class="newSessionLabel wide"
+        class="newSessionLabelMask"
       >
-        New Session
+        <span
+          class="newSessionContent"
+        >
+          <svg
+            aria-hidden="true"
+            data-content="47b5e433"
+            fill="none"
+            height="14"
+            stroke-width="1.3"
+            viewBox="0 0 16 16"
+            width="14"
+            xmlns="http://www.w3.org/2000/svg"
+          />
+          <span
+            class="newSessionLabel wide"
+          >
+            New Session
+          </span>
+        </span>
       </span>
     </button>
     <div
@@ -481,6 +533,7 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
   >
     <div
       class="logoRow"
+      data-window-drag="true"
     >
       <button
         aria-label="新建会话"
@@ -554,23 +607,30 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
     <button
       aria-label="新建会话"
       class="newSession"
-      data-dsh-sidebar-new-session=""
       type="button"
     >
-      <svg
-        aria-hidden="true"
-        data-content="47b5e433"
-        fill="none"
-        height="14"
-        stroke-width="1.3"
-        viewBox="0 0 16 16"
-        width="14"
-        xmlns="http://www.w3.org/2000/svg"
-      />
       <span
-        class="newSessionLabel wide"
+        class="newSessionLabelMask"
       >
-        新会话
+        <span
+          class="newSessionContent"
+        >
+          <svg
+            aria-hidden="true"
+            data-content="47b5e433"
+            fill="none"
+            height="14"
+            stroke-width="1.3"
+            viewBox="0 0 16 16"
+            width="14"
+            xmlns="http://www.w3.org/2000/svg"
+          />
+          <span
+            class="newSessionLabel wide"
+          >
+            新会话
+          </span>
+        </span>
       </span>
     </button>
     <div

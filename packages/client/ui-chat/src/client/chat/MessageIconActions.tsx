@@ -3,7 +3,13 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import {
-  IconBranchOutlineRegular, IconCheckOutlineRegular, IconCopyOutlineRegular, Tooltip, writeClipboard,
+  IconBranchOutlineRegular,
+  IconCheckOutlineRegular,
+  IconCloseOutlineRegular,
+  IconCopyOutlineRegular,
+  IconEditOutlineRegular,
+  Tooltip,
+  writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
 import { formatMessageClock } from './message-chrome.ts'
@@ -51,7 +57,7 @@ export interface MessageIconActionsProps {
  * @returns The actions row element.
  */
 export function MessageIconActions({
-  text, time, clock, onBranch, branchUnavailable = false, className,
+  text, time, clock, onBranch, onEdit, onSaveEdit, onCancelEdit, saveDisabled = false, branchUnavailable = false, className,
   extraActions, usageAction, t,
 }: MessageIconActionsProps) {
   const day = useCalendarDay()
@@ -96,6 +102,27 @@ export function MessageIconActions({
         </button>
       </Tooltip>
       {extraActions}
+      {onEdit !== undefined && (
+        <Tooltip label={t('message.edit')} side="bottom">
+          <button type="button" className={css.action} aria-label={t('message.edit')} onClick={onEdit}>
+            <IconEditOutlineRegular />
+          </button>
+        </Tooltip>
+      )}
+      {onSaveEdit !== undefined && (
+        <Tooltip label={t('message.saveEdit')} side="bottom">
+          <button type="button" className={css.action} aria-label={t('message.saveEdit')} disabled={saveDisabled} onClick={onSaveEdit}>
+            <IconCheckOutlineRegular />
+          </button>
+        </Tooltip>
+      )}
+      {onCancelEdit !== undefined && (
+        <Tooltip label={t('message.cancelEdit')} side="bottom">
+          <button type="button" className={css.action} aria-label={t('message.cancelEdit')} onClick={onCancelEdit}>
+            <IconCloseOutlineRegular />
+          </button>
+        </Tooltip>
+      )}
       {onBranch !== undefined && (
         <Tooltip label={branchUnavailable ? t('message.branchUnavailable') : t('message.branch')} side="bottom">
           {/* Native disabled buttons do not deliver the hover/focus events Tooltip needs. */}

@@ -4,7 +4,7 @@ import { Service, type Context } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { RemoteFailure } from '@deepseek-ai/dsh-typert-protocol'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
-import type { WorkspaceInitializeDefaultRequest, WorkspaceView } from '../types.ts'
+import type { WorkspaceView } from '../types.ts'
 import type { ClientWorkspaceModel, WorkspaceSnapshot } from './model.ts'
 
 /** Structured create failure for callers that distinguish Host business errors. */
@@ -48,7 +48,12 @@ export interface IWorkspaces {
   /** Host-authoritative Workspace rows, order, archive set, and follow lifecycle. */
   readonly list: WorkspaceSource
   create(input: { path: string }): Promise<WorkspaceView>
-  initializeDefault(request: WorkspaceInitializeDefaultRequest, signal?: AbortSignal): Promise<WorkspaceView | undefined>
+  /**
+   * Initialize or reuse the default Workspace.
+   * @param signal - caller lifetime.
+   * @returns the prepared Workspace, or undefined when first-use initialization is ineligible; rejects on preparation failure.
+   */
+  initializeDefault(signal?: AbortSignal): Promise<WorkspaceView | undefined>
   rename(workspaceId: WorkspaceId, title: string): Promise<WorkspaceView>
   delete(workspaceId: WorkspaceId): Promise<void>
   insertBefore(workspaceId: WorkspaceId, beforeWorkspaceId?: WorkspaceId): Promise<void>
@@ -82,8 +87,8 @@ export class WorkspaceController extends Service implements IWorkspaces {
     return result.value.workspace
   }
 
-  async initializeDefault(request: WorkspaceInitializeDefaultRequest, signal?: AbortSignal): Promise<WorkspaceView | undefined> {
-    const result = await this.model.initializeDefault(request, signal)
+  async initializeDefault(signal?: AbortSignal): Promise<WorkspaceView | undefined> {
+    const result = await this.model.initializeDefault(signal)
     if (!result.ok) throw new WorkspaceCreateError(result.error)
     return result.value?.workspace
   }

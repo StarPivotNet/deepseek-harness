@@ -18,7 +18,8 @@ export {
  * Register the durable workspace section when a settings provider exists.
  * @param ctx - Host context whose optional settings service owns the section.
  */
-export function apply(ctx: Context): void {
+export function apply(ctx?: Context): void {
+  if (ctx === undefined) return
   ctx.inject(['settings'], (settingsCtx) => {
     settingsCtx.settings.register(
       settingsNamespace(WORKSPACE_SETTINGS_NAMESPACE),

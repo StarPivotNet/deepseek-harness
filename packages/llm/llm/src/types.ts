@@ -6,7 +6,7 @@
 
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { FileAttachmentRef, ImageAttachmentRef, VideoAttachmentRef } from '@deepseek-ai/dsh-attachment'
-import type { ToolCallId, ProviderRequestId, ReasoningEffortId } from './brand.ts'
+import type { MessageId, ToolCallId, ProviderRequestId, ReasoningEffortId } from './brand.ts'
 import type { Message, UserMessage } from './message.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -95,19 +95,17 @@ export interface ImageBlock {
  * so adapters and providers see text in its place while the durable log keeps
  * the structured reference for presentation and authorization.
  */
+
+/**
+ * A durable video reference, valid in user content. Adapters that advertise
+ * video input send native video bytes; others project a handle.
+ */
 export interface VideoBlock {
   type: 'video'
   /** Immutable stored bytes and container metadata owned by the attachment service. */
   attachment: VideoAttachmentRef
 }
 
-/**
- * A durable verbatim file reference, valid in user content. Files never reach
- * a provider natively: request assembly projects every occurrence to
- * deterministic handle text (name, byte size, and the read-only saved path),
- * so adapters and providers see text in its place while the durable log keeps
- * the structured reference for presentation and authorization.
- */
 export interface FileBlock {
   type: 'file'
   /** Immutable verbatim bytes and display metadata owned by the attachment service. */
@@ -144,9 +142,8 @@ export interface ToolRemovalBlock {
 
 /**
  * Merge-extensible content blocks keyed by `type`. New core blocks must land
- * with adapter, UI, and compaction support. Developer tool-change blocks are
- * reserved for Session V4 persistence; providers and UI reject them until
- * their producers and consumers are implemented together.
+ * with adapter, UI, and compaction support. Tool-change blocks belong to
+ * developer messages; `projectToolUpdates` selects what each route receives.
  */
 export interface ContentBlockMap {
   'text': TextBlock
@@ -338,23 +335,10 @@ export interface LlmDiscoveredModel {
   contextWindow?: number
   /** Maximum output tokens, when disclosed. */
   maxTokens?: number
-  /**
-   * Selectable reasoning efforts the listing disclosed, keyed by the
-   * adapter-owned level id a selector would offer. A value is the wire
-   * spelling dispatch should send; `off` may be `null` meaning "supported,
-   * send nothing". Absence means the listing did not describe reasoning.
-   */
-  reasoningEfforts?: Readonly<Record<string, string | null>>
-  /**
-   * Whether the endpoint accepts a reasoning-effort parameter for this
-   * model. Absence means the listing did not say.
-   */
-  supportsReasoningEffort?: boolean
   /** Accepted input types when disclosed by the catalog or endpoint; absent means unknown. */
   inputModalities?: readonly ModelModality[]
 }
 
-/** One adapter-discovered model; catalog membership is advisory, not request validation. */
 /** One adapter-discovered model; catalog membership is advisory, not request validation. */
 export interface LlmModelInfo {
   /** Provider route that owns this model entry. */
@@ -424,6 +408,17 @@ export interface LlmModelReasoningInfo {
  */
 export type SystemPromptUpdate = 'in-history'
 
+/**
+ * How a model accepts native tool declarations that change mid-conversation.
+ * `'addition-only'`: the model reads a `tool-addition` block in a later
+ * developer message as activating a tool declared with `deferLoading`, so an
+ * added tool follows the cached history instead of rewriting the declaration
+ * list. `'in-history'`: the model additionally reads `tool-removal` blocks,
+ * so a removed tool keeps its declaration and the removal follows the history.
+ * Absent means every request declares the complete current tool list.
+ */
+export type ToolUpdate = 'in-history' | 'addition-only'
+
 /** Exact-route model metadata resolved by its owning adapter. */
 export interface LlmResolvedModelInfo extends LlmModelInfo {
   /** Provider-owned context capacity when known. */
@@ -434,6 +429,10 @@ export interface LlmResolvedModelInfo extends LlmModelInfo {
   reasoning?: LlmModelReasoningInfo
   /** Declared mid-conversation system prompt handling; absent means only a leading system message is read. */
   systemPromptUpdate?: SystemPromptUpdate
+  /** Complete system-prompt template captured with the adapter dispatch generation. */
+  systemPrompt?: string
+  /** Declared mid-conversation tool declaration handling; absent means every request declares the complete tool list. */
+  toolUpdate?: ToolUpdate
 }
 
 /**
@@ -510,6 +509,19 @@ export interface RequestUserInput {
 /** A durable conversation message or a user input used only for one request. */
 export type RequestMessage = Message | RequestUserInput
 
+/** Logged tool declarations and update identities since the last declaration reset. */
+export interface ToolHistory {
+  /** Complete active declarations at the start of this history. */
+  readonly tools: readonly ToolSchema[]
+  /** Ordered developer messages, with additions resolved from their historical headers. */
+  readonly updates: readonly {
+    /** Identity used to locate this update in the derived request history. */
+    readonly messageId: MessageId
+    /** Added definitions resolved from the event's referenced request header. */
+    readonly additions: readonly ToolSchema[]
+  }[]
+}
+
 /** A single model request, fully assembled. */
 export interface GenerateOptions {
   /** Registered provider route selecting the adapter instance. */
@@ -531,6 +543,8 @@ export interface GenerateOptions {
   system?: string
   /** Tool schemas (adapters map to the provider's `tools` field). */
   tools?: ToolSchema[]
+  /** Session-folded tool history used for route projection; omission sends complete declarations without tool updates. */
+  toolHistory?: ToolHistory
   temperature?: number
   maxTokens?: number
   /**
