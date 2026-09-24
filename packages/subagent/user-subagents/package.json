@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-user-subagents",
   "description": "User-authored subagent definition library consumed by the delegation tool",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
