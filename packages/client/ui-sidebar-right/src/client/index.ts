@@ -24,6 +24,7 @@ import type {} from '@deepseek-ai/dsh-client-shortcuts/client'
 import { observeSidebarFocus } from './focus.ts'
 import { registerSidebarShortcuts } from './shortcuts.ts'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-client-resources/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
@@ -107,7 +108,7 @@ export function apply(ctx: ClientContext): void {
   // its own apply top level for the same reason.
   const t = ctx.locale.bind(NS)
   const tabs = new SidebarRightTabRegistry(ctx)
-  const views = new SidebarSessionViews(ctx.sessions)
+  const views = new SidebarSessionViews(ctx.get('sessions') as unknown as ISessions)
   ctx.effect(() => {
     const current = ctx.uiSession.adapter.current
     const sync = (): void => { views.select(current.getSnapshot().key as SessionId | undefined) }

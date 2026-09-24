@@ -29,7 +29,7 @@ const sessions: SessionListState = {
   byId: { [SESSION]: { id: SESSION, displayTitle: SESSION, running: false, blank: false, updatedAt: 0, retainedBy: {} } },
   phase: 'ready', projectionsBySession: {},
 }
-const workspaces: WorkspaceSnapshot = { items: [], archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null }
+const workspaces: WorkspaceSnapshot = { items: [], archivedSessionIds: [], pinnedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null }
 
 /**
  * Session list whose catalog row for this tab's Session carries a title.

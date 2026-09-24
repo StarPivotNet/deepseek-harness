@@ -29,6 +29,7 @@
  */
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
@@ -86,6 +87,7 @@ export const inject = [
  * @param ctx - browser services used by these contributions.
  */
 export function apply(ctx: ClientContext): void {
+  const sessions = ctx.get('sessions') as unknown as ISessions
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-schedule: dictionaries')
   ctx.effect(() => ctx.locale.register(MANAGER_NS, { zh: managerZh, en: managerEn }), 'ui-schedule: manager dictionaries')
   const t = ctx.locale.bind(MANAGER_NS)
@@ -133,7 +135,7 @@ export function apply(ctx: ClientContext): void {
   }
   const loadHistory = (request: ScheduleDeliveryHistoryRequest) => ctx.remote.schedule.history(request)
   const openSession = (id: SessionId): void => {
-    if (sessionLinkState(id, ctx.sessions.list.getSnapshot(), ctx.workspaces.list.getSnapshot()) === 'available') {
+    if (sessionLinkState(id, sessions.list.getSnapshot(), ctx.workspaces.list.getSnapshot()) === 'available') {
       ctx.uiWorkspace.openSession(id)
     }
   }

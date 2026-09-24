@@ -335,6 +335,18 @@ export interface LlmDiscoveredModel {
   contextWindow?: number
   /** Maximum output tokens, when disclosed. */
   maxTokens?: number
+  /**
+   * Selectable reasoning efforts the listing disclosed, keyed by the
+   * adapter-owned level id a selector would offer. A value is the wire
+   * spelling dispatch should send; `off` may be `null` meaning "supported,
+   * send nothing". Absence means the listing did not describe reasoning.
+   */
+  reasoningEfforts?: Readonly<Record<string, string | null>>
+  /**
+   * Whether the endpoint accepts a reasoning-effort parameter for this
+   * model. Absence means the listing did not say.
+   */
+  supportsReasoningEffort?: boolean
   /** Accepted input types when disclosed by the catalog or endpoint; absent means unknown. */
   inputModalities?: readonly ModelModality[]
 }

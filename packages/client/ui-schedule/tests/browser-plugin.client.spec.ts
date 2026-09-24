@@ -1,3 +1,4 @@
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { Context, Service } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi, type Mock } from 'vitest'
@@ -106,7 +107,7 @@ async function baseContext(
     ids: [id], byId: { [id]: { id, displayTitle: id, running: false, blank: false, updatedAt: 0, retainedBy: {} } },
     phase: 'ready', projectionsBySession: {},
   }
-  const workspaces: WorkspaceSnapshot = { items: [], archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null }
+  const workspaces: WorkspaceSnapshot = { items: [], archivedSessionIds: [], pinnedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null }
   ctx.provide('sessions', {
     list: { getSnapshot: () => sessions, subscribe: () => () => {} },
     binding: () => undefined,
@@ -442,9 +443,10 @@ describe('ui-schedule browser half', () => {
       expect(openSession).not.toHaveBeenCalled()
       face.onOpenSession(record.sessionId)
       expect(openSession).toHaveBeenCalledWith(record.sessionId)
-      const available = ctx.sessions.list.getSnapshot()
+      const sessions = ctx.get('sessions') as unknown as ISessions
+      const available = sessions.list.getSnapshot()
       const workspace = ctx.workspaces.list.getSnapshot()
-      const sessionRead = vi.spyOn(ctx.sessions.list, 'getSnapshot')
+      const sessionRead = vi.spyOn(sessions.list, 'getSnapshot')
       const workspaceRead = vi.spyOn(ctx.workspaces.list, 'getSnapshot')
       sessionRead.mockReturnValue({ ...available, phase: 'pending' })
       face.onOpenSession(record.sessionId)

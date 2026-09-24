@@ -13,7 +13,7 @@ const manifest = JSON.parse(readFileSync(new URL('./package.json', import.meta.u
   dependencies: Record<string, string>
 }
 /** electron-builder ships the manifest `dependencies` next to the main bundle; Electron provides `electron` and Node. */
-const mainProcessImports = { packages: new Set(['electron', ...Object.keys(manifest.dependencies)]), nodeBuiltins: true }
+const mainProcessImports = { packages: new Set(['electron', 'bufferutil', 'utf-8-validate', ...Object.keys(manifest.dependencies)]), nodeBuiltins: true }
 /**
  * The `require` polyfill of a sandboxed preload resolves only these modules
  * (Electron: Process Sandboxing, "Preload scripts").
@@ -77,7 +77,7 @@ export default defineConfig([
     clean: false,
     // The asar ships lib/ alone with no node_modules: runtime dependencies
     // must be inlined, and electron stays external as the host-provided builtin.
-    deps: { neverBundle: ['electron'], alwaysBundle: ['electron-updater', 'electron-updater/out/electronHttpExecutor.js', 'semver', 'ws', '@deepseek-ai/cordis', '@deepseek-ai/dsh-api-gateway', '@deepseek-ai/dsh-api-gateway/stream-protocol'] },
+    deps: { neverBundle: ['electron', 'bufferutil', 'utf-8-validate'], alwaysBundle: ['electron-updater', 'electron-updater/out/electronHttpExecutor.js', 'semver', 'ws', '@deepseek-ai/cordis', '@deepseek-ai/dsh-api-gateway', '@deepseek-ai/dsh-api-gateway/stream-protocol'] },
   },
   ...(['preload-app', 'preload-welcome', 'preload-platform-account', 'preload-mandatory', 'preload-update-dialog'] as const).map(name => ({
     // Sandboxed Electron preloads run as CommonJS even though the application package is ESM.

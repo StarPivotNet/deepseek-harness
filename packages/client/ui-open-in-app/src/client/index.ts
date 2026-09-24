@@ -6,6 +6,7 @@
 
 import type { ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/client'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
@@ -44,6 +45,7 @@ export const inject = ['sessions', 'slots', 'locale', 'remote', 'remote.session'
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
+  const sessions = ctx.get('sessions') as unknown as ISessions
   const controller = new OpenInAppController()
   void controller.load()
   const paths = new OpenInAppPathController(ctx.remote)
@@ -51,7 +53,7 @@ export function apply(ctx: ClientContext): void {
   const t = ctx.locale.bind(NS)
   const target = () => {
     if (ctx.layout.panelInfo.getSnapshot().activePanelId !== null) return undefined
-    const session = Object.values(ctx.sessions.list.getSnapshot().byId)
+    const session = Object.values(sessions.list.getSnapshot().byId)
       .find(row => (row.retainedBy.mainView ?? 0) > 0)
     const appId = controller.currentApp()
     return session?.cwd && appId !== undefined ? { appId, path: session.cwd } : undefined
