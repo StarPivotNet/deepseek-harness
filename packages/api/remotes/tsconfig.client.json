@@ -12,6 +12,7 @@
     "src/types.ts"
   ],
   "references": [
+    { "path": "../../client/product-analytics/tsconfig.client.json" },
     {
       "path": "../../../vendor/cordis"
     },

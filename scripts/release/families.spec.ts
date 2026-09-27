@@ -62,14 +62,11 @@ describe('release families', () => {
       '@deepseek-ai/dsh-experimental-client-ui-voice-input',
       '@deepseek-ai/dsh-experimental-computer-use-cua-driver-mcp',
       '@deepseek-ai/dsh-experimental-computer-use-cua-driver-native',
-      '@deepseek-ai/dsh-experimental-inspector',
-      '@deepseek-ai/dsh-experimental-ptc-runtime-python',
+      '@deepseek-ai/dsh-experimental-schedule-bundle',
       '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice',
       '@deepseek-ai/dsh-experimental-speech-to-text',
       '@deepseek-ai/dsh-experimental-tool-agent-team',
       '@deepseek-ai/dsh-experimental-voice-input-bundle',
-      '@deepseek-ai/dsh-experimental-webworker-packer',
-      '@deepseek-ai/dsh-experimental-webworker-runtime',
     ])
   })
 

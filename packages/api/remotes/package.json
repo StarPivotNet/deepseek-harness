@@ -122,6 +122,7 @@
     "@deepseek-ai/dsh-agent-presets": "workspace:*",
     "@deepseek-ai/dsh-automation": "workspace:*",
     "@deepseek-ai/dsh-invariants": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*"
+    "@deepseek-ai/dsh-session": "workspace:*",
+    "@deepseek-ai/dsh-client-product-analytics": "workspace:*"
   }
 }

@@ -131,7 +131,8 @@
     "@deepseek-ai/dsh-session-history-gate": "workspace:*",
     "@deepseek-ai/dsh-skill-session-control": "workspace:*",
     "@deepseek-ai/dsh-tool-session-control": "workspace:*",
-    "@deepseek-ai/dsh-user-system-prompts": "workspace:*"
+    "@deepseek-ai/dsh-user-system-prompts": "workspace:*",
+    "@deepseek-ai/dsh-otel": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"

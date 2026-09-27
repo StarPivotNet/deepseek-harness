@@ -126,11 +126,16 @@ export interface ISessions {
    *   seq (a real event seq the caller already knows; a cut inside an open
    *   turn is balanced Host-side with synthetic closers, and omission selects
    *   the latest completed-turn prefix), and whether to increment an
-   *   inherited durable title before resolving.
+   *   inherited durable title before resolving. `onCreated` observes the catalogued child before that optional rename.
    * @returns the child session id.
    * @throws when the fork fails, or when a requested child-title rename fails after creation.
    */
-  fork(opts: { sessionId: SessionId; atSeq?: number; increaseTitle?: boolean }): Promise<SessionId>
+  fork(opts: {
+    sessionId: SessionId
+    atSeq?: number
+    increaseTitle?: boolean
+    onCreated?: (childId: SessionId) => void
+  }): Promise<SessionId>
   /**
    * Restore the Completed reminder so a listed Session returns to that section.
    * @param id - listed Session id.
