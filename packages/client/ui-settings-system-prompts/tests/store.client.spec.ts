@@ -1,12 +1,11 @@
-// @ts-nocheck — merge-port: client-runtime retirement; restore types in a follow-up.
 /** Library writes and per-model bindings go through settings.replace. */
 
 import { describe, expect, it, vi } from 'vitest'
 import type { ClientRemote, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import { bindingFor, messageOf, refreshIfLoaded, slugFromName, SystemPromptsStore } from '../src/client/store.ts'
 
-function ok<T>(value: T): RpcResponse<T> {
-  return { rpcId: 'r' as RpcId, result: { ok: true, value } }
+function ok<T>(value: T): { ok: true; value: T } {
+  return { ok: true, value }
 }
 
 function view(section: { prompts: unknown[]; bindings: unknown[]; overrides?: unknown[] }, revision = 1): SettingsNamespaceView {
@@ -35,8 +34,9 @@ function api(initial: {
     bindings: initial.bindings ?? [],
     overrides: initial.overrides ?? [],
   })
-  const replace = vi.fn(async (payload: { section: { prompts: unknown[]; bindings: unknown[] } }) => {
-    current = view(payload.section, current.revision + 1)
+  type PromptSection = { prompts: unknown[]; bindings: unknown[]; overrides?: unknown[] }
+  const replace = vi.fn(async (_ns: string, section: PromptSection, expectedRevision?: number) => {
+    current = view(section, (expectedRevision ?? current.revision) + 1)
     return ok(current)
   })
   return {
@@ -162,14 +162,15 @@ describe('SystemPromptsStore', () => {
     store.setDraftName('Style')
     store.setDraftText('Be concise.')
     await store.saveDraft()
-    expect(wire.replace).toHaveBeenCalledWith(expect.objectContaining({
-      ns: 'user-system-prompts',
-      section: {
+    expect(wire.replace).toHaveBeenCalledWith(
+      'user-system-prompts',
+      {
         prompts: [{ id: 'style', name: 'Style', text: 'Be concise.' }],
         bindings: [],
         overrides: [],
       },
-    }))
+      1,
+    )
     expect(store.store.getSnapshot().draft).toBeNull()
     expect(store.store.getSnapshot().prompts).toHaveLength(1)
   })
@@ -221,7 +222,7 @@ describe('SystemPromptsStore', () => {
     await store.load()
     await store.setPromptIds('deepseek-official', 'deepseek-v4-flash', ['style'])
     await store.setOverride('deepseek-official', 'deepseek-v4-flash', true)
-    expect(wire.replace.mock.calls.at(-1)?.[0].section.bindings).toEqual([{
+    expect(wire.replace.mock.calls.at(-1)?.[1].bindings).toEqual([{
       provider: 'deepseek-official',
       model: 'deepseek-v4-flash',
       promptIds: ['style'],
@@ -240,13 +241,15 @@ describe('SystemPromptsStore', () => {
     store.setDraftName('Voice')
     store.setDraftText('Speak plainly.')
     await store.saveDraft()
-    expect(wire.replace).toHaveBeenCalledWith(expect.objectContaining({
-      section: {
+    expect(wire.replace).toHaveBeenCalledWith(
+      'user-system-prompts',
+      {
         prompts: [{ id: 'style', name: 'Voice', text: 'Speak plainly.' }],
         bindings: [],
         overrides: [],
       },
-    }))
+      1,
+    )
     store.beginCreate()
     store.cancelDraft()
     expect(store.store.getSnapshot().draft).toBeNull()
@@ -375,9 +378,11 @@ describe('SystemPromptsStore', () => {
     await store.load()
     store.confirmDelete('style')
     await store.remove()
-    expect(wire.replace).toHaveBeenCalledWith(expect.objectContaining({
-      section: { prompts: [], bindings: [], overrides: [] },
-    }))
+    expect(wire.replace).toHaveBeenCalledWith(
+      'user-system-prompts',
+      { prompts: [], bindings: [], overrides: [] },
+      1,
+    )
   })
 
   it('writes and resets a shipped-section override', async () => {
@@ -387,20 +392,22 @@ describe('SystemPromptsStore', () => {
     store.beginEditBuiltIn('harness:identity')
     store.setDraftText('Custom opener.')
     await store.saveDraft()
-    expect(wire.replace).toHaveBeenCalledWith(expect.objectContaining({
-      section: {
+    expect(wire.replace).toHaveBeenCalledWith(
+      'user-system-prompts',
+      {
         prompts: [],
         bindings: [],
         overrides: [{ name: 'harness:identity', text: 'Custom opener.' }],
       },
-    }))
+      1,
+    )
     expect(store.store.getSnapshot().builtIns[0]).toMatchObject({
       name: 'harness:identity',
       text: 'Custom opener.',
       overridden: true,
     })
     await store.resetBuiltIn('harness:identity')
-    expect(wire.replace.mock.calls.at(-1)?.[0].section.overrides).toEqual([])
+    expect(wire.replace.mock.calls.at(-1)?.[1].overrides).toEqual([])
     expect(store.store.getSnapshot().builtIns[0]?.overridden).toBe(false)
   })
 

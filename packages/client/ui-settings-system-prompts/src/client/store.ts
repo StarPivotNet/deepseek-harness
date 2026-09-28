@@ -10,12 +10,71 @@ import type {
 import type { SystemPromptSectionView } from '@deepseek-ai/dsh-api-settings-controller/types'
 
 type RegisteredPromptSectionView = SystemPromptSectionView
+type RemoteEnvelope<T> = { ok: boolean; value?: T; error?: { message: string } }
 type SettingsWire = {
-  describe: () => Promise<{ ok: boolean; value?: { namespaces: SettingsNamespaceView[] }; error?: { message: string } }>
-  replace: (...args: unknown[]) => Promise<{ ok: boolean; value?: unknown; error?: { message: string } }>
+  describe: () => Promise<unknown>
+  replace: (...args: unknown[]) => Promise<unknown>
 }
-type LlmWire = { listProviders: () => Promise<{ ok: boolean; value?: unknown; error?: { message: string } }> }
-type SystemPromptWire = { list: () => Promise<{ ok: boolean; value?: { sections?: unknown } }> }
+type LlmWire = {
+  listProviders?: () => Promise<unknown>
+  models?: () => Promise<unknown>
+}
+type SystemPromptWire = { list: () => Promise<unknown> }
+
+/** Accept either a Typert Remote result or the historical unary `{ rpcId, result }` envelope. */
+function unwrapRemote<T>(response: unknown): RemoteEnvelope<T> {
+  if (typeof response === 'object' && response !== null && 'result' in response) {
+    const nested = (response as { result?: unknown }).result
+    if (typeof nested === 'object' && nested !== null && 'ok' in nested) {
+      return nested as RemoteEnvelope<T>
+    }
+  }
+  if (typeof response === 'object' && response !== null && 'ok' in response) {
+    return response as RemoteEnvelope<T>
+  }
+  return { ok: false, error: { message: 'malformed remote response' } }
+}
+
+/**
+ * Project either the historical `llm.models` groups or a `listProviders` array
+ * onto the per-model rows this page binds.
+ */
+function catalogFromModels(value: unknown): CatalogModel[] {
+  if (typeof value === 'object' && value !== null && Array.isArray((value as { groups?: unknown }).groups)) {
+    const groups = (value as { groups: unknown[] }).groups
+    const catalog: CatalogModel[] = []
+    for (const group of groups) {
+      if (typeof group !== 'object' || group === null) continue
+      const row = group as { id?: unknown; name?: unknown; models?: unknown }
+      if (typeof row.id !== 'string' || !Array.isArray(row.models)) continue
+      const providerName = typeof row.name === 'string' ? row.name : row.id
+      for (const model of row.models) {
+        if (typeof model !== 'object' || model === null) continue
+        const entry = model as { id?: unknown; name?: unknown }
+        if (typeof entry.id !== 'string' || entry.id.length === 0) continue
+        catalog.push({
+          provider: row.id,
+          providerName,
+          model: entry.id,
+          modelName: typeof entry.name === 'string' ? entry.name : entry.id,
+        })
+      }
+    }
+    return catalog
+  }
+  if (!Array.isArray(value)) return []
+  return value.flatMap((entry) => {
+    if (typeof entry !== 'object' || entry === null) return []
+    const row = entry as { id?: unknown; name?: unknown }
+    if (typeof row.id !== 'string') return []
+    return [{
+      provider: row.id,
+      providerName: typeof row.name === 'string' ? row.name : row.id,
+      model: row.id,
+      modelName: typeof row.name === 'string' ? row.name : row.id,
+    }]
+  })
+}
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 
 /** Settings namespace this page reads and writes. */
@@ -241,12 +300,15 @@ export class SystemPromptsStore {
     })
     try {
       const settingsApi = this.api as unknown as { settings: SettingsWire; llm: LlmWire; systemPrompt?: SystemPromptWire }
-      const [settingsResponse, modelsResponse, sectionsResponse] = await Promise.all([
+      const [settingsRaw, modelsRaw, sectionsRaw] = await Promise.all([
         settingsApi.settings.describe(),
-        settingsApi.llm.listProviders(),
+        settingsApi.llm.models?.() ?? settingsApi.llm.listProviders?.() ?? Promise.resolve({ ok: true, value: [] }),
         settingsApi.systemPrompt?.list?.() ?? Promise.resolve({ ok: true, value: { sections: [] } }),
       ])
       if (generation !== this.generation) return
+      const settingsResponse = unwrapRemote<{ writable?: boolean; namespaces: SettingsNamespaceView[] }>(settingsRaw)
+      const modelsResponse = unwrapRemote<unknown>(modelsRaw)
+      const sectionsResponse = unwrapRemote<{ sections?: unknown }>(sectionsRaw)
       if (!settingsResponse.ok) throw new Error(settingsResponse.error?.message ?? 'settings describe failed')
       const view = settingsResponse.value?.namespaces.find((entry: SettingsNamespaceView) => entry.ns === USER_SYSTEM_PROMPTS_NS)
       if (view === undefined) {
@@ -267,17 +329,12 @@ export class SystemPromptsStore {
       if (!modelsResponse.ok) {
         catalogError = modelsResponse.error?.message ?? 'listProviders failed'
       } else {
-        catalog = (modelsResponse.value as readonly { id: string; name?: string }[]).map(provider => ({
-          provider: provider.id,
-          providerName: provider.name ?? provider.id,
-          model: provider.id,
-          modelName: provider.name ?? provider.id,
-        }))
+        catalog = catalogFromModels(modelsResponse.value)
       }
       let registered: readonly RegisteredPromptSectionView[] = []
       let builtInError: string | null = null
       if (!sectionsResponse.ok) {
-        builtInError = (sectionsResponse as { error?: { message?: string } }).error?.message ?? 'systemPrompt list failed'
+        builtInError = sectionsResponse.error?.message ?? 'systemPrompt list failed'
       } else {
         registered = asRegisteredSections(sectionsResponse.value?.sections)
       }
@@ -531,10 +588,12 @@ export class SystemPromptsStore {
     // discard the replace result and leave the draft stuck on saving.
     const generation = ++this.writeGeneration
     try {
-      const response = await (this.api as unknown as { settings: SettingsWire }).settings.replace(
-        USER_SYSTEM_PROMPTS_NS,
-        section as never,
-        view.revision,
+      const response = unwrapRemote<SettingsNamespaceView>(
+        await (this.api as unknown as { settings: SettingsWire }).settings.replace(
+          USER_SYSTEM_PROMPTS_NS,
+          section as never,
+          view.revision,
+        ),
       )
       if (generation !== this.writeGeneration) return
       if (!response.ok) throw new Error(response.error?.message ?? 'settings replace failed')

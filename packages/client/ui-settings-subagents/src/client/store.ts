@@ -6,6 +6,22 @@
 import type { ClientRemote, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 
+type RemoteEnvelope<T> = { ok: boolean; value?: T; error?: { message: string } }
+
+/** Accept either a Typert Remote result or the historical unary `{ rpcId, result }` envelope. */
+function unwrapRemote<T>(response: unknown): RemoteEnvelope<T> {
+  if (typeof response === 'object' && response !== null && 'result' in response) {
+    const nested = (response as { result?: unknown }).result
+    if (typeof nested === 'object' && nested !== null && 'ok' in nested) {
+      return nested as RemoteEnvelope<T>
+    }
+  }
+  if (typeof response === 'object' && response !== null && 'ok' in response) {
+    return response as RemoteEnvelope<T>
+  }
+  return { ok: false, error: { message: 'malformed remote response' } }
+}
+
 /** Settings namespace this page reads and writes. */
 export const USER_SUBAGENTS_NS = 'user-subagents'
 
@@ -140,10 +156,12 @@ export class SubagentsStore {
       state.error = null
     })
     try {
-      const settingsResponse = await this.api.settings.describe()
+      const settingsResponse = unwrapRemote<{ writable: boolean; namespaces: SettingsNamespaceView[] }>(
+        await this.api.settings.describe(),
+      )
       if (generation !== this.generation) return
-      if (!settingsResponse.ok) throw new Error(settingsResponse.error.message)
-      const view = settingsResponse.value.namespaces.find(entry => entry.ns === USER_SUBAGENTS_NS)
+      if (!settingsResponse.ok) throw new Error(settingsResponse.error?.message ?? 'settings describe failed')
+      const view = settingsResponse.value?.namespaces.find(entry => entry.ns === USER_SUBAGENTS_NS)
       if (view === undefined) {
         this.view = undefined
         this.store.update((state) => {
@@ -153,7 +171,7 @@ export class SubagentsStore {
         })
         return
       }
-      this.accept(view, settingsResponse.value.writable)
+      this.accept(view, Boolean(settingsResponse.value?.writable))
     } catch (error) {
       if (generation !== this.generation) return
       this.fail(error)
@@ -325,14 +343,16 @@ export class SubagentsStore {
     }
     const generation = ++this.writeGeneration
     try {
-      const response = await this.api.settings.replace(
-        USER_SUBAGENTS_NS,
-        section as never,
-        view.revision,
+      const response = unwrapRemote<SettingsNamespaceView>(
+        await this.api.settings.replace(
+          USER_SUBAGENTS_NS,
+          section as never,
+          view.revision,
+        ),
       )
       if (generation !== this.writeGeneration) return
-      if (!response.ok) throw new Error(response.error.message)
-      this.accept(response.value, this.store.getSnapshot().writable)
+      if (!response.ok) throw new Error(response.error?.message ?? 'settings replace failed')
+      this.accept(response.value as SettingsNamespaceView, this.store.getSnapshot().writable)
       onSuccess?.()
     } catch (error) {
       /* v8 ignore next -- dispose() already bumped writeGeneration before the rejected replace settles */

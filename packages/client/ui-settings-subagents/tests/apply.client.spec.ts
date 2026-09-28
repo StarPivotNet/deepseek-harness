@@ -16,6 +16,7 @@ async function bench() {
   await ctx.plugin(SlotRegistry).await()
   const locale = new LocaleRuntime(ctx)
   ctx.provide('locale', locale)
+  locale.setLocale('zh')
   new TestRemote(ctx)
   ctx.provide('connection', {
     isLoopback: true,

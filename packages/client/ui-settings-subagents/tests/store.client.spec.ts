@@ -1,12 +1,11 @@
-// @ts-nocheck — merge-port: client-runtime retirement; restore types in a follow-up.
 /** Library writes go through settings.replace. */
 
 import { describe, expect, it, vi } from 'vitest'
 import type { ClientRemote, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import { messageOf, parseToolList, refreshIfLoaded, slugFromName, SubagentsStore } from '../src/client/store.ts'
 
-function ok<T>(value: T): RpcResponse<T> {
-  return { rpcId: 'r' as RpcId, result: { ok: true, value } }
+function ok<T>(value: T): { ok: true; value: T } {
+  return { ok: true, value }
 }
 
 function view(section: { definitions: unknown[] }, revision = 1): SettingsNamespaceView {
@@ -25,8 +24,8 @@ function api(initial: { definitions?: unknown[] } = {}): {
   replace: ReturnType<typeof vi.fn>
 } {
   let current = view({ definitions: initial.definitions ?? [] })
-  const replace = vi.fn(async (payload: { section: { definitions: unknown[] } }) => {
-    current = view(payload.section, current.revision + 1)
+  const replace = vi.fn(async (_ns: string, section: { definitions: unknown[] }, expectedRevision?: number) => {
+    current = view(section, (expectedRevision ?? current.revision) + 1)
     return ok(current)
   })
   return {
@@ -88,9 +87,9 @@ describe('SubagentsStore', () => {
     store.setDraftPersona('You are a reviewer.')
     store.setDraftDeny('edit, write')
     await store.saveDraft()
-    expect(wire.replace).toHaveBeenCalledWith(expect.objectContaining({
-      ns: 'user-subagents',
-      section: {
+    expect(wire.replace).toHaveBeenCalledWith(
+      'user-subagents',
+      {
         definitions: [{
           id: 'reviewer',
           name: 'Reviewer',
@@ -99,7 +98,8 @@ describe('SubagentsStore', () => {
           deny: ['edit', 'write'],
         }],
       },
-    }))
+      1,
+    )
     expect(store.store.getSnapshot().draft).toBeNull()
   })
 
@@ -128,14 +128,14 @@ describe('SubagentsStore', () => {
     store.setDraftName('Voice')
     store.setDraftPersona('Speak plainly.')
     await store.saveDraft()
-    expect(wire.replace.mock.calls.at(-1)?.[0].section.definitions[0]).toMatchObject({
+    expect(wire.replace.mock.calls.at(-1)?.[1].definitions[0]).toMatchObject({
       id: 'reviewer',
       name: 'Voice',
       persona: 'Speak plainly.',
     })
     store.confirmDelete('reviewer')
     await store.remove()
-    expect(wire.replace.mock.calls.at(-1)?.[0].section.definitions).toEqual([])
+    expect(wire.replace.mock.calls.at(-1)?.[1].definitions).toEqual([])
     store.beginCreate()
     store.cancelDraft()
     expect(store.store.getSnapshot().draft).toBeNull()

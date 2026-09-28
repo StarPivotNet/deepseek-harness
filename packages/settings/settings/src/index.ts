@@ -64,7 +64,68 @@ export abstract class SettingsProvider extends Service {
   protected abstract persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void>
 
   protected publish(_document: Record<string, unknown>): void {}
+
+  private readonly scopes = new Map<string, { value: unknown; schema?: unknown; owner?: Fiber }>()
+
+  /**
+   * Fork-era namespace registration used by StarPivot Host plugins and their tests.
+   * @param ns - settings namespace.
+   * @param schema - optional schema; when it is callable it supplies the base section.
+   * @param options - optional explicit base section.
+   * @returns a live scope over the in-memory section.
+   */
+  register<T>(ns: string, schema?: unknown, options?: { base?: Partial<T> }): SettingsScope<T> {
+    const key = String(ns)
+    const fromSchema = typeof schema === 'function' ? (schema as () => T)() : undefined
+    const current = (options?.base ?? fromSchema ?? {}) as T
+    const owner = this.ctx.fiber
+    this.scopes.set(key, { value: current, schema, owner })
+    owner.effect(() => () => {
+      const held = this.scopes.get(key)
+      if (held?.owner === owner) this.scopes.delete(key)
+    })
+    return {
+      get: () => this.scopes.get(key)?.value as T,
+      watch: () => () => {},
+      update: async (patch: object) => {
+        await this.update(key, patch)
+      },
+      replace: async (section: object) => {
+        this.validate(key, section)
+        this.scopes.set(key, { value: section, schema, owner })
+        await this.persist(key as SettingsNamespace, section as Record<string, unknown>)
+        this.ctx.emit('settings/document-updated', key as SettingsNamespace, 0)
+      },
+    }
+  }
+
+  get<T>(ns: string): T | undefined {
+    return this.scopes.get(String(ns))?.value as T | undefined
+  }
+
+  describe(): { ns: string }[] {
+    return [...this.scopes.keys()].map(ns => ({ ns }))
+  }
+
+  async update(ns: string, patch: object): Promise<void> {
+    const key = String(ns)
+    const held = this.scopes.get(key)
+    const prev = (held?.value ?? {}) as Record<string, unknown>
+    const next = { ...prev, ...patch }
+    this.validate(key, next)
+    this.scopes.set(key, { value: next, schema: held?.schema, owner: held?.owner })
+    await this.persist(key as SettingsNamespace, next)
+    this.ctx.emit('settings/document-updated', key as SettingsNamespace, 0)
+  }
+
+  private validate(ns: string, value: unknown): void {
+    const schema = this.scopes.get(ns)?.schema
+    if (typeof schema === 'function') {
+      (schema as (input: unknown) => unknown)(value)
+    }
+  }
 }
+
 
 interface SettingsSectionHooks<T> {
   setSource(source: () => T): void
