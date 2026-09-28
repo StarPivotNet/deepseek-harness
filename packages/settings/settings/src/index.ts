@@ -113,7 +113,11 @@ export abstract class SettingsProvider extends Service {
     const prev = (held?.value ?? {}) as Record<string, unknown>
     const next = { ...prev, ...patch }
     this.validate(key, next)
-    this.scopes.set(key, { value: next, schema: held?.schema, owner: held?.owner })
+    this.scopes.set(key, {
+      value: next,
+      ...held?.schema === undefined ? {} : { schema: held.schema },
+      ...held?.owner === undefined ? {} : { owner: held.owner },
+    })
     await this.persist(key as SettingsNamespace, next)
     this.ctx.emit('settings/document-updated', key as SettingsNamespace, 0)
   }
