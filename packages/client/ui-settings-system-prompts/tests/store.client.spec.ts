@@ -1,7 +1,7 @@
 /** Library writes and per-model bindings go through settings.replace. */
 
 import { describe, expect, it, vi } from 'vitest'
-import type { ClientRemote, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
+import type { SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import { bindingFor, messageOf, refreshIfLoaded, slugFromName, SystemPromptsStore } from '../src/client/store.ts'
 
 function ok<T>(value: T): { ok: true; value: T } {
@@ -12,8 +12,9 @@ function view(section: { prompts: unknown[]; bindings: unknown[]; overrides?: un
   return {
     ns: 'user-system-prompts',
     schema: {},
-    value: section,
+    value: section as SettingsNamespaceView['value'],
     applies: 'live',
+    autoGenerate: false,
     secrets: [],
     revision,
   }
@@ -24,9 +25,9 @@ function api(initial: {
   bindings?: unknown[]
   overrides?: unknown[]
 } = {}): {
-  settings: Pick<ClientRemote, 'settings'>['settings']
-  llm: Pick<ClientRemote, 'llm'>['llm']
-  systemPrompt: Pick<ClientRemote, 'systemPrompt'>['systemPrompt']
+  settings: { describe: ReturnType<typeof vi.fn>; replace: ReturnType<typeof vi.fn> }
+  llm: { models: ReturnType<typeof vi.fn>; listProviders?: ReturnType<typeof vi.fn> }
+  systemPrompt: { list: ReturnType<typeof vi.fn> }
   replace: ReturnType<typeof vi.fn>
 } {
   let current = view({
@@ -65,11 +66,6 @@ function api(initial: {
       })),
     },
     replace,
-  } as unknown as {
-    settings: Pick<ClientRemote, 'settings'>['settings']
-    llm: Pick<ClientRemote, 'llm'>['llm']
-    systemPrompt: Pick<ClientRemote, 'systemPrompt'>['systemPrompt']
-    replace: ReturnType<typeof vi.fn>
   }
 }
 
@@ -182,7 +178,7 @@ describe('SystemPromptsStore', () => {
     store.beginCreate()
     store.setDraftName('Style')
     store.setDraftText('Be concise.')
-    let finishReplace: ((value: RpcResponse<SettingsNamespaceView>) => void) | undefined
+    let finishReplace: ((value: { ok: true; value: SettingsNamespaceView }) => void) | undefined
     wire.replace.mockImplementationOnce(() => new Promise((resolve) => {
       finishReplace = resolve
     }))
@@ -273,9 +269,9 @@ describe('SystemPromptsStore', () => {
   it('keeps a shipped-prompt listing error while the library stays editable', async () => {
     const wire = api()
     wire.systemPrompt.list = vi.fn(async () => ({
-      rpcId: 'p' as RpcId,
-      result: { ok: false, error: { message: 'down' } },
-    })) as unknown as typeof wire.systemPrompt.list
+      ok: false,
+      error: { message: 'down' },
+    }))
     const store = new SystemPromptsStore(wire)
     await store.load()
     expect(store.store.getSnapshot()).toMatchObject({
@@ -326,9 +322,9 @@ describe('SystemPromptsStore', () => {
   it('keeps a catalog error while the library stays editable', async () => {
     const wire = api()
     wire.llm.models = vi.fn(async () => ({
-      rpcId: 'm' as RpcId,
-      result: { ok: false, error: { message: 'down' } },
-    })) as unknown as typeof wire.llm.models
+      ok: false,
+      error: { message: 'down' },
+    }))
     const store = new SystemPromptsStore(wire)
     await store.load()
     expect(store.store.getSnapshot()).toMatchObject({
@@ -345,7 +341,7 @@ describe('SystemPromptsStore', () => {
         replace: vi.fn(),
       },
       llm: {
-        models: vi.fn(async () => ({ rpcId: 'm' as RpcId, result: { ok: false, error: { message: 'catalog down' } } })),
+        models: vi.fn(async () => ({ ok: false, error: { message: 'catalog down' } })),
       },
       systemPrompt: { list: vi.fn(async () => ok({ sections: [] })) },
     } as never)

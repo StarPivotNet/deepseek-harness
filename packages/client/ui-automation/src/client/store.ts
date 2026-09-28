@@ -87,7 +87,7 @@ function unwrapRemote<T>(response: unknown): RemoteEnvelope<T> {
  * @param response - the unary response.
  * @returns the success value.
  */
-function valueOf<T>(response: unknown): T {
+function valueOf<T>(response: RemoteResult<T>): T {
   const unwrapped = unwrapRemote<T>(response)
   if (!unwrapped.ok) throw new Error(unwrapped.error?.message ?? 'remote call failed')
   return unwrapped.value as T

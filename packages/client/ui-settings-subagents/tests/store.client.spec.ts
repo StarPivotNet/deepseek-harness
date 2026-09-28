@@ -12,8 +12,9 @@ function view(section: { definitions: unknown[] }, revision = 1): SettingsNamesp
   return {
     ns: 'user-subagents',
     schema: {},
-    value: section,
+    value: section as SettingsNamespaceView['value'],
     applies: 'live',
+    autoGenerate: false,
     secrets: [],
     revision,
   }
