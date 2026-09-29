@@ -1,7 +1,7 @@
 /** Installed launcher scripts preserve terminal invocation through a minimal runtime fixture. */
 
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { copyFileSync, mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
@@ -61,6 +61,17 @@ function fixture() {
   }
   return { root, command, start }
 }
+
+it('copies the POSIX launcher for linux-x64 AppImage packaging', async () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'dsh-cli-linux-')))
+  onTestFinished(async () => {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  })
+  prepareDesktopCli(join(root, 'cli'), 'linux')
+  const launcher = readFileSync(join(root, 'cli', 'bin', 'dsh'), 'utf8')
+  expect(launcher).toContain('DeepSeekHarness')
+  expect(launcher).toContain('MacOS/DeepSeek Harness')
+})
 
 it('preserves common arguments, cwd, environment, binary input, stderr and exit status', async () => {
   const f = fixture()

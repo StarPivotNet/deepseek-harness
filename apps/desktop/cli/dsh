@@ -11,4 +11,12 @@ while [ -L "$launcher" ]; do
   esac
 done
 resources=$(CDPATH= cd -- "$(dirname -- "$launcher")/../../.." && pwd -P)
-ELECTRON_RUN_AS_NODE=1 exec "$resources/../MacOS/DeepSeek Harness" --expose-internals "$resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js" "$@"
+if [ -x "$resources/../MacOS/DeepSeek Harness" ]; then
+  electron="$resources/../MacOS/DeepSeek Harness"
+elif [ -x "$resources/../DeepSeekHarness" ]; then
+  electron="$resources/../DeepSeekHarness"
+else
+  echo "dsh: cannot find the DeepSeek Harness executable next to $resources" >&2
+  exit 127
+fi
+ELECTRON_RUN_AS_NODE=1 exec "$electron" --expose-internals "$resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js" "$@"
