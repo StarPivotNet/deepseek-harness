@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-tool",
   "description": "Client Tool call-tree renderer and keyed per-tool presentation slot",
-  "version": "0.2.0-rc.1",
+  "version": "0.2.0-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -76,7 +76,8 @@
     "clsx": "^2.0.0",
     "@deepseek-ai/dsh-ptc-runtime": "workspace:*",
     "@deepseek-ai/dsh-token-meter": "workspace:*",
-    "@deepseek-ai/dsh-ptc-runtime-node": "workspace:*"
+    "@deepseek-ai/dsh-ptc-runtime-node": "workspace:*",
+    "@deepseek-ai/dsh-user-questions": "workspace:*"
   },
   "files": [
     "lib/index.js",
