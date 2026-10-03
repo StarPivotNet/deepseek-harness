@@ -7,14 +7,15 @@
 
 import type { WebBootGraph } from '@deepseek-ai/dsh-client-modules'
 
-/** One SSE frame: the settled graph on connection or change, or one rebuilt bundle notice. */
+/** One SSE frame: the settled graph, one rebuilt bundle notice, or a manual reload request. */
 export type PluginsEventFrame =
   | { type: 'graph'; graph: WebBootGraph }
   | { type: 'rebuilt'; id: string; rev: string }
+  | { type: 'reload'; id: string; rev: string }
 
 /** Browser wire-parse result: known frame, forward-compatible unknown type, or malformed payload. */
 export type PluginsEventParseResult =
-  | { kind: 'frame'; frame: { type: 'graph'; graph: unknown } | Extract<PluginsEventFrame, { type: 'rebuilt' }> }
+  | { kind: 'frame'; frame: { type: 'graph'; graph: unknown } | Extract<PluginsEventFrame, { type: 'rebuilt' | 'reload' }> }
   | { kind: 'unknown' }
   | { kind: 'invalid' }
 
@@ -28,8 +29,9 @@ export function parsePluginsEventFrame(value: unknown): PluginsEventParseResult 
   const record = value as Record<string, unknown>
   switch (record.type) {
     case 'rebuilt':
+    case 'reload':
       return typeof record.id === 'string' && typeof record.rev === 'string'
-        ? { kind: 'frame', frame: { type: 'rebuilt', id: record.id, rev: record.rev } }
+        ? { kind: 'frame', frame: { type: record.type, id: record.id, rev: record.rev } }
         : { kind: 'invalid' }
     case 'graph':
       return typeof record.graph === 'object' && record.graph !== null

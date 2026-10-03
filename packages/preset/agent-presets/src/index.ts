@@ -217,7 +217,6 @@ export class AgentPresets extends Service {
     // VETOES publication, and this service must not, because composing an agent
     // outside the roster is legal — `recompose` binds exactly such a bare agent
     // below, and the ACP, SDK-server, and headless entry points all create one.
-    // The invariant companion is the check that fails loud, at assembly. Why an
     // unjoined agent matters at all has one home: the [Agent
     // Note](../../../../.agents/notes/implemented/architecture/2026-08-10-host-plane-ownership-after-presets.md).
     //

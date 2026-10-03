@@ -8,38 +8,15 @@
     "src"
   ],
   "references": [
-    {
-      "path": "../../../vendor/cosmokit"
-    },
-    {
-      "path": "../../../vendor/cordis"
-    },
-    {
-      "path": "../../../vendor/schemastery"
-    },
-    {
-      "path": "../../core/agent"
-    },
-    {
-      "path": "../sandbox"
-    },
-    {
-      "path": "../../core/session"
-    },
-    {
-      "path": "../../workspace/workspace"
-    },
-    {
-      "path": "../../core/system-prompt"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
-      "path": "../../util/home-paths"
-    },
-    {
-      "path": "../../session/session-projection"
-    }
+    { "path": "../../../vendor/cosmokit" },
+    { "path": "../../../vendor/cordis" },
+    { "path": "../../../vendor/schemastery" },
+    { "path": "../../core/agent" },
+    { "path": "../sandbox" },
+    { "path": "../../core/session" },
+    { "path": "../../workspace/workspace" },
+    { "path": "../../core/system-prompt" },
+    { "path": "../../util/home-paths" },
+    { "path": "../../session/session-projection" }
   ]
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck — merge-port: client-runtime retirement; restore types in a follow-up.
 import { describe, expect, it, vi } from 'vitest'
 import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { ClientHmrReloadPolicy } from '../src/client/reload-policy.ts'

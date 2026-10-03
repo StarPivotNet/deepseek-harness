@@ -15,6 +15,5 @@
     { "path": "../../api/remotes/tsconfig.client.json" },
     { "path": "../ui-slots" },
     { "path": "../ui-renderer" },
-    { "path": "../../runtime-diagnostics/invariants" }
   ]
 }

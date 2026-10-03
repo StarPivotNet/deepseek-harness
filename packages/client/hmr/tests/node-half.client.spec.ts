@@ -137,8 +137,8 @@ describe('hmr node half', () => {
     const routes: WebRoute[] = []
     const { fiber } = await mount(clientModuleHost, fakeHttpServer(routes))
 
-    expect(routes).toHaveLength(1)
-    expect(routes[0]).toMatchObject({ kind: 'exact', path: EVENTS_ENDPOINT })
+    expect(routes.map(route => route.path).sort()).toEqual([EVENTS_ENDPOINT, RELOAD_ENDPOINT].sort())
+    expect(routes.find(route => route.path === EVENTS_ENDPOINT)).toMatchObject({ kind: 'exact', path: EVENTS_ENDPOINT })
     expect(clientModuleHost.rebuiltCalls).toEqual([])
 
     // Nudge mtime past stat granularity so the poller sees a content signal.
@@ -360,7 +360,7 @@ it('broadcasts the desired graph without waiting for Host activation or cleanup'
   await starting
   const fiber = ctx.plugin({ inject, Config, apply }, { pollIntervalMs: POLL_MS })
   await fiber.await()
-  const route = routes[0]!
+  const route = routes.find(entry => entry.path === EVENTS_ENDPOINT)!
   const connect = async () => {
     const lines: string[] = []
     const response = Object.assign(new EventEmitter(), {

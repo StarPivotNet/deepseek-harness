@@ -27,9 +27,6 @@
       "path": "../../llm/llm-default-policy"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../../api/remotes/tsconfig.client.json"
     }
   ]

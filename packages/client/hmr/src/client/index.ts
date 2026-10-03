@@ -34,7 +34,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 export const name = 'client-hmr'
 
 /** Required service: the client module system whose entry controller handles received frames. */
-export const inject = ['modules', 'slots', 'locale', 'settingsScope']
+export const inject = ['loader', 'modules', 'slots', 'locale', 'connection', 'remote', 'settingsScope']
 
 /**
  * Forward graph snapshots and rebuilds to the page's shared serial controller.

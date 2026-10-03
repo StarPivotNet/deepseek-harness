@@ -54,7 +54,9 @@ import TerminalSessionService from '@deepseek-ai/dsh-terminal'
 import * as ToolPty from '@deepseek-ai/dsh-tool-terminal'
 import * as ToolGoal from '@deepseek-ai/dsh-tool-goal'
 import * as ToolAutomation from '@deepseek-ai/dsh-tool-automation'
-import * as ToolSchedule from '@deepseek-ai/dsh-schedule'
+import * as ToolSchedule from '@deepseek-ai/dsh-tool-schedule'
+import type ScheduleService from '@deepseek-ai/dsh-schedule'
+
 import Lsp from '@deepseek-ai/dsh-lsp'
 import * as ToolLsp from '@deepseek-ai/dsh-tool-lsp'
 import * as ToolSkill from '@deepseek-ai/dsh-tool-skill'
@@ -468,22 +470,21 @@ const TOOL_PACKAGES: ToolPackage[] = [
       + 'There is no automation_run_now tool.',
   },
   {
-    pkg: '@deepseek-ai/dsh-schedule',
-    dir: 'schedule',
-    source: 'packages/schedule/schedule/src/tools.ts',
-    requires: ['ctx.tools', 'ctx.schedule', 'a live root Agent'],
+    pkg: '@deepseek-ai/dsh-tool-schedule',
+    dir: 'tool-schedule',
+    source: 'packages/schedule/tool-schedule/src/index.ts',
+    requires: ['ctx.tools', 'ctx.schedule'],
+
     writes: ['tool/call', 'Schedule storage domain create, update, or delete', 'tool/result'],
     async mount(ctx) {
-      await ctx.plugin(SessionStore)
-      const session = ctx.sessions.create(SessionId('tool-catalog-schedule'))
-      const agent = { id: session.id, session } as Agent
-      await mountCatalogChildScope(ctx, (childCtx) => {
-        ToolSchedule.registerScheduleTools(ctx, childCtx, agent)
-      }, agent, ['tools', 'systemPrompt'])
+      // Schema harvest never executes a tool, so the Host service is a
+      // declaration-only stub.
+      ctx.provide('schedule', {} as ScheduleService)
+      await ctx.plugin(ToolSchedule)
     },
-    scope: ctx => catalogChildScopes.get(ctx) as Agent,
     note:
-      'Registered in live root Agent scopes while the Schedule service is loaded. '
+      'A preset or Agent scope mounts this package; the preset decides which agents receive the four '
+      + 'management tools. Each call acts on the calling Agent\'s Session. '
       + 'Accepts after_seconds, explicit absolute at, bounded fixed-rate every_seconds, daily and weekly '
       + 'local times in an explicit IANA zone, and cron as a five-field expression. '
       + 'Management uses the Host storage domain; due messages resume the original Session.',

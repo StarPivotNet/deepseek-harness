@@ -13,7 +13,6 @@
     "src/index.ts",
     "src/ids.ts",
     "src/shared.ts",
-    "src/invariant.ts"
   ],
   "references": [
     { "path": "../ui-chat/tsconfig.client.json" },
@@ -24,7 +23,6 @@
     { "path": "../../boot/app-boot" },
     { "path": "../../interaction/commands" },
     { "path": "../../host/webserver" },
-    { "path": "../../runtime-diagnostics/invariants" },
     { "path": "../../settings/settings" },
     { "path": "../../test-support/client-runtime" },
     { "path": "../locale/tsconfig.client.json" },

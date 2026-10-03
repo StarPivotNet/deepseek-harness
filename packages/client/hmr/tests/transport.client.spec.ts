@@ -11,6 +11,14 @@ it('forwards full graphs and rebuilt frames, contains wire errors and closes its
   const sync = vi.fn(async () => {})
   const reload = vi.fn(async () => {})
   ctx.provide('modules', { entries: { sync, reload } } as unknown as ClientModuleLoader)
+  ctx.provide('loader', { entries: () => [] } as never)
+  ctx.provide('connection', { api: {}, isLoopback: true } as never)
+  ctx.provide('remote', { $on: () => () => {} } as never)
+  ctx.provide('locale', { register: () => () => {} } as never)
+  ctx.provide('slots', { inject: () => () => {}, register: () => () => {} } as never)
+  ctx.provide('settingsScope', {
+    bind: () => ({ getSnapshot: () => ({}), subscribe: () => () => {}, set: async () => {} }),
+  } as never)
   const warnings = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
   const errors = vi.spyOn(ctx.logger, 'error').mockImplementation(() => {})
   let receive!: (event: { data: string }) => void

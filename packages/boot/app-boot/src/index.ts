@@ -63,6 +63,7 @@ export {
   type RunProfilePnpmOptions,
   composeEntries,
   createRuntimeResolution,
+  ProfileRuntimeResolution,
   DEFAULT_PROFILE_BUNDLES,
   OPTIONAL_BUNDLES,
   bundlePatchFiles,

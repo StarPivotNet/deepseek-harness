@@ -12,6 +12,5 @@
     { "path": "../../core/session" },
     { "path": "../../core/agent" },
     { "path": "../../session-query/session-query" },
-    { "path": "../../runtime-diagnostics/invariants" }
   ]
 }

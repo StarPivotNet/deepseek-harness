@@ -35,8 +35,5 @@
     {
       "path": "../../settings/settings"
     },
-    {
-      "path": "../../runtime-diagnostics/invariants"
-    }
   ]
 }

@@ -10,7 +10,6 @@
     "src/index.ts",
     "src/ids.ts",
     "src/shared.ts",
-    "src/invariant.ts"
   ],
   "references": [
     { "path": "../../../vendor/cordis" },
@@ -18,7 +17,6 @@
     { "path": "../../../vendor/schemastery" },
     { "path": "../../boot/app-boot" },
     { "path": "../../interaction/commands" },
-    { "path": "../../runtime-diagnostics/invariants" },
     { "path": "../../settings/settings" }
   ]
 }
