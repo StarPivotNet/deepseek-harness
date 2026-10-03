@@ -26,6 +26,7 @@ function fakeScope(initial?: ClientHmrSettings): SettingsScope<ClientHmrSettings
     },
     set: setMock,
     unset: vi.fn(async () => undefined),
+    mutate: vi.fn(async () => undefined),
     publish(value) {
       snapshot = { ...snapshot, status: 'ready', value, revision: (snapshot.revision ?? -1) + 1 }
       for (const listener of listeners) listener()

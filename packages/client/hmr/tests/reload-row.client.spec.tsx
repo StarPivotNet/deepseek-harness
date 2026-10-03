@@ -1,28 +1,34 @@
 // @vitest-environment jsdom
+import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { WorkspaceSnapshot as WorkspaceListState } from '@deepseek-ai/dsh-api-workspace-controller/client'
-import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
+import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import { ReloadRow } from '../src/client/ReloadRow.tsx'
 import type { ReloadRowProps } from '../src/client/ReloadRow.tsx'
 import { ClientHmrReloadPolicy } from '../src/client/reload-policy.ts'
 import { en } from '../src/client/locales.ts'
 
+const useResource = (() => ({
+  status: 'none' as const, value: undefined, failure: undefined, reload: () => {},
+})) as GlobalStandardProps['useResource']
+const usePanelInfo: GlobalStandardProps['usePanelInfo'] = selector => selector({ activePanelId: null })
+
 afterEach(cleanup)
 
 function emptySessions() {
   return bindSnapshotSelector(createSnapshotStore<SessionListState>({
-    ids: [], byId: {}, current: undefined, phase: 'ready', subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+    ids: [], byId: {}, current: undefined, phase: 'ready',
+    projectionsBySession: {},
   }))
 }
 
 function emptyWorkspaces() {
-  return bindSnapshotSelector(createSnapshotStore<WorkspaceListState>({
-    items: [], archivedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null,
-    baselinesReady: true, recentWorkspaceId: undefined,
+  return bindSnapshotSelector(createSnapshotStore<WorkspaceSnapshot>({
+    items: [], archivedSessionIds: [], pinnedSessionIds: [], hiddenWorkspaceIds: [],
+    state: 'idle', phase: 'ready', error: null,
   }))
 }
 
@@ -30,7 +36,11 @@ function mount(reloadPlugins = vi.fn(async () => 2)) {
   const policy = new ClientHmrReloadPolicy()
   const setAutoReload = vi.fn((enabled: boolean) => { policy.setAutoReload(enabled) })
   const props: ReloadRowProps = {
+    usePanelInfo,
     useSessions: emptySessions(),
+    useSessionStatus: selector => selector(new Map()),
+    useSessionRetainInfo: () => undefined,
+    useResource,
     useWorkspaces: emptyWorkspaces(),
     useAutoReload: bindSnapshotSelector(policy.autoReload),
     setAutoReload,

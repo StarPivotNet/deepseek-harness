@@ -17,7 +17,7 @@ class MemorySettings extends SettingsProvider {
 
 function fakeClientModules(): ClientModuleRegistry {
   const fake: Pick<ClientModuleRegistry, 'graph' | 'clientPath' | 'rebuilt' | 'onRebuilt' | 'onGraphChanged'> = {
-    graph: () => ({ rev: 'r', entries: [] }),
+    graph: () => ({ rev: 'r', entries: [], batches: [] }),
     clientPath: () => undefined,
     rebuilt: () => undefined,
     onRebuilt: () => () => {},
