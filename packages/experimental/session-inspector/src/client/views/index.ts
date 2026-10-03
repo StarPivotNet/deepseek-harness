@@ -4,7 +4,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
-import type { SessionBinding } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ISessions, SessionBinding } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { ChatNodeModel } from './chat-node/model.ts'
 import { SessionLogModel } from './session-log/model.ts'
@@ -33,7 +33,8 @@ export function registerInspectorTab(ctx: Context): void {
   ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
     name: 'sidebar.right.pane.tab', key: id, locale: NS,
     inject: (sessionId: SessionId): SessionInspectorInjected => {
-      const binding = ctx.sessions.binding(sessionId)
+      const sessions = ctx.sessions as unknown as ISessions
+      const binding = sessions.binding(sessionId)
       if (binding === undefined) throw new Error(`session-inspector: unknown Session ${sessionId}`)
       let sources = models.get(binding)
       if (sources === undefined) {

@@ -12,7 +12,6 @@
     { "path": "../../client/ui-primitives" },
     { "path": "../../client/ui-sidebar-right" },
     { "path": "../../client/ui-session" },
-    { "path": "../../core/session" },
     { "path": "../../llm/llm" },
     { "path": "../../../vendor/cordis" },
     { "path": "../../client/locale/tsconfig.client.json" },
