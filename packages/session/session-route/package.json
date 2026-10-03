@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-session-route",
   "description": "Latest dispatched request route projection (requestRoute) for the DeepSeek Harness",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.1-alpha.1.1",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-automation",
   "description": "Sidebar Host Automation manager: list, create, enable, run, and delete timed new-session rules, plus keep-awake and create-form templates",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.1-alpha.1.1",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
