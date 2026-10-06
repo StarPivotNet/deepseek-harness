@@ -8,9 +8,10 @@ on:
       suite:
         description: Manual CI suite to run
         required: true
-        default: larger-runner-benchmark
+        default: platform-checks
         type: choice
         options:
+          - platform-checks
           - larger-runner-benchmark
           - consolidated-runner-benchmark
 
@@ -30,9 +31,9 @@ env:
   DSH_TELEMETRY_DISABLED: '1'
 
 jobs:
-  # These native runtime carriers are post-merge checks; release keeps all targets.
+  # These native runtime carriers run on demand; release keeps all targets.
   python-runtime:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'platform-checks'
     name: python runtime / macOS and Linux ARM64
     uses: ./.github/workflows/build-exe-for-python-sdk.yml
     with:
@@ -43,7 +44,7 @@ jobs:
 
   # Wine runs once here, independently of the native serial standby aggregates.
   windows:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'platform-checks'
     runs-on: ubuntu-latest
     name: windows node 24 / wine
     timeout-minutes: 15
@@ -225,7 +226,7 @@ jobs:
   # (and saving here would poison the hosted cache namespace with self-hosted
   # paths).
   serial-windows:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'platform-checks'
     name: serial / windows (self-hosted standby)
     runs-on: [self-hosted, dsh-win-ci, windows]
     timeout-minutes: 120
