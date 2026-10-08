@@ -1,20 +1,20 @@
-// @ts-nocheck — merge-port: client-runtime retirement; restore types in a follow-up.
 /** Library writes and per-model bindings go through settings.replace. */
 
 import { describe, expect, it, vi } from 'vitest'
-import type { ClientRemote, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
+import type { SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import { bindingFor, messageOf, refreshIfLoaded, slugFromName, SystemPromptsStore } from '../src/client/store.ts'
 
-function ok<T>(value: T): RpcResponse<T> {
-  return { rpcId: 'r' as RpcId, result: { ok: true, value } }
+function ok<T>(value: T): { ok: true; value: T } {
+  return { ok: true, value }
 }
 
 function view(section: { prompts: unknown[]; bindings: unknown[]; overrides?: unknown[] }, revision = 1): SettingsNamespaceView {
   return {
     ns: 'user-system-prompts',
     schema: {},
-    value: section,
+    value: section as SettingsNamespaceView['value'],
     applies: 'live',
+    autoGenerate: false,
     secrets: [],
     revision,
   }
@@ -25,9 +25,9 @@ function api(initial: {
   bindings?: unknown[]
   overrides?: unknown[]
 } = {}): {
-  settings: Pick<ClientRemote, 'settings'>['settings']
-  llm: Pick<ClientRemote, 'llm'>['llm']
-  systemPrompt: Pick<ClientRemote, 'systemPrompt'>['systemPrompt']
+  settings: { describe: ReturnType<typeof vi.fn>; replace: ReturnType<typeof vi.fn> }
+  llm: { models: ReturnType<typeof vi.fn>; listProviders?: ReturnType<typeof vi.fn> }
+  systemPrompt: { list: ReturnType<typeof vi.fn> }
   replace: ReturnType<typeof vi.fn>
 } {
   let current = view({
@@ -35,8 +35,9 @@ function api(initial: {
     bindings: initial.bindings ?? [],
     overrides: initial.overrides ?? [],
   })
-  const replace = vi.fn(async (payload: { section: { prompts: unknown[]; bindings: unknown[] } }) => {
-    current = view(payload.section, current.revision + 1)
+  type PromptSection = { prompts: unknown[]; bindings: unknown[]; overrides?: unknown[] }
+  const replace = vi.fn(async (_ns: string, section: PromptSection, expectedRevision?: number) => {
+    current = view(section, (expectedRevision ?? current.revision) + 1)
     return ok(current)
   })
   return {
@@ -65,11 +66,6 @@ function api(initial: {
       })),
     },
     replace,
-  } as unknown as {
-    settings: Pick<ClientRemote, 'settings'>['settings']
-    llm: Pick<ClientRemote, 'llm'>['llm']
-    systemPrompt: Pick<ClientRemote, 'systemPrompt'>['systemPrompt']
-    replace: ReturnType<typeof vi.fn>
   }
 }
 
@@ -162,14 +158,15 @@ describe('SystemPromptsStore', () => {
     store.setDraftName('Style')
     store.setDraftText('Be concise.')
     await store.saveDraft()
-    expect(wire.replace).toHaveBeenCalledWith(expect.objectContaining({
-      ns: 'user-system-prompts',
-      section: {
+    expect(wire.replace).toHaveBeenCalledWith(
+      'user-system-prompts',
+      {
         prompts: [{ id: 'style', name: 'Style', text: 'Be concise.' }],
         bindings: [],
         overrides: [],
       },
-    }))
+      1,
+    )
     expect(store.store.getSnapshot().draft).toBeNull()
     expect(store.store.getSnapshot().prompts).toHaveLength(1)
   })
@@ -181,7 +178,7 @@ describe('SystemPromptsStore', () => {
     store.beginCreate()
     store.setDraftName('Style')
     store.setDraftText('Be concise.')
-    let finishReplace: ((value: RpcResponse<SettingsNamespaceView>) => void) | undefined
+    let finishReplace: ((value: { ok: true; value: SettingsNamespaceView }) => void) | undefined
     wire.replace.mockImplementationOnce(() => new Promise((resolve) => {
       finishReplace = resolve
     }))
@@ -221,7 +218,7 @@ describe('SystemPromptsStore', () => {
     await store.load()
     await store.setPromptIds('deepseek-official', 'deepseek-v4-flash', ['style'])
     await store.setOverride('deepseek-official', 'deepseek-v4-flash', true)
-    expect(wire.replace.mock.calls.at(-1)?.[0].section.bindings).toEqual([{
+    expect(wire.replace.mock.calls.at(-1)?.[1].bindings).toEqual([{
       provider: 'deepseek-official',
       model: 'deepseek-v4-flash',
       promptIds: ['style'],
@@ -240,13 +237,15 @@ describe('SystemPromptsStore', () => {
     store.setDraftName('Voice')
     store.setDraftText('Speak plainly.')
     await store.saveDraft()
-    expect(wire.replace).toHaveBeenCalledWith(expect.objectContaining({
-      section: {
+    expect(wire.replace).toHaveBeenCalledWith(
+      'user-system-prompts',
+      {
         prompts: [{ id: 'style', name: 'Voice', text: 'Speak plainly.' }],
         bindings: [],
         overrides: [],
       },
-    }))
+      1,
+    )
     store.beginCreate()
     store.cancelDraft()
     expect(store.store.getSnapshot().draft).toBeNull()
@@ -270,9 +269,9 @@ describe('SystemPromptsStore', () => {
   it('keeps a shipped-prompt listing error while the library stays editable', async () => {
     const wire = api()
     wire.systemPrompt.list = vi.fn(async () => ({
-      rpcId: 'p' as RpcId,
-      result: { ok: false, error: { message: 'down' } },
-    })) as unknown as typeof wire.systemPrompt.list
+      ok: false,
+      error: { message: 'down' },
+    }))
     const store = new SystemPromptsStore(wire)
     await store.load()
     expect(store.store.getSnapshot()).toMatchObject({
@@ -323,9 +322,9 @@ describe('SystemPromptsStore', () => {
   it('keeps a catalog error while the library stays editable', async () => {
     const wire = api()
     wire.llm.models = vi.fn(async () => ({
-      rpcId: 'm' as RpcId,
-      result: { ok: false, error: { message: 'down' } },
-    })) as unknown as typeof wire.llm.models
+      ok: false,
+      error: { message: 'down' },
+    }))
     const store = new SystemPromptsStore(wire)
     await store.load()
     expect(store.store.getSnapshot()).toMatchObject({
@@ -342,7 +341,7 @@ describe('SystemPromptsStore', () => {
         replace: vi.fn(),
       },
       llm: {
-        models: vi.fn(async () => ({ rpcId: 'm' as RpcId, result: { ok: false, error: { message: 'catalog down' } } })),
+        models: vi.fn(async () => ({ ok: false, error: { message: 'catalog down' } })),
       },
       systemPrompt: { list: vi.fn(async () => ok({ sections: [] })) },
     } as never)
@@ -375,9 +374,11 @@ describe('SystemPromptsStore', () => {
     await store.load()
     store.confirmDelete('style')
     await store.remove()
-    expect(wire.replace).toHaveBeenCalledWith(expect.objectContaining({
-      section: { prompts: [], bindings: [], overrides: [] },
-    }))
+    expect(wire.replace).toHaveBeenCalledWith(
+      'user-system-prompts',
+      { prompts: [], bindings: [], overrides: [] },
+      1,
+    )
   })
 
   it('writes and resets a shipped-section override', async () => {
@@ -387,20 +388,22 @@ describe('SystemPromptsStore', () => {
     store.beginEditBuiltIn('harness:identity')
     store.setDraftText('Custom opener.')
     await store.saveDraft()
-    expect(wire.replace).toHaveBeenCalledWith(expect.objectContaining({
-      section: {
+    expect(wire.replace).toHaveBeenCalledWith(
+      'user-system-prompts',
+      {
         prompts: [],
         bindings: [],
         overrides: [{ name: 'harness:identity', text: 'Custom opener.' }],
       },
-    }))
+      1,
+    )
     expect(store.store.getSnapshot().builtIns[0]).toMatchObject({
       name: 'harness:identity',
       text: 'Custom opener.',
       overridden: true,
     })
     await store.resetBuiltIn('harness:identity')
-    expect(wire.replace.mock.calls.at(-1)?.[0].section.overrides).toEqual([])
+    expect(wire.replace.mock.calls.at(-1)?.[1].overrides).toEqual([])
     expect(store.store.getSnapshot().builtIns[0]?.overridden).toBe(false)
   })
 

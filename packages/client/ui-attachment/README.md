@@ -39,7 +39,7 @@ Trajectory attachment rows request 48px square thumbnails that contain the compl
 
 ### Drop overlay
 
-While a file drag is over the page, the full-viewport overlay announces the drop: illustration, title, and a limits line when drops are accepted. The overlay only shows state — the owner's document-level listeners decide accept or reject.
+While a file drag is over the page, the full-viewport overlay announces the drop: illustration, title, and a limits line when drops are accepted. The overlay only shows state — the owner's document-level listeners decide accept or reject, and the drop handler reports which dropped members are directories through the entry API so the owner can cite or refuse them.
 
 -----
 
@@ -58,7 +58,7 @@ The plugin waits for `conversation.input.attachments`, `conversation.message.ima
 | [`src/AttachmentRail.tsx`](src/AttachmentRail.tsx) | Horizontal attachment overflow, wheel translation, edge arrows |
 | [`src/client/MessageImages.tsx`](src/client/MessageImages.tsx) | Per-message gallery + lightbox assembly |
 | [`src/MessageImage.tsx`](src/MessageImage.tsx) | Single image sizing, load/retry, click-to-open; local submission-echo previews render their object URL directly |
-| [`src/ImageLightbox.tsx`](src/ImageLightbox.tsx) | Document-level modal preview over the shared mask |
+| [`ImageLightbox`](../ui-primitives/src/ImageLightbox.tsx) | Document-level modal preview over the shared mask |
 | [`src/DropOverlay.tsx`](src/DropOverlay.tsx) | Pointer-inert drag invitation portal |
 
 </details>
@@ -71,7 +71,7 @@ The plugin waits for `conversation.input.attachments`, `conversation.message.ima
 Read these pages when the attachment surface is not enough. They move from the slots this package fills to the conversation shell that owns the input flow.
 
 - [ui-conversation](../ui-conversation/README.md) — declares the attachment slots and owns the composer and image intake.
-- [Web client architecture](../../../.agents/notes/implemented/architecture/2026-07-19-gui-web-client-architecture.md) — how browser plugin rows load and register slots.
+- [Web client architecture](../../../docs/subsystems/web-client.md) — how browser plugin rows load and register slots.
 - [Client package map](../README.md) — adjacent browser UI packages.
 
 -----
@@ -104,5 +104,3 @@ These limits define the current attachment surface. They are package constraints
 None.
 
 </details>
-
-**Runtime invariant:** No companion is published. The package contributes only effect-owned slot entries; the slot registry owns their lifecycle and validates their declarations.

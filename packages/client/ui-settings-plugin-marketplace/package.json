@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-settings-plugin-marketplace",
   "description": "In-box plugin marketplace: Discover, installed plugins, and configuration for the web profile",
-  "version": "0.1.6-alpha.3.3",
+  "version": "0.2.1-alpha.1.1",
   "publishConfig": {
     "access": "public"
   },
@@ -21,10 +21,6 @@
     "./host": {
       "types": "./lib/types/host/index.d.ts",
       "default": "./lib/host.js"
-    },
-    "./invariant": {
-      "types": "./lib/types/invariant.d.ts",
-      "default": "./lib/invariant.js"
     },
     "./client": {
       "types": "./lib/types/client/index.d.ts",
@@ -65,7 +61,6 @@
     "@deepseek-ai/dsh-client-ui-settings": "workspace:^",
     "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
     "@deepseek-ai/dsh-host-webserver": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-settings": "workspace:^",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -85,7 +80,6 @@
     "@deepseek-ai/dsh-client-ui-settings": "workspace:^",
     "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
     "@deepseek-ai/dsh-host-webserver": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-settings": "workspace:^",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.1",
@@ -94,7 +88,6 @@
   },
   "files": [
     "lib/index.js",
-    "lib/invariant.js",
     "lib/client.js",
     "lib/host.js",
     "lib/types/**/*.d.ts"

@@ -29,12 +29,12 @@ function sessionState(sessions: readonly SessionSummary[], phase: SessionListSta
     byId: Object.fromEntries(sessions.map(session => [session.id, session])),
     phase,
     subagentsByParent: {},
-    jobsBySession: {},
+    jobsBySession: {}, projectionsBySession: {},
   }
 }
 
 function snapshot(archivedSessionIds: readonly string[], items: readonly WorkspaceView[] = []): WorkspaceSnapshot {
-  return { items, archivedSessionIds: archivedSessionIds.map(sid), hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null }
+  return { items, archivedSessionIds: archivedSessionIds.map(sid), hiddenWorkspaceIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null }
 }
 
 function workspace(title: string, sessionIds: readonly string[]): WorkspaceView {

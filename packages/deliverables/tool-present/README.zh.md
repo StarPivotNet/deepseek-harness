@@ -53,8 +53,6 @@ kind: "package-reference"
 
 纯 `./types` 入口声明 `PresentedFile` 与 Session 事件，不导入 Host 运行时代码。Web 消费方在展示或打开文件前校验持久声明。事件不保存 Session ID，因此 fork 历史中的相对路径按当前查看的 Session 工作区解析。
 
-**运行时不变式：** 不发布伴生入口。工具与事件注册归 effect 所有，Session 日志拥有文件声明；插件不维护独立的文件内容存储。
-
 </details>
 
 -----
@@ -73,7 +71,7 @@ kind: "package-reference"
 
 #### 模型看到的内容
 
-[present schema](../../../docs/tool-catalog.zh.md#present)要求已有且可访问的文件：“Declare existing files accessible through the Session filesystem as final deliverables. When a file you create or update is an output the user asked to receive, you must call present after writing it and before your final response, including files created through Bash or code execution. Mentioning its path in your reply does not replace this call. The files must already exist. The user opens the current source files; their contents are not copied or preserved.” 每个文件的结果为 `Presented <path>`；程序结果和持久事件包含路径及可选说明。
+[present schema](../../../docs/tool-catalog.zh.md#present)要求已有且可访问的文件：“Declare existing files as final deliverables for the user. Use it when the user needs a separate file, especially Office documents, spreadsheets, and slide decks; prefer your final response when that suffices. The user opens the current files; their contents are not copied.” `files` 参数要求选择 1-2 个最重要的交付物，每次调用最多 4 个。每个文件的结果为 `Presented <path>`；程序结果和持久事件包含路径及可选说明。
 
 #### Token 影响
 

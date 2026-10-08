@@ -19,7 +19,7 @@
  *         apiKeyEnv: OPENAI_API_KEY
  *         retryPolicy:
  *           mode: normal
- *           maxRetries: 5
+ *           maxRetries: 2
  *       # Catalog route with the catalog narrowed and one capacity corrected.
  *       anthropic:
  *         apiKeyEnv: ANTHROPIC_API_KEY
@@ -54,46 +54,30 @@
  *
  * @module @deepseek-ai/dsh-llm-pi-ai
  */
+import type {} from '@deepseek-ai/dsh-settings'
+
+import type {} from '@deepseek-ai/cordis-plugin-loader'
 
 import type { Context } from '@deepseek-ai/cordis'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
 import { assertUsableApiKey, LlmError, resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
 import type { AdapterRegistrationHandle, DirectoryRegistrationHandle, LlmConfigurableProvider } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-fs'
-import type {} from '@deepseek-ai/dsh-settings'
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
 import { PiAiAdapter } from './adapter.ts'
 import { authContextFrom, credentialStoreFrom } from './auth.ts'
-import {
-  catalogProviderIds,
-  FAC_DISPLAY_NAME,
-  FAC_PROVIDER,
-  isShippedProvider,
-} from './catalog.ts'
-import {
-  LLM_DEFAULT_POLICY_ENTRY,
-  LLM_DEFAULT_POLICY_SETTINGS_NAMESPACE,
-} from '@deepseek-ai/dsh-llm-default-policy'
-import type { LlmDefaultPolicySettings } from '@deepseek-ai/dsh-llm-default-policy'
+import { catalogProviderIds } from './catalog.ts'
 import { assertServiceable, Config, resolveProfiles } from './config.ts'
 import type { ResolvedPiAiProviderProfile } from './config.ts'
 import { discoverModels } from './discovery.ts'
 import type { StoredModelDiscoveryProfile } from './discovery.ts'
 import { registerPiAiFlows } from './login.ts'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 
 export { PiAiAdapter } from './adapter.ts'
 export type { PiAiAdapterOptions } from './adapter.ts'
-export {
-  FAC_API,
-  FAC_BASE_URL,
-  FAC_DISPLAY_NAME,
-  FAC_PROVIDER,
-  isShippedProvider,
-} from './catalog.ts'
 export { Config } from './config.ts'
 export type {
-  DshModality,
+  Options,
   PiAiCompatProfile,
   PiAiModality,
   PiAiModelOverride,
@@ -139,6 +123,7 @@ function registrationFacts(profiles: ReadonlyMap<string, ResolvedPiAiProviderPro
  */
 function directoryEntries(
   profiles: ReadonlyMap<string, ResolvedPiAiProviderProfile>,
+  settingsNs: string,
 ): LlmConfigurableProvider[] {
   const catalog = new Set(catalogProviderIds())
   const entries = new Map<string, LlmConfigurableProvider>()
@@ -146,22 +131,15 @@ function directoryEntries(
     entries.set(provider, {
       provider,
       displayName,
-      settingsNs: NS,
+      settingsNs,
       settingsPath: ['providers', provider],
-      // Membership of the installed catalog or a harness-owned gateway, not of
-      // the settings document: narrowing a shipped provider's models stores a
-      // profile too, and that route is still one this adapter knows.
-      declared: !isShippedProvider(provider),
+      // Membership of the installed catalog, not of the settings document:
+      // narrowing a shipped provider's models stores a profile too, and that
+      // route is still one pi-ai knows.
+      declared: !catalog.has(provider),
       ...error === undefined ? {} : { error },
     })
   }
-  // FAC leads so the Models page paints it above DeepSeek, which the
-  // llm-deepseek adapter declares later into the same directory Map.
-  declare(FAC_PROVIDER, FAC_DISPLAY_NAME)
-  // Installed catalog routes are offered even when their only native method is
-  // OAuth: the adapter now injects a durable credential store and a login flow
-  // writes into it, so `openai-codex` has a working posture rather than only a
-  // failing one. FAC stays first; catalog membership still drives `declared`.
   for (const provider of catalog) declare(provider, provider)
   for (const [provider, profile] of profiles) declare(provider, profile.displayName, profile.catalogError)
   return [...entries.values()]
@@ -169,12 +147,10 @@ function directoryEntries(
 
 /** Register one generic pi-ai adapter for all configured provider routes. */
 export function apply(ctx: Context, config: Config): void {
-  let current: () => Config = () => config
-  let lastRaw: Config | undefined
-  let lastDefaults: LlmDefaultPolicySettings | undefined
+  ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
+  const settingsNs = ctx.fiber.entry?.options.id ?? NS
+  let lastRaw: ReturnType<Config['providers']['get']> | undefined
   let memoized: ReadonlyMap<string, ResolvedPiAiProviderProfile> | undefined
-  const defaults = (): LlmDefaultPolicySettings =>
-    ctx.get('llmDefaultPolicy')?.current() ?? LLM_DEFAULT_POLICY_ENTRY
   /**
    * The resolved profiles for the current configuration, memoized by the raw
    * snapshot's identity — which is also what makes the adapter's own snapshot
@@ -185,29 +161,35 @@ export function apply(ctx: Context, config: Config): void {
    * Scalar configuration errors still reject resolution.
    */
   const profiles = (): ReadonlyMap<string, ResolvedPiAiProviderProfile> => {
-    const raw = current()
-    const nextDefaults = defaults()
-    if (raw === lastRaw && lastDefaults === nextDefaults && memoized !== undefined) return memoized
-    const next = resolveProfiles(raw.providers, nextDefaults, 'deferred')
+    const raw = config.providers.get()
+    if (raw === lastRaw && memoized !== undefined) return memoized
+    const next = resolveProfiles(structuredClone(raw) as import('./config.ts').Options['providers'], 'deferred')
     lastRaw = raw
-    lastDefaults = nextDefaults
     memoized = next
     return next
   }
   profiles()
+  ctx.on('internal/config', function (this: import('@deepseek-ai/cordis').Fiber, _raw, next) {
+    const raw: unknown = next()
+    if (this !== ctx.fiber) return raw
+    const candidate = Config(raw as import('./config.ts').Options)
+    assertServiceable(
+      { providers: structuredClone(candidate.providers.get()) } as import('./config.ts').Options,
+      { providers: structuredClone(config.providers.get()) } as import('./config.ts').Options,
+    )
+    return raw
+  })
 
   const resolveApiKey = async (
     provider: string,
     profile: ResolvedPiAiProviderProfile,
-    model?: string,
   ): Promise<string | undefined> => {
-    const ref = model === undefined ? profile.apiKeyEnv : (profile.configuredApiKeys.get(model) ?? profile.apiKeyEnv)
-    // Only a request that names no credential at all defers to pi-ai's
-    // provider-native discovery. Once one is named — on the model or the
-    // route — a miss must fail loud: handing pi-ai `undefined` would let it
-    // pick up an unrelated ambient key (OPENAI_API_KEY and friends), billing
-    // another tenant for a request the deployment meant to authenticate
-    // differently.
+    const ref = profile.apiKeyEnv
+    // Only a profile that names no credential at all defers to pi-ai's
+    // provider-native discovery. Once one is named, a miss must fail loud:
+    // handing pi-ai `undefined` would let it pick up an unrelated ambient key
+    // (OPENAI_API_KEY and friends), billing another tenant for a request the
+    // deployment meant to authenticate differently.
     if (ref === undefined) return undefined
     const credentials = ctx.get('credentials')
     const hit = credentials !== undefined
@@ -215,11 +197,8 @@ export function apply(ctx: Context, config: Config): void {
       // Without the seam the environment is the whole credential plane.
       : launchEnvironmentOf(ctx).get(ref)?.value
     if (hit !== undefined && hit.length > 0) return assertUsableApiKey(hit, 'llm-pi-ai', ref)
-    const subject = model === undefined
-      ? `provider route "${provider}"`
-      : `provider route "${provider}" model "${model}"`
     throw new LlmError(
-      `llm-pi-ai: no credential for ${subject}; its profile resolves ${ref}, which is not`
+      `llm-pi-ai: no credential for provider route "${provider}"; its profile resolves ${ref}, which is not`
       + ` set — store ${ref} through the credentials service (the web Models page writes it) or export it,`
       + ' and remove apiKeyEnv only if this provider should authenticate from pi-ai\'s own environment discovery',
       'MISSING_CREDENTIAL',
@@ -260,7 +239,7 @@ export function apply(ctx: Context, config: Config): void {
   let directory: DirectoryRegistrationHandle | undefined
   let directoryFacts: unknown
   const ensureDirectory = (): void => {
-    const entries = directoryEntries(profiles())
+    const entries = directoryEntries(profiles(), settingsNs)
     if (deepEqualJson(entries, directoryFacts)) return
     // Atomic replace, never dispose-then-register: a route another adapter
     // family already declares (a profile keyed `deepseek-official`) would
@@ -293,7 +272,7 @@ export function apply(ctx: Context, config: Config): void {
   // except the stored credential and deployment-owned headers: the curated UI
   // accepts neither, so an already-configured route supplies both inside the
   // Host rather than widening the discovery request.
-  ctx.llm.registerModelDiscovery(NS, (request, signal) => discoverModels(
+  ctx.llm.registerModelDiscovery(settingsNs, (request, signal) => discoverModels(
     { ...request, ...signal === undefined ? {} : { signal } },
     () => storedDiscoveryProfile(request.provider),
   ))
@@ -328,54 +307,11 @@ export function apply(ctx: Context, config: Config): void {
   }
   ensureRegistrationFacts()
 
-  ctx.inject(['settings'], (settingsCtx) => {
-    let registering = true
-    settingsCtx.settings.installSection(ctx, NS, Config, config, {
-      validate: (value) => {
-        // Stored catalog drift must not prevent registration of the repair UI.
-        if (registering) {
-          resolveProfiles(value.providers, LLM_DEFAULT_POLICY_ENTRY, 'deferred')
-        } else {
-          assertServiceable(value, current())
-        }
-      },
-      setSource: (source) => {
-        current = source
-      },
-      onChange: () => {
-        // Named here rather than left to the settings watcher: `assertServiceable`
-        // cannot see the llm registry, so a profile claiming a route another
-        // adapter family owns is stored successfully and only fails at this swap.
-        // Without its own diagnostic that refusal reaches the operator as a
-        // generic "settings: watcher failed", naming neither the route nor why it
-        // is not serving. The previous routes keep serving either way.
-        try {
-          ensureRegistrationFacts()
-        } catch (error) {
-          ctx.logger.error('llm-pi-ai: keeping the previously registered routes after a refused update')
-          ctx.logger.error(error)
-        }
-        // The directory follows the profiles the registry accepted, so a route
-        // that failed to register is not advertised as configurable. A refused
-        // directory swap is contained here for the same reason the registry's
-        // is: the previous entries keep serving, and `directoryFacts` stays put
-        // so returning to a working configuration re-applies.
-        try {
-          ensureDirectory()
-        } catch (error) {
-          ctx.logger.error('llm-pi-ai: keeping the previous configurable-provider directory after a refused update')
-          ctx.logger.error(error)
-        }
-      },
-    })
-    registering = false
-  })
-  ctx.inject(['settings'], (settingsCtx) => {
-    settingsCtx.on('settings/updated', (ns) => {
-      if (ns === settingsNamespace(LLM_DEFAULT_POLICY_SETTINGS_NAMESPACE)) ensureRegistrationFacts()
-    })
-  })
-  ctx.inject(['llmDefaultPolicy'], () => {
-    ensureRegistrationFacts()
+  ctx.on('loader/volatile-update', () => {
+    try { ensureRegistrationFacts(); ensureDirectory() }
+    catch (error) {
+      ctx.logger.error('llm-pi-ai: configuration conflicts with an existing provider route')
+      ctx.logger.error(error)
+    }
   })
 }

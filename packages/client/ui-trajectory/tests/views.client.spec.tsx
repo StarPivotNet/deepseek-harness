@@ -11,7 +11,7 @@ import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement, type ComponentProps, type FC, type ReactNode } from 'react'
-import { bindSnapshotSelector, SlotTestRuntime, stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
+import { bindSnapshotSelector, SlotTestRuntime, stubConfigForm } from '@deepseek-ai/dsh-client-test-runtime'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import {
   EMPTY_CONVERSATION_SNAPSHOT, UiConversation,
@@ -39,9 +39,10 @@ import {
 } from '@deepseek-ai/dsh-client-ui-conversation/src/client/skeleton/ConversationSession.tsx'
 import { createConversationStore } from '@deepseek-ai/dsh-client-ui-conversation/src/client/stores.ts'
 import { zh as conversationZh } from '@deepseek-ai/dsh-client-ui-conversation/src/client/locales.ts'
-import { apply as localeApply, inject as localeInject } from '@deepseek-ai/dsh-client-locale/client'
+import * as localePlugin from '@deepseek-ai/dsh-client-locale/client'
 import { apply, inject } from '@deepseek-ai/dsh-client-ui-trajectory/client'
 import { apply as nodeApply } from '@deepseek-ai/dsh-client-ui-trajectory'
+import { PartialArguments } from '@deepseek-ai/dsh-util-values'
 import type { TrajectoryTurnModel } from '../src/client/layout.ts'
 import { TrajectoryTimeline as LocalizedTrajectoryTimeline } from '../src/client/TrajectoryTimeline.tsx'
 import {
@@ -91,6 +92,7 @@ const NODES: LegacyConversationSlice['nodes'] = [
   },
   {
     kind: 'tool-result', seq: 3, time: 3_000, callId: 'c1', call: null, callTime: 2_200,
+    name: '', args: PartialArguments.EMPTY,
     content: [], isError: false, subCalls: [],
   },
   {
@@ -172,13 +174,13 @@ function standaloneDuration(): Pick<
 /** Empty sessions-list hook; breadcrumbs therefore fall back to the raw id. */
 function emptySessions() {
   const store = createSnapshotStore<SessionListState>(
-    { ids: [], byId: {}, phase: 'ready', subagentsByParent: {}, jobsBySession: {} })
+    { ids: [], byId: {}, phase: 'ready', projectionsBySession: {} })
   return bindSnapshotSelector(store)
 }
 
 function emptyWorkspaces() {
   const store = createSnapshotStore<WorkspaceSnapshot>({
-    items: [], archivedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null,
+    items: [], archivedSessionIds: [], pinnedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null,
   })
   return bindSnapshotSelector(store)
 }
@@ -214,7 +216,10 @@ function standaloneProps(
     draft: '', detectLength: 0, attachmentIds: [], draftRev: 0, phase: 'plain', occurrences: [], queue: [],
   })
   const inputActions: InputActions = {
+    captureInsertion: () => ({ start: 0, end: 0, draftRev: 0 }),
+    insertText: () => false,
     setDraft: () => {},
+    persistDraft: () => {},
     addAttachments: () => false,
     removeAttachment: () => {},
     pruneAttachments: () => {},
@@ -234,6 +239,7 @@ function standaloneProps(
     useInput: bindSnapshotSelector(input),
     inputActions,
     useProjection,
+    inspectCall: undefined,
     viewRequest: null,
     openView: () => {},
     completeViewRequest: () => {},
@@ -272,9 +278,11 @@ async function bench(snapshot = historySnapshot(NODES)) {
   const targetSources: ConversationTargetSources = {
     chat: createSnapshotStore<ChatSnapshot | undefined>(undefined),
     trajectory: trajectoryStore,
+    'tool-todo-history': createSnapshotStore<ConversationViewSnapshotMap['tool-todo-history'] | undefined>(undefined),
   }
   const binding: ConversationBinding = {
     snapshot: conversationStore,
+    openTurn: createSnapshotStore<number | undefined>(undefined),
     activate: () => {},
     target: target => targetSources[target],
   }
@@ -290,8 +298,8 @@ async function bench(snapshot = historySnapshot(NODES)) {
   // The locale plugin backs the locale-aware view tab label ('locale' in
   // inject); its settings scope needs a connection handle.
   ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
-  ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
-  await runtime.mount({ inject: [...localeInject], apply: localeApply })
+  ctx.provide('configForms', { developerTools: { enabled: createSnapshotStore(true) }, get: () => stubConfigForm().scope } as never)
+  await runtime.mount(localePlugin)
   const provide = vi.spyOn(ctx.uiSession, 'provide')
   const feature = await runtime.mount({ inject: [...inject], apply })
   const sourceDescriptor = provide.mock.calls[0]?.[0]
@@ -308,10 +316,10 @@ function tabsOf(slots: SlotRegistry): ViewTab[] {
     .map(e => ({ id: e.options.id!, label: resolveSlotLabel(e.options.label) ?? e.options.id! }))
 }
 
-type ConvViewOwner = Pick<ConvViewProps, 'viewRequest' | 'openView' | 'completeViewRequest'>
+type ConvViewOwner = Pick<ConvViewProps, 'inspectCall' | 'viewRequest' | 'openView' | 'completeViewRequest'>
 
 function isConvViewOwner(owner: object): owner is ConvViewOwner {
-  return 'viewRequest' in owner
+  return 'inspectCall' in owner && 'viewRequest' in owner
     && 'openView' in owner && typeof owner.openView === 'function'
     && 'completeViewRequest' in owner && typeof owner.completeViewRequest === 'function'
 }
@@ -337,7 +345,10 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
     draft: '', detectLength: 0, attachmentIds: [], draftRev: 0, phase: 'plain', occurrences: [], queue: [],
   }))
   const inputActions: InputActions = {
+    captureInsertion: () => ({ start: 0, end: 0, draftRev: 0 }),
+    insertText: () => false,
     setDraft: vi.fn(),
+    persistDraft: vi.fn(),
     addAttachments: vi.fn(() => false),
     removeAttachment: vi.fn(),
     pruneAttachments: vi.fn(),
@@ -394,6 +405,7 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
   return render(
     <>
       <ConversationSessionHeader
+        hideChrome={false}
         {...standardProps}
         SessionProvider={({ children }) => children}
         useStore={bindSnapshotSelector(conversation)}
@@ -409,8 +421,9 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
         useStore={bindSnapshotSelector(conversation)}
         actions={conversation.actions}
         renderSlot={renderSlot}
-        bindDraftMirror={() => () => {}}
+        bindDraftPersistence={() => () => {}}
         openView={conversation.actions.openView}
+        useInspectCall={selector => selector(undefined)}
       />
     </>,
   )
@@ -453,7 +466,7 @@ describe('plugin registration', () => {
 
     expect(resolveSource(binding)).toBe(source)
     expect(resolveSource(binding)).toBe(source)
-    const optionalTrajectory = b.trajectoryStore as unknown as {
+    const optionalTrajectory = b.trajectoryStore as {
       set(value: TrajectorySnapshot | undefined): void
     }
     optionalTrajectory.set(undefined)
@@ -831,6 +844,9 @@ describe('timeline projection', () => {
     expect(view.container.querySelector('[data-timeline-hover-line]')).toBeTruthy()
     fireEvent.pointerEnter(boundary)
     expect(view.container.querySelector('[data-timeline-hover-line]')).toBeNull()
+    // Keyboard modality first: Tooltip suppresses focus arriving after a
+    // pointer interaction, and earlier cases in this file press pointers.
+    fireEvent.keyDown(boundary, { key: 'Tab' })
     fireEvent.focus(boundary)
     expect(screen.getByRole('tooltip').textContent)
       .toContain('Click to load earlier history')
@@ -1358,6 +1374,7 @@ describe('TrajectoryView state', () => {
       blocks: [{ kind: 'tool-call', callId: 'boundary-call', name: 'bash', argsRaw: '{}' }],
     }, {
       kind: 'tool-result', seq: 3, time: 3, callId: 'boundary-call',
+      name: 'bash', args: PartialArguments.fromText('{}'),
       call: { name: 'bash', argsRaw: '{}' }, callTime: 2,
       content: [], isError: false, subCalls: [],
     }, ...Array.from({ length: 39 }, (_, index) => ({
@@ -1412,12 +1429,13 @@ describe('TrajectoryView state', () => {
       seq: 3,
       time: 3,
       callId: 'hidden-root',
+      name: 'run_code', args: PartialArguments.fromText('{}'),
       call: { name: 'run_code', argsRaw: '{}' },
       callTime: 2,
       content: [],
       isError: false,
       subCalls: [{
-        callId: 'hidden-child', parentCallId: 'hidden-root', name: 'bash', argsRaw: '{}',
+        phase: 'start' as const, args: PartialArguments.fromText('{}'), callId: 'hidden-child', parentCallId: 'hidden-root', name: 'bash', argsRaw: '{}',
         turn: 1, step: 1, time: 3, subCalls: [],
       }],
     }, 'hidden-child'],
@@ -1426,6 +1444,7 @@ describe('TrajectoryView state', () => {
       { kind: 'user', seq: 1, time: 1, content: [], source: null },
       {
         kind: 'tool-result', seq: 2, time: 2, callId: 'unrelated', call: null, callTime: null,
+        name: '', args: PartialArguments.EMPTY,
         content: [], isError: false, subCalls: [],
       },
       target,

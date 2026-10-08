@@ -17,6 +17,7 @@ import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
 import { execa } from 'execa'
 import * as yaml from 'js-yaml'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { testProfileResolution } from './profiles/headless/tests/profile-resolution.ts'
 
 /** Published-entry acceptance for argument errors, profile lifecycle, and boot-free config dumps. */
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
@@ -341,6 +342,8 @@ function startStartupProfile(fixture: StartupFixture, args: readonly string[]) {
 }
 
 describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', () => {
+  testProfileResolution('lib')
+
   it('requires a profile and rejects removed flags', async () => {
     const bare = await runBuiltBin()
     expect(bare.code).toBe(1)
@@ -369,6 +372,7 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
       expect(web.stderr).toBe('')
       expect(web.stdout).toContain('Usage: dsh --profile web')
       expect(web.stdout).toContain('--port <port>')
+      expect(web.stdout).toContain('--public-url <url>')
       expect(web.stdout).not.toContain('dsh web: http://')
 
       const wildcardHost = await runBuiltBin(['web', '--host', '0.0.0.0'], {
@@ -517,7 +521,6 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
       successText: 'ACP BUILT PROFILE OK',
     })
     const home = mkdtempSync(join(tmpdir(), 'dsh-built-acp-'))
-    writeFileSync(join(home, 'settings.yaml'), 'llm-deepseek:\n  protocol: chat-completions\n')
     const child = execa(process.execPath, [dshBin, '--profile', 'acp'], {
       cwd: home,
       reject: false,
@@ -603,7 +606,6 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
       successText: 'published headless profile reached the mock',
     })
     const home = mkdtempSync(join(tmpdir(), 'dsh-built-headless-'))
-    writeFileSync(join(home, 'settings.yaml'), 'llm-deepseek:\n  protocol: chat-completions\n')
     try {
       const result = await runBuiltBin(['--profile', 'headless', 'answer', 'from', 'the', 'published', 'entry'], {
         DSH_HOME: home,
@@ -615,7 +617,7 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
       expect(result.stdout).toBe('published headless profile reached the mock')
       expect(result.stderr).toBe('dsh: reasoning:\nInspecting the published entry.')
       expect(server.requests.length).toBeGreaterThan(0)
-      expect(server.requests.every(request => request.path === '/chat/completions')).toBe(true)
+      expect(server.requests.every(request => request.path === '/v1/messages')).toBe(true)
       expect(JSON.stringify(server.requests.map(request => request.body))).toContain('answer from the published entry')
     } finally {
       await server.close()
@@ -740,7 +742,6 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
       successText: 'launching endpoint reached the mock',
     })
     const home = mkdtempSync(join(tmpdir(), 'dsh-home-environment-'))
-    writeFileSync(join(home, 'settings.yaml'), 'llm-deepseek:\n  protocol: chat-completions\n')
     const project = mkdtempSync(join(tmpdir(), 'dsh-home-project-'))
     writeFileSync(join(home, '.credentials.yaml'), `version: 1\nrefs:\n  DEEPSEEK_API_KEY: ${apiKey}\n`, { mode: 0o600 })
     createEnvironmentProbeProfile(home, project)
@@ -763,8 +764,8 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
       expect(result.stdout).not.toContain(apiKey)
       expect(result.stderr).not.toContain(apiKey)
       expect(server.requests).toHaveLength(1)
-      expect(server.requests[0]?.path).toBe('/chat/completions')
-      expect(server.requests[0]?.headers.authorization).toBe(`Bearer ${apiKey}`)
+      expect(server.requests[0]?.path).toBe('/v1/messages')
+      expect(server.requests[0]?.headers['x-api-key']).toBe(apiKey)
       expect(JSON.stringify(server.requests[0]?.body)).not.toContain(apiKey)
     } finally {
       await server.close()
@@ -1246,7 +1247,7 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
         ['deepseek-llm-api-extensions', '@deepseek-ai/dsh-deepseek-llm-api-extensions'],
         ['session-log-deepseek', '@deepseek-ai/dsh-session-log-deepseek'],
         ['plugin-package-inventory-deepseek', '@deepseek-ai/dsh-plugin-package-inventory-deepseek'],
-        ['llm-deepseek', '@deepseek-ai/dsh-llm-deepseek'],
+        ['llm-deepseek', '@deepseek-ai/dsh-llm-deepseek-api-key'],
         ['sandbox', '@deepseek-ai/dsh-sandbox-local'],
         ['session-projection', '@deepseek-ai/dsh-session-projection'],
         ['sandbox-policy', '@deepseek-ai/dsh-sandbox-policy'],
@@ -1264,11 +1265,6 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
         ['agent', '@deepseek-ai/dsh-agent'],
         ['llm-retry', '@deepseek-ai/dsh-llm-retry'],
         ['jobs', '@deepseek-ai/dsh-jobs-local'],
-        ['invariants', '@deepseek-ai/dsh-invariants'],
-        ['session-invariant', '@deepseek-ai/dsh-session/invariant'],
-        ['agent-invariant', '@deepseek-ai/dsh-agent/invariant'],
-        ['scope-invariant', '@deepseek-ai/dsh-scope/invariant'],
-        ['agent-loop-invariant', '@deepseek-ai/dsh-agent-loop/invariant'],
         ['agent-loop', '@deepseek-ai/dsh-agent-loop'],
         ['persistent-bash', '@deepseek-ai/dsh-tool-bash-persistent'],
         ['persistent-pwsh', '@deepseek-ai/dsh-tool-pwsh-persistent'],

@@ -16,16 +16,17 @@ async function bench() {
   await ctx.plugin(SlotRegistry).await()
   const locale = new LocaleRuntime(ctx)
   ctx.provide('locale', locale)
+  locale.setLocale('zh')
   new TestRemote(ctx)
-  ctx.provide('remote.settings', { describe: vi.fn(() => Promise.resolve({ rpcId: 's', result: { ok: false, error: { message: 'no' } } })) } as never)
-  ctx.provide('remote.llm', { listProviders: vi.fn(() => Promise.resolve({ rpcId: 'm', result: { ok: false, error: { message: 'no' } } })) } as never)
-  ctx.provide('remote.systemPrompt', { list: vi.fn(() => Promise.resolve({ rpcId: 'p', result: { ok: false, error: { message: 'no' } } })) } as never)
+  ctx.provide('remote.settings', { describe: vi.fn(() => Promise.resolve({ ok: false, error: { message: 'no' } })) } as never)
+  ctx.provide('remote.llm', { listProviders: vi.fn(() => Promise.resolve({ ok: false, error: { message: 'no' } })) } as never)
+  ctx.provide('remote.systemPrompt', { list: vi.fn(() => Promise.resolve({ ok: false, error: { message: 'no' } })) } as never)
   ctx.provide('connection', {
     isLoopback: true,
     api: {
-      settings: { describe: vi.fn(() => Promise.resolve({ rpcId: 's', result: { ok: false, error: { message: 'no' } } })) },
-      llm: { models: vi.fn(() => Promise.resolve({ rpcId: 'm', result: { ok: false, error: { message: 'no' } } })) },
-      systemPrompt: { list: vi.fn(() => Promise.resolve({ rpcId: 'p', result: { ok: false, error: { message: 'no' } } })) },
+      settings: { describe: vi.fn(() => Promise.resolve({ ok: false, error: { message: 'no' } })) },
+      llm: { models: vi.fn(() => Promise.resolve({ ok: false, error: { message: 'no' } })) },
+      systemPrompt: { list: vi.fn(() => Promise.resolve({ ok: false, error: { message: 'no' } })) },
     },
   } as never)
   return { ctx, slots: ctx.get('slots') as SlotRegistry }

@@ -1,17 +1,16 @@
 /**
  * ui-git-branch plugin halves: the browser entry dictionaries and hero-slot
  * registration against the real SlotRegistry (with fiber teardown proving
- * removal — HMR safety), the inert node entry, and the invariant companion.
+ * removal — HMR safety), the inert node entry.
  */
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it } from 'vitest'
-import InvariantRegistry from '@deepseek-ai/dsh-invariants'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { stubConfigForm, stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
 import { apply as applyLocale, inject as localeInject } from '@deepseek-ai/dsh-client-locale/client'
 import { apply, inject } from '../src/client/index.ts'
 import { apply as applyNode } from '../src/index.ts'
-import * as GitInvariant from '../src/invariant.ts'
 import { en, NS, zh } from '../src/client/locales.ts'
 
 function heroOccupied(ctx: Context): boolean {
@@ -84,7 +83,9 @@ async function bench(options: {
   ctx.provide('remote', { $on: () => () => {}, git: gitNamespace } as never)
   ctx.provide('remote.git', gitNamespace as never)
   ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
+  ctx.provide('configForms', { developerTools: { enabled: createSnapshotStore(true) }, get: () => stubConfigForm().scope } as never)
   await ctx.plugin({ inject: localeInject, apply: applyLocale }).await()
+  ctx.locale.setLocale('zh')
   const fiber = ctx.plugin({ inject: [...inject], apply })
   await fiber.await()
   return {
@@ -210,18 +211,5 @@ describe('ui-git-branch browser half', () => {
 describe('ui-git-branch node half', () => {
   it('contributes no host behavior', () => {
     expect(applyNode).not.toThrow()
-  })
-})
-
-describe('ui-git-branch invariant companion', () => {
-  it('reserves package ownership under its declared companion name', async () => {
-    const ctx = new Context()
-    await ctx.plugin(InvariantRegistry, { enabled: true })
-    const fiber = ctx.plugin(GitInvariant)
-    await fiber.await()
-    expect(GitInvariant.name).toBe('client-ui-git-branch-invariant')
-    expect(GitInvariant.inject).toEqual(['invariants'])
-    expect(() => { (ctx.emit as (event: string) => void)('slots/changed') }).not.toThrow()
-    await fiber.dispose()
   })
 })

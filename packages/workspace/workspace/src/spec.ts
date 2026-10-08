@@ -14,6 +14,8 @@ import type { WorkspaceId } from './types.ts'
 /** Workspace id schema at the durable boundary; branding has no runtime representation. */
 const workspaceId = z.string().transform(value => value as WorkspaceId)
 
+const sessionId = z.string().transform(value => brandString<SessionId>(value))
+
 /**
  * Durable shape of one workspace record. `path` is the `fs.realpath` canon
  * stamped at create and remains the session cwd / primary folder; `folders`
@@ -65,7 +67,9 @@ export type SessionHomeMemory = z.infer<typeof sessionHomeMemory>
  * the registry-global archive set layered over workspace accounting: an
  * archived session keeps its `sessionIds` slot (unarchiving must restore the
  * position), so the set never participates in the one-owner accounting
- * invariant. `hiddenWorkspaceIds` is the registry-global hidden set layered
+ * invariant. `pinnedSessionIds` is the registry-global pin set in pin order
+ * (most recently pinned first); pinning and archival are mutually
+ * exclusive, so archiving drops the session's pin. `hiddenWorkspaceIds` is the registry-global hidden set layered
  * over registry order: a hidden workspace keeps its `workspaceIds` slot and
  * its `sessionIds` account (showing must restore the position), so the set
  * never participates in the one-owner accounting invariant. `sessionHomes`
@@ -76,8 +80,11 @@ export type SessionHomeMemory = z.infer<typeof sessionHomeMemory>
  */
 export const workspaceDomainState = z.object({
   initialized: z.boolean(),
+  /** First-use Workspace identity, retained after its registration is deleted. */
+  defaultWorkspaceId: workspaceId.optional(),
   workspaceIds: z.array(workspaceId),
-  archivedSessionIds: z.array(z.string().transform(value => brandString<SessionId>(value))).default([]),
+  archivedSessionIds: z.array(sessionId).default([]),
+  pinnedSessionIds: z.array(sessionId).default([]),
   hiddenWorkspaceIds: z.array(workspaceId).default([]),
   pendingMutation: workspacePendingMutation.optional(),
   sessionHomes: z.record(z.string(), sessionHomeMemory).default({}),
@@ -97,7 +104,14 @@ export const workspaceDomainSpec = defineDomain({
   version: 2,
   global: {
     schema: workspaceDomainState,
-    initial: { initialized: false, workspaceIds: [], archivedSessionIds: [], hiddenWorkspaceIds: [], sessionHomes: {} },
+    initial: {
+      initialized: false,
+      workspaceIds: [],
+      archivedSessionIds: [],
+      pinnedSessionIds: [],
+      hiddenWorkspaceIds: [],
+      sessionHomes: {},
+    },
   },
   tables: { workspaces: domainTable<WorkspaceId, WorkspaceRecord>(workspaceRecord) },
 })

@@ -215,10 +215,10 @@ export function apply(ctx: Context, config: Config): void {
     for (const agent of agents.list()) refreshAgent(agent)
   })
   ctx.inject(['settings'], (settingsCtx) => {
-    const scope = settingsCtx.settings.register(
+    const scope = settingsCtx.settings.register<{ enabled: boolean }>(
       SESSION_HISTORY_TOOLS_SETTINGS_NAMESPACE,
       SessionHistoryToolsSettingsSchema,
-      { applies: 'live' },
+      {},
     )
     setEnabled(scope.get().enabled)
     scope.watch((next) => {

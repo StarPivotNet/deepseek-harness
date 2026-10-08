@@ -29,6 +29,7 @@ skill 家族让 agent 和用户仅在需要时发现并加载可复用的任务�
 | [`skill-badge/`](skill-badge/README.zh.md) | 随包附带官方「powered by dsh」徽章 skill，默认禁用 | 注册到 `ctx.skills` |
 | [`skill-office/`](skill-office/README.zh.md) | 随包提供 Word、PowerPoint 和 Excel 工作流及文件结构检查 | 注册到 `ctx.skills` |
 | [`tool-skill/`](tool-skill/README.zh.md) | 发布会话 skill 目录与面向模型的 `skill` 加载工具 | 注册到 `ctx.tools` |
+| [`tool-workspace-dependencies/`](tool-workspace-dependencies/README.zh.md) | 为 Desktop 与 SDK 载体报告内置 Office 解释器路径和版本 | 注册到 `ctx.tools` |
 
 -----
 
@@ -38,7 +39,7 @@ skill 家族让 agent 和用户仅在需要时发现并加载可复用的任务�
 先从子系统参考了解共享词汇，再阅读 Agent Note 了解设计依据。
 
 - [skill 子系统参考](../../docs/subsystems/skills.zh.md)——注册表、提供方约定、本地发现优先级，以及目录与工具。
-- [skill 调用策略 Agent Note](../../.agents/notes/implemented/feature/2026-07-28-skill-invocation-policy.zh.md)——模型与用户调用控制。
+- [skill 调用策略 参考](skill/README.zh.md)——模型与用户调用控制。
 
 -----
 

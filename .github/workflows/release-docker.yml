@@ -4,10 +4,6 @@
 name: Release (docker)
 
 on:
-  push:
-    tags:
-      - 'desktop-v*'
-      - 'docker-v*'
   workflow_dispatch:
     inputs:
       publish:

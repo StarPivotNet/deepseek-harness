@@ -13,7 +13,7 @@ import { registerTurnErrorConversationNode } from './turn-error.ts'
 import { registerTurnMaxTokensConversationNode } from './turn-max-tokens.ts'
 import { registerTurnProcess } from './turn-process.ts'
 import { registerTurnTailConversationNode } from './turn-tail.ts'
-import { registerRequestHeaderConversationNode } from './request-header.ts'
+import { processGroupDefinition } from './process-groups.ts'
 
 /**
  * Register the Chat business Definitions and target builder contributed by this package.
@@ -21,7 +21,6 @@ import { registerRequestHeaderConversationNode } from './request-header.ts'
  */
 export function registerConversationNodes(ctx: Context): void {
   registerInboxConversationNodes(ctx)
-  registerRequestHeaderConversationNode(ctx)
   registerMessageConversationNode(ctx)
   registerRequestPromptConversationNode(ctx)
   registerAssistantConversationNode(ctx)
@@ -35,4 +34,5 @@ export function registerConversationNodes(ctx: Context): void {
   registerTurnTailConversationNode(ctx)
   registerUnknownConversationFallback(ctx)
   registerChatConversationView(ctx)
+  ctx.uiConversation.groups.register(processGroupDefinition)
 }

@@ -8,9 +8,10 @@ on:
       suite:
         description: Manual CI suite to run
         required: true
-        default: larger-runner-benchmark
+        default: platform-checks
         type: choice
         options:
+          - platform-checks
           - larger-runner-benchmark
           - consolidated-runner-benchmark
 
@@ -30,9 +31,9 @@ env:
   DSH_TELEMETRY_DISABLED: '1'
 
 jobs:
-  # These native runtime carriers are post-merge checks; release keeps all targets.
+  # These native runtime carriers run on demand; release keeps all targets.
   python-runtime:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'platform-checks'
     name: python runtime / macOS and Linux ARM64
     uses: ./.github/workflows/build-exe-for-python-sdk.yml
     with:
@@ -43,7 +44,7 @@ jobs:
 
   # Wine runs once here, independently of the native serial standby aggregates.
   windows:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'platform-checks'
     runs-on: ubuntu-latest
     name: windows node 24 / wine
     timeout-minutes: 15
@@ -144,8 +145,8 @@ jobs:
           fetch-depth: 0
 
       # Redirect the Node compile cache (enabled by pnpm and TypeScript) off
-      # the root partition's /tmp before the first pnpm call in this lane —
-      # see .agents/notes/implemented/process/2026-08-28-ci-node-compile-cache-data-disk.md.
+      # the root partition's /tmp before the first pnpm call in this lane.
+      # see .github/workflows/ci.yml.
       - name: Redirect Node compile cache to runner temp
         run: echo "NODE_COMPILE_CACHE=${{ runner.temp }}/node-compile-cache" >> "$GITHUB_ENV"
 
@@ -165,8 +166,8 @@ jobs:
 
       # The persistent VM image owns Playwright's Linux system packages; this
       # step also proves that browser provisioning remains usable for failover.
-      - name: Install Playwright Chromium
-        run: pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install chromium
+      - name: Install Playwright Chromium and WebKit
+        run: pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install chromium webkit
 
       - name: Prepare bubblewrap (unrestrict userns)
         run: bash scripts/prepare-ci-bubblewrap.sh
@@ -225,7 +226,7 @@ jobs:
   # (and saving here would poison the hosted cache namespace with self-hosted
   # paths).
   serial-windows:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'platform-checks'
     name: serial / windows (self-hosted standby)
     runs-on: [self-hosted, dsh-win-ci, windows]
     timeout-minutes: 120

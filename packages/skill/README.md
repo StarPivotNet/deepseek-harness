@@ -29,6 +29,7 @@ The skill family lets agents and users discover and load reusable task instructi
 | [`skill-badge/`](skill-badge/README.md) | Bundles the official "powered by dsh" badge skill, disabled by default | registers on `ctx.skills` |
 | [`skill-office/`](skill-office/README.md) | Bundles Word, PowerPoint, and Excel workflows with structural file checks | registers on `ctx.skills` |
 | [`tool-skill/`](tool-skill/README.md) | Publishes the session skill catalog and the model-facing `skill` loader tool | registers on `ctx.tools` |
+| [`tool-workspace-dependencies/`](tool-workspace-dependencies/README.md) | Reports bundled Office interpreter paths and versions for Desktop and SDK carriers | registers on `ctx.tools` |
 
 -----
 
@@ -38,7 +39,7 @@ The skill family lets agents and users discover and load reusable task instructi
 Start with the subsystem reference for the shared vocabulary, then read the Agent Notes for the design rationale.
 
 - [Skill subsystem reference](../../docs/subsystems/skills.md) — the registry, provider contract, local discovery priority, and the catalog and tool.
-- [Skill invocation policy Agent Note](../../.agents/notes/implemented/feature/2026-07-28-skill-invocation-policy.md) — the model and user invocation controls.
+- [Skill invocation policy reference](skill/README.md) — the model and user invocation controls.
 
 -----
 

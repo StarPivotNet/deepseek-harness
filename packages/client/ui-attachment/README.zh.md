@@ -39,7 +39,7 @@ Trajectory 附件行使用 48px 方形缩略图，完整缩放图片而不裁剪
 
 ### 拖放遮罩
 
-文件拖到页面上方时，全视口遮罩显示拖放提示，包括插画和标题；接受拖放时还会显示一行限制说明。遮罩只呈现状态——是否接受由持有方的文档级监听器决定。
+文件拖到页面上方时，全视口遮罩显示拖放提示，包括插画和标题；接受拖放时还会显示一行限制说明。遮罩只呈现状态，是否接受由持有方的文档级监听器决定，拖放处理器通过 entry API 报告放下的成员中哪些是文件夹，以便持有方引用或拒绝它们。
 
 -----
 
@@ -58,7 +58,7 @@ Trajectory 附件行使用 48px 方形缩略图，完整缩放图片而不裁剪
 | [`src/AttachmentRail.tsx`](src/AttachmentRail.tsx) | 附件横向溢出、滚轮转换、边缘箭头 |
 | [`src/client/MessageImages.tsx`](src/client/MessageImages.tsx) | 每消息画廊＋灯箱的组装 |
 | [`src/MessageImage.tsx`](src/MessageImage.tsx) | 单图尺寸、加载／重试、点击打开；本地提交回显预览直接显示其 object URL |
-| [`src/ImageLightbox.tsx`](src/ImageLightbox.tsx) | 铺在共享遮罩上的文档级模态预览 |
+| [`ImageLightbox`](../ui-primitives/src/ImageLightbox.tsx) | 铺在共享遮罩上的文档级模态预览 |
 | [`src/DropOverlay.tsx`](src/DropOverlay.tsx) | 不接收指针事件的拖放提示 portal |
 
 </details>
@@ -71,7 +71,7 @@ Trajectory 附件行使用 48px 方形缩略图，完整缩放图片而不裁剪
 如果附件界面本身还不够，请阅读以下页面。这些页面从本包填充的 slot 讲到负责输入流程的会话外壳。
 
 - [ui-conversation](../ui-conversation/README.zh.md)——声明附件 slot，并负责 composer 与图片接收。
-- [Web 客户端架构](../../../.agents/notes/implemented/architecture/2026-07-19-gui-web-client-architecture.zh.md)——浏览器插件行如何加载并注册 slot。
+- [Web 客户端架构](../../../docs/subsystems/web-client.zh.md)——浏览器插件行如何加载并注册 slot。
 - [客户端包映射](../README.zh.md)——相邻的浏览器 UI 包。
 
 -----
@@ -104,5 +104,3 @@ Trajectory 附件行使用 48px 方形缩略图，完整缩放图片而不裁剪
 无。
 
 </details>
-
-**运行时不变式：** 不发布伴生入口。本包只贡献由 effect 持有的 slot entry；slot 注册表负责其生命周期并校验声明。

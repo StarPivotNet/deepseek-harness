@@ -7,14 +7,15 @@
 
 import type { WebBootGraph } from '@deepseek-ai/dsh-client-modules'
 
-/** One SSE frame: the settled graph on connection or change, or one rebuilt bundle notice. */
+/** One SSE frame: the settled graph, one rebuilt bundle notice, or a manual reload request. */
 export type PluginsEventFrame =
   | { type: 'graph'; graph: WebBootGraph }
   | { type: 'rebuilt'; id: string; rev: string }
+  | { type: 'reload'; id: string; rev: string }
 
 /** Browser wire-parse result: known frame, forward-compatible unknown type, or malformed payload. */
 export type PluginsEventParseResult =
-  | { kind: 'frame'; frame: { type: 'graph'; graph: unknown } | Extract<PluginsEventFrame, { type: 'rebuilt' }> }
+  | { kind: 'frame'; frame: { type: 'graph'; graph: unknown } | Extract<PluginsEventFrame, { type: 'rebuilt' | 'reload' }> }
   | { kind: 'unknown' }
   | { kind: 'invalid' }
 
@@ -28,8 +29,9 @@ export function parsePluginsEventFrame(value: unknown): PluginsEventParseResult 
   const record = value as Record<string, unknown>
   switch (record.type) {
     case 'rebuilt':
+    case 'reload':
       return typeof record.id === 'string' && typeof record.rev === 'string'
-        ? { kind: 'frame', frame: { type: 'rebuilt', id: record.id, rev: record.rev } }
+        ? { kind: 'frame', frame: { type: record.type, id: record.id, rev: record.rev } }
         : { kind: 'invalid' }
     case 'graph':
       return typeof record.graph === 'object' && record.graph !== null
@@ -45,3 +47,9 @@ export const EVENTS_ENDPOINT = '/plugins/events'
 
 /** POST endpoint that reloads every watched client plugin entry. */
 export const RELOAD_ENDPOINT = '/plugins/reload'
+
+/**
+ * Document-relative form of {@link EVENTS_ENDPOINT} used by the browser half.
+ * See .agents/notes/implemented/architecture/2026-09-14-web-document-relative-app-routes.md.
+ */
+export const EVENTS_ROUTE = EVENTS_ENDPOINT.slice(1)

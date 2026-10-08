@@ -39,7 +39,7 @@ interface InputIsolationPlugin {
 const REQUESTING_PACKAGE = '@deepseek-ai/dsh-client-ui-conversation'
 
 function clientConfigs(id = REQUESTING_PACKAGE) {
-  return clientBundle(id, ['lib/types/index.js', 'lib/types/invariant.js'])(
+  return clientBundle(id, ['lib/types/index.js'])(
     { env: { DSH_BUILD_FACE: 'client' } },
   ).filter(config => config.platform === 'browser')
 }
@@ -89,8 +89,6 @@ function clientSourceMapPath(packagePath: string): string {
 }
 
 function purityResolveId(id = REQUESTING_PACKAGE): ResolveId {
-  // libEntry is spelled at every call site (no default) so the
-  // package-invariants text check can see the invariant entry per package.
   const configs = clientConfigs(id)
   const plugins = (configs[0] as { plugins: { name: string; resolveId?: unknown }[] }).plugins
   const gate = plugins.find(p => p.name === 'dsh-client-bundle-purity')
@@ -144,7 +142,12 @@ describe('client bundle purity gate', () => {
     expect(() => resolveId('@deepseek-ai/dsh-llm-default-policy')).toThrow(/purity/)
     expect(() => resolveId('@deepseek-ai/dsh-llm-default-policy/settings')).toThrow(/purity/)
     expect(resolveId('@deepseek-ai/dsh-host-open-in-app/shared')).toBeNull()
+    expect(resolveId('@deepseek-ai/dsh-native-command/types')).toBeNull()
+    expect(() => resolveId('@deepseek-ai/dsh-native-command')).toThrow('client bundle purity')
     expect(() => resolveId('@deepseek-ai/dsh-host-open-in-app')).toThrow(/purity/)
+    expect(resolveId('@deepseek-ai/dsh-plugin-manager/registry')).toBeNull()
+    expect(() => resolveId('@deepseek-ai/dsh-plugin-manager')).toThrow(/purity/)
+    expect(() => resolveId('@deepseek-ai/dsh-plugin-manager/registry/internal')).toThrow(/purity/)
   })
 
   it('admits only the pure spill notice entry, not its Host policy', () => {

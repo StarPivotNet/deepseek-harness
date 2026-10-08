@@ -1,12 +1,9 @@
 # Pack DeepSeek Harness desktop installers and publish them as a GitHub
-# Release. Pack is credential-free and runs from a desktop-v* tag or a
-# manual dispatch; publication is a separate job that consumes those bytes.
+# Release. Pack is credential-free and runs on manual dispatch; publication
+# is a separate job that consumes those bytes and requires a desktop-v* tag.
 name: Release (desktop)
 
 on:
-  push:
-    tags:
-      - 'desktop-v*'
   workflow_dispatch:
     inputs:
       publish:

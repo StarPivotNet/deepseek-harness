@@ -1,70 +1,24 @@
-/** Host loader entry for the browser implementation exported from `./client`. */
+/** Welcome acknowledgement stored in the plugin configuration. */
+import type {} from '@deepseek-ai/dsh-settings'
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Volatile, Context } from '@deepseek-ai/cordis'
+
 import z from '@deepseek-ai/schemastery'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
-import {
-  consumeHostProcessStartCount,
-  formatHostStartedAt,
-  HOST_LIFETIME_SETTINGS_NAMESPACE,
-  HOST_START_COUNT_FIELD,
-  HOST_STARTED_AT_FIELD,
-  hostProcessStartedAt,
-  HostLifetimeSettingsSchema,
-  nextHostStartCount,
-  type HostLifetimeSettings,
-} from './host-lifetime.ts'
 
-export {
-  consumeHostProcessStartCount,
-  formatHostStartedAt,
-  HOST_LIFETIME_SETTINGS_NAMESPACE,
-  HOST_START_COUNT_FIELD,
-  HOST_STARTED_AT_FIELD,
-  hostProcessStartedAt,
-  HostLifetimeSettingsSchema,
-  internals as hostLifetimeInternals,
-  nextHostStartCount,
-  type HostLifetimeSettings,
-} from './host-lifetime.ts'
-
-/** Durable settings namespace for product-wide GUI onboarding facts. */
-const ONBOARDING_SETTINGS_NAMESPACE = 'ui-onboarding'
-const HOST_NAMESPACE = settingsNamespace(HOST_LIFETIME_SETTINGS_NAMESPACE)
-
-interface OnboardingSettings {
-  /** Last version acknowledged by the current product welcome step. */
-  welcomeNoticeVersion?: string
+/** Runtime preferences projected to the browser. */
+export interface Config {
+  /** Last acknowledged welcome notice version. */
+  welcomeNoticeVersion: Volatile<string | undefined>
 }
 
-const OnboardingSettingsSchema: z<OnboardingSettings> = z.object({
-  welcomeNoticeVersion: z.string(),
+/** Live welcome preference. */
+export const Config = z.object({
+  welcomeNoticeVersion: z.string().volatile(),
 })
 
-/**
- * Record this process start on the durable Host-lifetime section.
- * @param scope - owner of the Host-lifetime namespace.
+/** The browser consumes the configuration form projection.
+ * @param ctx Plugin context used for optional settings presentation.
  */
-function recordHostProcessStart(scope: { get(): HostLifetimeSettings; update(patch: object): Promise<void> }): void {
-  const startedAt = formatHostStartedAt(hostProcessStartedAt())
-  if (consumeHostProcessStartCount()) {
-    void scope.update({
-      [HOST_START_COUNT_FIELD]: nextHostStartCount(scope.get().startCount),
-      [HOST_STARTED_AT_FIELD]: startedAt,
-    })
-    return
-  }
-  void scope.update({ [HOST_STARTED_AT_FIELD]: startedAt })
-}
-
-/** Register onboarding and Host-lifetime sections when a settings provider exists. */
 export function apply(ctx: Context): void {
-  ctx.inject(['settings'], (settingsCtx) => {
-    settingsCtx.settings.register(
-      ONBOARDING_SETTINGS_NAMESPACE,
-      OnboardingSettingsSchema,
-    )
-    const lifetime = settingsCtx.settings.register(HOST_NAMESPACE, HostLifetimeSettingsSchema)
-    recordHostProcessStart(lifetime)
-  })
+  ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
 }

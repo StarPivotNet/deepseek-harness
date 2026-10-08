@@ -66,14 +66,31 @@ export function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+type RemoteEnvelope<T> = { ok: boolean; value?: T; error?: { message: string } }
+
+/** Accept either a Typert Remote result or the historical unary envelope. */
+function unwrapRemote<T>(response: unknown): RemoteEnvelope<T> {
+  if (typeof response === 'object' && response !== null && 'result' in response) {
+    const nested = (response as { result?: unknown }).result
+    if (typeof nested === 'object' && nested !== null && 'ok' in nested) {
+      return nested as RemoteEnvelope<T>
+    }
+  }
+  if (typeof response === 'object' && response !== null && 'ok' in response) {
+    return response as RemoteEnvelope<T>
+  }
+  return { ok: false, error: { message: 'malformed remote response' } }
+}
+
 /**
  * Unwrap a unary response into its value or throw the Host error message.
  * @param response - the unary response.
  * @returns the success value.
  */
 function valueOf<T>(response: RemoteResult<T>): T {
-  if (!response.ok) throw new Error(response.error.message)
-  return response.value
+  const unwrapped = unwrapRemote<T>(response)
+  if (!unwrapped.ok) throw new Error(unwrapped.error?.message ?? 'remote call failed')
+  return unwrapped.value as T
 }
 
 /** How long run-now waits for the started Session to appear in the list. */

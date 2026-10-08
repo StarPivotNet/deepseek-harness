@@ -1,4 +1,3 @@
-// @ts-nocheck — merge-port: client-runtime retirement; restore types in a follow-up.
 // @vitest-environment jsdom
 /** client-hmr apply wiring: settings dictionaries, declaration-aware
  * General-section row, and HMR collapse recovery. */
@@ -46,20 +45,27 @@ async function bench(isLoopback = true) {
       value: { writable: true, hasDocument: true, namespaces: [namespace()] },
     },
   }))
-  const mutate = vi.fn((request: { ops: { value: boolean }[] }) => {
-    autoReload = request.ops[0]!.value
-    return Promise.resolve({
-      rpcId: 'hmr-mutate' as never,
-      result: { ok: true as const, value: namespace() },
-    })
+  const mutate = vi.fn(async (_ns: string, ops: { path: string[]; value?: boolean }[], _revision?: number) => {
+    const value = ops[0]?.value
+    if (typeof value === 'boolean') autoReload = value
+    return {
+      ok: true as const,
+      value: namespace(),
+    }
   })
   ctx.provide('connection', { api: { settings: { describe, mutate } }, isLoopback } as never)
   ctx.provide('loader', { entries: () => [] } as never)
-  ctx.provide('modules', { invalidate() {}, prefetch: async () => undefined } as never)
-  new TestRemote(ctx)
+  ctx.provide('modules', {
+    invalidate() {},
+    prefetch: async () => undefined,
+    entries: { sync: async () => {}, reload: async () => {} },
+  } as never)
+  new TestRemote(ctx, { settings: { describe, mutate } })
   const connection = ctx.get('connection') as { api: never }
   const mirror = new SettingsDescribeMirror(connection.api)
-  await ctx.plugin(SettingsScopeBinder, { mirror, schema: new SettingsSchemaService(ctx) }).await()
+  await ctx.plugin(SettingsScopeBinder, {
+    mirror, schema: new SettingsSchemaService(ctx), persistence: 'host',
+  }).await()
   return {
     ctx, slots: ctx.get('slots') as SlotRegistry, locale, describe, mutate,
   }

@@ -1,54 +1,29 @@
 /**
  * Shell chrome content registered into the shell's trigger/header seats: the
- * trigger row (account chip + settings glyph) and the panel title text.
+ * trigger row icon + label (figma sidebar foot) and the panel title text.
  * The shell renders the surrounding chrome (button, nav heading row) and
- * reads each entry's `label` option for aria text. The settings button's
- * accessible name stays the localized Settings label; the account name is
- * visual only, and the account button uses its own accessible name.
+ * reads each entry's `label` option for aria text.
  */
-import { IconSettingsOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { accountInitial, accountNameFromHome } from './account-label.ts'
-import type { SettingsTriggerInjected } from './shell-contract.ts'
+import { IconSettingsOutlineMedium } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './chrome.module.css'
 
-/** Trigger content props: sidebar column state, Host home, and locale. */
-export type TriggerContentProps =
-  PropsRuntime<'settings.trigger'>
-  & InjectFace<SettingsTriggerInjected>
-  & PropsLocale<'settings'>
+/** Trigger content props: the sidebar column state + the standard locale seat. */
+export type TriggerContentProps = PropsRuntime<'settings.trigger'> & PropsLocale<'settings'>
 
 /** Header content props: the standard locale seat only. */
 export type HeaderContentProps = PropsRuntime<'settings.header'> & PropsLocale<'settings'>
 
 /**
- * Render the trigger row: a circular initial chip, the Host account name in
- * the wide column, and a trailing settings glyph. `part` selects the
- * account chip, the settings glyph, or the full row. The localized Settings
- * string stays in the tree except on the account part, and is visually
- * hidden so the shell button's accessible name does not become the account
- * name.
+ * Render the trigger row content (icon; label only in the wide column).
  * @param props - composed slot props.
  * @returns the trigger content fragment.
  */
-export function TriggerContent({ wide, part, useConnectionGeneration, t }: TriggerContentProps) {
-  const home = useConnectionGeneration(generation => generation?.host.home)
-  const account = accountNameFromHome(home) ?? t('account.fallback')
-  const initial = accountInitial(account)
-  const showAccount = part !== 'settings'
-  const showName = wide && part !== 'settings'
-  const showGlyph = wide && part !== 'account'
-  const showSettingsName = part !== 'account'
+export function TriggerContent({ wide, t }: TriggerContentProps) {
   return (
     <>
-      {showAccount && <span className={css.avatar} aria-hidden="true">{initial}</span>}
-      {showName && <span className={css.accountName} aria-hidden="true">{account}</span>}
-      {showGlyph && (
-        <span className={css.settingsGlyph} aria-hidden="true">
-          <IconSettingsOutline16 size={16} />
-        </span>
-      )}
-      {showSettingsName && <span className={css.hiddenLabel}>{t('trigger')}</span>}
+      <IconSettingsOutlineMedium size={wide ? 16 : 18} />
+      {wide && <span className={css.triggerLabel}>{t('trigger')}</span>}
     </>
   )
 }

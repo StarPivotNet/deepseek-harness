@@ -52,6 +52,7 @@ export class WorkspaceFeed {
   private order: readonly string[]
   private archived: readonly string[]
   private hidden: readonly string[]
+  private pinned: readonly string[]
 
   /** @param ctx - Host context containing the authoritative Workspace registry. */
   constructor(private readonly ctx: Context) {
@@ -59,6 +60,7 @@ export class WorkspaceFeed {
     this.knownIds = new Set(baseline.map(workspace => String(workspace.id)))
     this.order = baseline.map(workspace => String(workspace.id))
     this.archived = ctx.workspaceRegistry.archivedSessionIds.map(String)
+    this.pinned = ctx.workspaceRegistry.pinnedSessionIds.map(String)
     this.hidden = ctx.workspaceRegistry.hiddenWorkspaceIds.map(String)
     ctx.on('domain/changed', (change: DomainChanged) => { this.changed(change) })
     ctx.effect(() => () => {
@@ -69,12 +71,13 @@ export class WorkspaceFeed {
 
   /**
    * Read the complete current projection synchronously.
-   * @returns all active Workspaces and archived Session identities.
+   * @returns all active Workspaces plus archived and pinned Session identities.
    */
   baseline(): WorkspaceBaseline {
     return {
       items: this.ctx.workspaceRegistry.list().map(workspaceView),
       archivedSessionIds: [...this.ctx.workspaceRegistry.archivedSessionIds],
+      pinnedSessionIds: [...this.ctx.workspaceRegistry.pinnedSessionIds],
       hiddenWorkspaceIds: [...this.ctx.workspaceRegistry.hiddenWorkspaceIds],
     }
   }
@@ -119,6 +122,11 @@ export class WorkspaceFeed {
       if (!sameStrings(this.archived, nextArchived)) {
         this.archived = nextArchived
         this.publish({ type: 'archived', archivedSessionIds: [...state.archivedSessionIds] })
+      }
+      const nextPinned = state.pinnedSessionIds.map(String)
+      if (!sameStrings(this.pinned, nextPinned)) {
+        this.pinned = nextPinned
+        this.publish({ type: 'pinned', pinnedSessionIds: [...state.pinnedSessionIds] })
       }
       const nextHidden = state.hiddenWorkspaceIds.map(String)
       if (!sameStrings(this.hidden, nextHidden)) {

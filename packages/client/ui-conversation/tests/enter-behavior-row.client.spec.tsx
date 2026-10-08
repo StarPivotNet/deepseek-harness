@@ -22,13 +22,13 @@ afterEach(() => {
 
 function emptySessions() {
   return bindSnapshotSelector(createSnapshotStore<SessionListState>({
-    ids: [], byId: {}, phase: 'ready', subagentsByParent: {}, jobsBySession: {},
+    ids: [], byId: {}, phase: 'ready', projectionsBySession: {}, subagentsByParent: {}, jobsBySession: {},
   }))
 }
 
 function emptyWorkspaces() {
   return bindSnapshotSelector(createSnapshotStore<WorkspaceSnapshot>({
-    items: [], archivedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null,
+    items: [], archivedSessionIds: [], pinnedSessionIds: [], hiddenWorkspaceIds: [], state: 'idle', phase: 'ready', error: null,
   }))
 }
 

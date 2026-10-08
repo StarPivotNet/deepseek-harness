@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SessionId, SessionSummary } from '@deepseek-ai/dsh-api-remotes/client'
 import { flattenLineage } from '../src/client/sessions/lineage.ts'
 
-const s = (id: string, updatedAt: number, parent?: string): SessionSummary => ({
+const s = (id: string, updatedAt: number, parent?: string): SessionSummary => ({ agentAvailable: true,
   sessionId: id as SessionId, updatedAt, running: false, blank: false,
   ...(parent !== undefined ? { parentSessionId: parent as SessionId } : {}),
 })
@@ -53,9 +53,9 @@ describe('Session lineage flattening', () => {
     }
   })
 
-  it('keeps lineage rows free of completion presentation state', () => {
-    const out = flattenLineage([s('a', 10), s('b', 20)])
+  it('defaults completion presentation to false and marks the supplied reminder set', () => {
+    const out = flattenLineage([s('a', 10), s('b', 20)], new Set(['b' as SessionId]))
     expect(out).toHaveLength(2)
-    for (const row of out) expect(row).not.toHaveProperty('completed')
+    expect(out.map(row => [row.sessionId, row.completed])).toEqual([['a', false], ['b', true]])
   })
 })

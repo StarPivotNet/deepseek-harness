@@ -15,6 +15,5 @@
     { "path": "../../workspace/workspace" },
     { "path": "../../sandbox/sandbox-policy" },
     { "path": "../../util/home-paths" },
-    { "path": "../../runtime-diagnostics/invariants" }
   ]
 }

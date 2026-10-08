@@ -1,4 +1,3 @@
-// @ts-nocheck — merge-port: client-runtime retirement; restore types in a follow-up.
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it } from 'vitest'
 import { SettingsProvider, settingsNamespace, type SettingsNamespace } from '@deepseek-ai/dsh-settings'
@@ -18,7 +17,7 @@ class MemorySettings extends SettingsProvider {
 
 function fakeClientModules(): ClientModuleRegistry {
   const fake: Pick<ClientModuleRegistry, 'graph' | 'clientPath' | 'rebuilt' | 'onRebuilt' | 'onGraphChanged'> = {
-    graph: () => ({ rev: 'r', entries: [] }),
+    graph: () => ({ rev: 'r', entries: [], batches: [] }),
     clientPath: () => undefined,
     rebuilt: () => undefined,
     onRebuilt: () => () => {},

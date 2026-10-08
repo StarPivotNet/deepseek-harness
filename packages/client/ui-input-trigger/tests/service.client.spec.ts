@@ -259,7 +259,7 @@ describe('sessionOf', () => {
     })
 
     locale = 'zh'
-    root.emit('locale/change', { active: 'zh', preference: undefined, locales: [], revision: 1 } as LocaleSnapshot)
+    root.emit('locale/change', { active: 'zh', preference: undefined, locales: [], revision: 1 } as unknown as LocaleSnapshot)
     expect(first.menu.getSnapshot().open).toBe(true)
     expect(second.menu.getSnapshot().open).toBe(true)
     await tick()

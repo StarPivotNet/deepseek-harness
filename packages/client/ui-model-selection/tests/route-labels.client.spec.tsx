@@ -46,6 +46,7 @@ function directoryState(overrides: Partial<ModelDirectoryState> = {}): ModelDire
     }],
     failures: [],
     status: 'ready',
+    pending: null,
     error: null,
     ...overrides,
   }
