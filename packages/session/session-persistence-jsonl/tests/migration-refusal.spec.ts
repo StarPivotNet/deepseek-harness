@@ -31,7 +31,7 @@ const prefix: readonly SessionFormatJsonObject[] = [
   { type: 'user/message', data: question, surfaceOp: 'append' },
   { type: 'request/header', data: { header: { config, system: 'Inspect the durable audit.' }, reason: 'initial' } },
 ]
-/** Released V3 files still carry plugin attribution; current V4 files are producer-owned. */
+/** Released V3 files still carry plugin attribution; current files are producer-owned. */
 const releasedPrefix: readonly SessionFormatJsonObject[] = [
   ...prefix.slice(0, 2),
   { type: 'system/message', surfaceOp: 'append', data: {
@@ -318,7 +318,7 @@ describe.each(modes)('EOF migration refusal ($compression, $access)', ({ compres
     await expectOnlyGenerations([path])
   })
 
-  it.each([5, 99])('retains a V3 watermark claiming V%s unchanged through native reopening', async (sessionFormatVersion) => {
+  it.each([SESSION_FORMAT_VERSION + 1, 99])('retains a V3 watermark claiming V%s unchanged through native reopening', async (sessionFormatVersion) => {
     const marker = { type: 'session-log-deepseek/delivery-accepted', data: {
       sessionId: id, throughSeq: 0, sessionFormatVersion,
     } }

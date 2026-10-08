@@ -65,7 +65,8 @@ class Relationships {
   readonly commands = new Set<string>()
   readonly orphanCompactions = new Set<number>()
 
-  constructor(readonly artifact: SessionFormatArtifact, readonly knownEventTypes: ReadonlySet<string>) {
+  constructor(readonly artifact: SessionFormatArtifact, readonly knownEventTypes: ReadonlySet<string>,
+    private readonly abandonedStepEnds: ReadonlySet<number> = new Set()) {
     let start: number | undefined
     for (const event of artifact.events) {
       if (!knownEventTypes.has(event.type)) continue
@@ -88,8 +89,10 @@ class Relationships {
     }
   }
 
-  closeTools(type: string): void {
-    if (this.tools.size !== 0) throw new SessionFormatError(`${type} leaves unresolved tool call ${String(this.tools.keys().next().value)}`)
+  closeTools(event: SessionFormatEvent): void {
+    if (this.tools.size !== 0 && !(event.type === 'step/end' && this.abandonedStepEnds.has(event.seq))) {
+      throw new SessionFormatError(`${event.type} leaves unresolved tool call ${String(this.tools.keys().next().value)}`)
+    }
     this.tools.clear()
   }
 
@@ -280,7 +283,7 @@ class Relationships {
         break
       case 'turn/end':
         if (this.turn === null || data['turn'] !== this.turn || this.step !== null) throw new SessionFormatError('turn/end does not match the open turn with no open step')
-        this.closeTools(event.type)
+        this.closeTools(event)
         this.turn = null
         this.nextTurn += 1
         break
@@ -290,7 +293,7 @@ class Relationships {
         break
       case 'step/end':
         this.requireStep(event, data)
-        this.closeTools(event.type)
+        this.closeTools(event)
         this.step = null
         this.nextStep += 1
         break
@@ -381,5 +384,19 @@ function titleSources(
  */
 export function assertV4LifecycleRelationships(artifact: SessionFormatArtifact, knownEventTypes: ReadonlySet<string>): void {
   const state = new Relationships(artifact, knownEventTypes)
+  for (const event of artifact.events) state.accept(event)
+}
+
+/**
+ * Validate lifecycle ownership while abandoning unresolved calls at caller-admitted step ends.
+ * Event records remain unchanged; abandonment does not assert a tool execution outcome.
+ * @param artifact - artifact whose envelopes and messages have been admitted.
+ * @param knownEventTypes - event types interpreted by the caller.
+ * @param abandonedStepEnds - step/end sequence numbers whose caller-owned semantics permit abandonment.
+ */
+export function assertLifecycleRelationshipsWithAbandonedSteps(
+  artifact: SessionFormatArtifact, knownEventTypes: ReadonlySet<string>, abandonedStepEnds: ReadonlySet<number>,
+): void {
+  const state = new Relationships(artifact, knownEventTypes, abandonedStepEnds)
   for (const event of artifact.events) state.accept(event)
 }

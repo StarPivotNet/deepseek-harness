@@ -43,7 +43,7 @@ describe.each(modes)('native message-source admission ($compression, $access)', 
     const { ctx, path, bytes } = await stored(source)
     const opened = ctx.sessionPersistence.open(id, access).then(async (handle) => { await handle.close() })
     await expect(opened).rejects.toBeInstanceOf(SessionPersistenceCorruptionError)
-    await expect(opened).rejects.toThrow('producer-owned source kind')
+    await expect(opened).rejects.toThrow('producer source kind')
     expect(await readFile(path)).toEqual(bytes)
     expect((await readdir(dirname(path))).filter(name => name !== 'session.lock')).toHaveLength(1)
   })
@@ -51,7 +51,7 @@ describe.each(modes)('native message-source admission ($compression, $access)', 
   it('still validates known queued events marked ignorable', async () => {
     const { ctx, path, bytes } = await stored({}, 'agent/inbox/spliced', true)
     const opened = ctx.sessionPersistence.open(id, access).then(async (handle) => { await handle.close() })
-    await expect(opened).rejects.toThrow('producer-owned source kind')
+    await expect(opened).rejects.toThrow('producer source kind')
     expect(await readFile(path)).toEqual(bytes)
   })
 

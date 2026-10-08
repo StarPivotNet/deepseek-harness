@@ -1,3 +1,4 @@
+import { SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session'
 import { describe, expect, it } from 'vitest'
 import { createSessionFormatCatalogWithChildren, sessionFormatCatalog } from '../src/index.ts'
 
@@ -7,11 +8,11 @@ const child = (id: string) => ({ childId: id, childCreatedAt: 2, descriptorCount
   descriptor: { version: 3, provider: 'spawn', mode: 'one-shot' } })
 
 describe('parent-specific catalog assembly', () => {
-  it('requires explicit children for historical bodies while retaining header and native V4 reads', () => {
+  it('requires explicit children for historical bodies while retaining header and native current reads', () => {
     expect(sessionFormatCatalog.readHeader(header).status).toBe('migration-required')
     expect(() => sessionFormatCatalog.createRestore(header, policy)).toThrow('explicit historical child facts')
     expect(createSessionFormatCatalogWithChildren([]).createRestore(header, policy).finish().events).toEqual([])
-    expect(sessionFormatCatalog.createRestore({ ...header, version: 4 }, policy).finish().events).toEqual([])
+    expect(sessionFormatCatalog.createRestore({ ...header, version: SESSION_FORMAT_VERSION }, policy).finish().events).toEqual([])
   })
 
   it('isolates interleaved restores and child evidence across parent catalogs', () => {

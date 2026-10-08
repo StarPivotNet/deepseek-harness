@@ -6,10 +6,10 @@ import { Session, SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
 import { buildForkSeed } from '@deepseek-ai/dsh-session/fork'
 import { createSessionFormatCatalog } from '@deepseek-ai/dsh-session-format'
-import { restoreReleasedV4Artifact } from '@deepseek-ai/dsh-session-format-v3-to-v4'
-import { sessionFormatCatalogOptions } from '../src/generated.ts'
+import { assertReleasedV4Header, releasedV4SessionFormatCodec, restoreReleasedV4Artifact, sessionFormatV3ToV4 } from '@deepseek-ai/dsh-session-format-v3-to-v4'
 import type { SessionFormatEvent } from '@deepseek-ai/dsh-session-format'
 import { sessionFormatCatalog } from '../src/index.ts'
+import { historicalSessionFormatCatalogOptions } from '../src/historical.ts'
 
 function restore(session: Session): Session {
   const header = { ...session.header, delegationDepth: 0 }
@@ -64,10 +64,15 @@ describe('developer tool history', () => {
     const known = new Set(events.map(event => event.type))
     if (!knowsDeveloper) known.delete('developer/message')
     const catalog = createSessionFormatCatalog({
-      ...sessionFormatCatalogOptions,
+      currentVersion: 4,
+      codecs: [...historicalSessionFormatCatalogOptions.codecs, releasedV4SessionFormatCodec],
+      currentEncoder: releasedV4SessionFormatCodec,
+      migrations: [...historicalSessionFormatCatalogOptions.migrations, sessionFormatV3ToV4],
+      restoreCurrentHeader(candidate) { assertReleasedV4Header(candidate); return candidate },
+      restoreTransformedCurrent: candidate => restoreReleasedV4Artifact(candidate, known),
       restoreCurrent: candidate => restoreReleasedV4Artifact(candidate, known),
     })
-    const reader = catalog.createRestore(sessionFormatCatalog.encodeCurrentHeader(header, 0), { recovery: 'strict', validation: 'current' })
+    const reader = catalog.createRestore(catalog.encodeCurrentHeader(header, 0), { recovery: 'strict', validation: 'current' })
     for (const event of events) reader.decodeRow(event)
     if (knowsDeveloper) expect(() => reader.finish()).toThrow()
     else expect(reader.finish()).toEqual({ header, events, inheritedEventCount: 0 })

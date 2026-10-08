@@ -29,6 +29,7 @@ import { Session } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { BlockAssembler, expandAssistantStream } from '@deepseek-ai/dsh-llm'
 import { SessionFormatError } from '@deepseek-ai/dsh-session-format'
+import { assertV4RowAdmission } from '@deepseek-ai/dsh-session-format-v3-to-v4'
 import type {
   SessionFormatArtifact,
   SessionFormatJsonValue,
@@ -308,7 +309,10 @@ class MigratingJsonlRows {
   private rowIndex = 0
   private issue: Error | undefined
 
-  constructor(private readonly restore: SessionFormatRestore) {}
+  constructor(
+    private readonly restore: SessionFormatRestore,
+    private readonly sourceVersion: number,
+  ) {}
 
   /** Consume plaintext bytes following the independently decoded header. */
   write(chunk: Buffer): void {
@@ -360,6 +364,7 @@ class MigratingJsonlRows {
       return
     }
     if (this.issue !== undefined) {
+      if (this.sourceVersion === 4) assertV4RowAdmission(row)
       if (typeof row === 'object' && row !== null
         && (row as { type?: unknown }).type === 'turn/end') throw this.issue
       return
@@ -387,7 +392,7 @@ async function startMigrationStream(
   const validation = validateHistoricalHeader?.(header)
   if (validation !== undefined) await validation
   const stream = format.createRestore(header)
-  return { parser: new MigratingJsonlRows(stream) }
+  return { parser: new MigratingJsonlRows(stream, sourceVersion) }
 }
 
 async function consumeMigrationBytes(

@@ -38,7 +38,11 @@ export function createSessionFormatV3ToV4(children: readonly SessionFormatJsonVa
   })
 }
 
-class ReleasedV3ToV4Stage implements SessionFormatMigrationStage {
+/**
+ * Convert V3 event bodies to tool-role content and complete child catalogs.
+ * Header version admission belongs to the caller; this stage never changes headers.
+ */
+export class ReleasedV3ToV4Stage implements SessionFormatMigrationStage {
   readonly headerInheritedEventCount?: number
   private readonly candidates: readonly SessionFormatJsonObject[]
   private readonly catalogs: SessionFormatJsonValue[] = []
@@ -52,7 +56,8 @@ class ReleasedV3ToV4Stage implements SessionFormatMigrationStage {
   private time: number
   private foreignDeliverySeq: number | undefined
 
-  constructor(private readonly input: SessionFormatMigrationStageInput, children: readonly SessionFormatJsonValue[]) {
+  constructor(private readonly input: SessionFormatMigrationStageInput, children: readonly SessionFormatJsonValue[],
+    private readonly sourceEventTypes: ReadonlySet<string> = RELEASED_V3_EVENT_TYPES) {
     this.candidates = children.map(childCatalogSource).sort((left, right) =>
       (left['childCreatedAt'] as number) - (right['childCreatedAt'] as number)
       || (left['childId'] === right['childId'] ? 0 : (left['childId'] as string) < (right['childId'] as string) ? -1 : 1))
@@ -94,7 +99,7 @@ class ReleasedV3ToV4Stage implements SessionFormatMigrationStage {
       context.emitEvent(opaque.seq === targetSeq ? opaque : { ...opaque, seq: targetSeq })
       return
     }
-    if (!RELEASED_V3_EVENT_TYPES.has(event.type)) {
+    if (!this.sourceEventTypes.has(event.type)) {
       throw new SessionFormatUnsupportedMigrationError(
         `format v3 contains unknown event type ${JSON.stringify(event.type)} at seq ${event.seq}`,
       )

@@ -1,13 +1,14 @@
 /** Historical restoration for collecting migration prerequisites without recursively opening current Sessions. */
 
 import { RELEASED_V3_EVENT_TYPES } from '@deepseek-ai/dsh-session-format-v3-to-v4'
+import type { SessionFormatCatalogOptions } from '@deepseek-ai/dsh-session-format'
 import { createSessionFormatCatalog } from '@deepseek-ai/dsh-session-format'
 import { releasedV0SessionFormatCodec, releasedV1SessionFormatCodec, sessionFormatV0ToV1 } from '@deepseek-ai/dsh-session-format-v0-to-v1'
 import { releasedV2SessionFormatCodec, sessionFormatV1ToV2 } from '@deepseek-ai/dsh-session-format-v1-to-v2'
 import { assertReleasedV3Header, releasedV3SessionFormatCodec, restoreReleasedV3Artifact, sessionFormatV2ToV3 } from '@deepseek-ai/dsh-session-format-v2-to-v3'
 
 /** V0–V3 decoding for historical child identity; never publishes or completes parent catalogs. */
-export const historicalSessionFormatCatalog = createSessionFormatCatalog({
+export const historicalSessionFormatCatalogOptions: SessionFormatCatalogOptions = {
   currentVersion: 3,
   codecs: [releasedV0SessionFormatCodec, releasedV1SessionFormatCodec, releasedV2SessionFormatCodec, releasedV3SessionFormatCodec],
   currentEncoder: releasedV3SessionFormatCodec,
@@ -18,4 +19,7 @@ export const historicalSessionFormatCatalog = createSessionFormatCatalog({
     assertReleasedV3Header(header)
     return header
   },
-})
+}
+
+/** Frozen upstream V0–V3 catalog for historical child evidence. */
+export const historicalSessionFormatCatalog = createSessionFormatCatalog(historicalSessionFormatCatalogOptions)

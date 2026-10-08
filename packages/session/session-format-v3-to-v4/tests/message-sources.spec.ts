@@ -1,9 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { SessionFormatEventCollector } from '@deepseek-ai/dsh-session-format'
 import type { SessionFormatEvent, SessionFormatJsonObject } from '@deepseek-ai/dsh-session-format'
-import { createSessionFormatCatalogWithChildren, sessionFormatCatalog } from '@deepseek-ai/dsh-session-format-catalog'
+import { createSessionFormatCatalog } from '@deepseek-ai/dsh-session-format'
+import { KNOWN_SESSION_EVENT_TYPES } from '@deepseek-ai/dsh-session'
+import { historicalSessionFormatCatalogOptions } from '../../session-format-catalog/src/historical.ts'
+import { createSessionFormatV3ToV4, restoreReleasedV4Artifact, assertReleasedV4Header } from '../src/index.ts'
 import { assertV4MessageSources, assertV4SourceRowAdmission } from '../src/message-sources.ts'
 import { releasedV4SessionFormatCodec } from '../src/codec.ts'
+
+const sessionFormatCatalog = createSessionFormatCatalog({
+  ...historicalSessionFormatCatalogOptions,
+  currentVersion: 4,
+  codecs: [...historicalSessionFormatCatalogOptions.codecs, releasedV4SessionFormatCodec],
+  currentEncoder: releasedV4SessionFormatCodec,
+  migrations: [...historicalSessionFormatCatalogOptions.migrations, createSessionFormatV3ToV4([])],
+  restoreCurrent: artifact => restoreReleasedV4Artifact(artifact, KNOWN_SESSION_EVENT_TYPES),
+  restoreTransformedCurrent: artifact => restoreReleasedV4Artifact(artifact, KNOWN_SESSION_EVENT_TYPES),
+  restoreCurrentHeader(header) { assertReleasedV4Header(header); return header },
+})
 
 const header = { type: 'session', version: 4, id: 'sources', createdAt: 1, delegationDepth: 0, isSeeded: false }
 function event(source: unknown): SessionFormatEvent {
@@ -11,7 +25,7 @@ function event(source: unknown): SessionFormatEvent {
 }
 
 function restore(source: unknown, version: 3 | 4 = 4) {
-  const reader = createSessionFormatCatalogWithChildren([]).createRestore({ ...header, version }, { recovery: 'strict', validation: 'current' })
+  const reader = sessionFormatCatalog.createRestore({ ...header, version }, { recovery: 'strict', validation: 'current' })
   reader.decodeRow(JSON.parse(JSON.stringify(event(source))))
   return reader.finish()
 }

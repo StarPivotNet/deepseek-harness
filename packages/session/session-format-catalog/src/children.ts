@@ -4,6 +4,7 @@ import { createSessionFormatCatalog } from '@deepseek-ai/dsh-session-format'
 import type { SessionFormatCatalog, SessionFormatJsonValue } from '@deepseek-ai/dsh-session-format'
 import { createSessionFormatV3ToV4, sessionFormatV3ToV4 } from '@deepseek-ai/dsh-session-format-v3-to-v4'
 import { sessionFormatCatalogOptions } from './generated.ts'
+import { withForkAutomationImport } from './fork-automation.ts'
 
 /**
  * Assemble a catalog whose V3→V4 edge knows one parent's historical children.
@@ -12,8 +13,8 @@ import { sessionFormatCatalogOptions } from './generated.ts'
  */
 export function createSessionFormatCatalogWithChildren(children: readonly SessionFormatJsonValue[]): SessionFormatCatalog {
   const migration = createSessionFormatV3ToV4(children)
-  return createSessionFormatCatalog({
+  return withForkAutomationImport(createSessionFormatCatalog({
     ...sessionFormatCatalogOptions,
     migrations: sessionFormatCatalogOptions.migrations.map(edge => edge === sessionFormatV3ToV4 ? migration : edge),
-  })
+  }), sessionFormatCatalogOptions, children)
 }

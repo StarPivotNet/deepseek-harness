@@ -205,6 +205,7 @@ export function renderSessionFormatCatalog(
     "import { createSessionFormatCatalog } from '@deepseek-ai/dsh-session-format'",
     "import type { SessionFormatCatalogOptions } from '@deepseek-ai/dsh-session-format'",
     "import { validateInstalledCurrentSessionArtifact, validateInstalledCurrentSessionHeader } from './current.ts'",
+    "import { withForkAutomationImport } from './fork-automation.ts'",
     ...imports,
     '',
     '/** Static assembly shared by current reads and parent-specific historical restoration. */',
@@ -233,7 +234,9 @@ export function renderSessionFormatCatalog(
     '}',
     '',
     '/** Physical codec dispatch and complete adjacent chain, independent of mounted plugins. */',
-    'export const sessionFormatCatalog = createSessionFormatCatalog(sessionFormatCatalogOptions)',
+    'export const sessionFormatCatalog = withForkAutomationImport(',
+    '  createSessionFormatCatalog(sessionFormatCatalogOptions), sessionFormatCatalogOptions,',
+    ')',
     '',
   ].join('\n')
 }
