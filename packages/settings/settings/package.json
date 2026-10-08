@@ -53,6 +53,7 @@
     "@deepseek-ai/dsh-config-editor": "workspace:*",
     "@deepseek-ai/cordis-plugin-loader": "workspace:~",
     "@deepseek-ai/cosmokit": "workspace:~",
-    "yaml": "^2.8.1"
+    "yaml": "^2.8.1",
+    "@deepseek-ai/dsh-atomic-write": "workspace:*"
   }
 }

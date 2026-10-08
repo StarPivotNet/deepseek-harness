@@ -34,6 +34,8 @@ kind: "package-reference"
 
 Settings 启动后、Loader 完成所有条目的加载时，早期版本留在 harness home 中的 `settings.yaml` 会被导入一次：每个 section 写入同名条目（`ui-developer-tools` → `ui-settings`、`ui-onboarding` → `ui-settings-general`、`shell` → 当前平台的 shell 执行器条目），文件在第一次写入前改名为 `settings.yaml.imported`，被当前组合拒绝的 section 会记录日志并只保留在改名后的文件中。
 
+调用 `register(namespace, schema, { base })` 的插件使用持久化命名空间偏好。取值按 schema 默认值、组合 `base`、用户覆盖的顺序解析。已有 `settings.yaml` 或 `settings.yaml.imported` 中的值仍可读取；写入使用 harness home 下加锁并原子替换的 `settings-namespaces.yaml`。`describe`、带修订号的 `update`、`replace` 和路径 `mutate` 通过同一设置 API 操作这些命名空间。作用域监听器接收已提交写入和外部文件变更；注册 fiber 卸载时移除对应命名空间和监听器。命名空间偏好不改变从 Config 派生的配置表单。
+
 重置恢复 profile 覆盖层以下的值，包括 schema 默认值。Home patch 和命令行 overlay 优先级更高；表单写入若会被它们覆盖，则被拒绝。
 
 每个表单报告 `autoGenerate`（默认开启），供按 schema 生成页面的客户端使用；目前没有已发布的客户端这样做。自带页面的插件在 `apply` 中于可选的 `ctx.inject(['settings'], ...)` 子级内以 effect 注册 `configure({ auto: false }, ctx.fiber)`：子级指明策略所属的插件 fiber，迟加载或被替换的 Settings 服务也会采用该策略，业务插件无需 Settings 即可运行。策略不移除配置读写。

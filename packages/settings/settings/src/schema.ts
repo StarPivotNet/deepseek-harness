@@ -16,7 +16,11 @@ export function plainConfig(value: unknown): unknown {
   return value
 }
 
-function plainSchema(schema: z): z {
+/** Remove runtime modifiers and secret defaults from a form schema.
+ * @param schema Schema to expose to a settings client.
+ * @returns Detached schema without secret defaults.
+ */
+export function plainSchema(schema: z): z {
   const result = new z(schema.toJSON())
   const walk = (node: z): void => {
     delete node.meta.volatile

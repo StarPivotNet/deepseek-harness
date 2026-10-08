@@ -18,7 +18,8 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import FileSettingsProvider from '@deepseek-ai/dsh-settings-file'
+import Settings from '@deepseek-ai/dsh-settings'
+import ConfigEditor from '@deepseek-ai/dsh-config-editor'
 import { afterEach, describe, expect, it } from 'vitest'
 import AgentPresets, { COMPOSITION_FILE, SETTINGS_NAMESPACE } from '@deepseek-ai/dsh-agent-presets'
 
@@ -28,7 +29,9 @@ const NS = SETTINGS_NAMESPACE
 
 /** Every temp root created by this file, removed after each test. */
 const roots: string[] = []
+const contexts: Context[] = []
 afterEach(async () => {
+  for (const ctx of contexts.splice(0)) await ctx.fiber.dispose()
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
 })
 
@@ -45,6 +48,7 @@ async function harness(
   await writeFile(settingsFile, '{}\n')
 
   const ctx = new Context()
+  contexts.push(ctx)
   ctx.baseUrl = pathToFileURL(FIXTURES).href + '/'
   await ctx.plugin(Loader)
   ctx.loader.builtins.include = Include
@@ -55,7 +59,13 @@ async function harness(
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(AgentLoop, { agents: [] })
-  const settingsFiber = ctx.plugin(FileSettingsProvider, { path: settingsFile, watch: false })
+  ctx.provide('profileContext', {
+    home, name: 'test', dir: home, patchPath: join(home, 'cordis.patch.yml'),
+    cwd: home, overlays: [], startedBundles: [], installAnchor: join(home, 'package.json'),
+    telemetryDisabledEnv: undefined,
+  })
+  await ctx.plugin(ConfigEditor)
+  const settingsFiber = ctx.plugin(Settings)
   await settingsFiber
   await ctx.plugin(AgentPresets, { default: 'standard', roots: [...ROOTS, ...extraRoots], includeShippedRoot: false, includeUserRoot: false })
   return { ctx, settingsFile, settingsFiber }

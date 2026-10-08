@@ -1,5 +1,6 @@
-/** Config-schema projection and form edits over Cordis profile patches. */
-import { existsSync } from 'node:fs'
+/** Config forms over profile patches and durable registered namespace preferences. */
+import { existsSync, readFileSync, watch } from 'node:fs'
+import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import { readFile, rename } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse } from 'yaml'
@@ -9,7 +10,7 @@ import { interpolate, type Entry } from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-config-editor'
 import type {} from '@deepseek-ai/dsh-app-boot'
 import { redactSecrets, type RedactedSecret } from './redact.ts'
-import { isVolatilePath, plainConfig, projectForm, volatileForm } from './schema.ts'
+import { isVolatilePath, plainConfig, plainSchema, projectForm, volatileForm } from './schema.ts'
 import type { SettingsNamespace } from './types.ts'
 
 export { redactSecrets } from './redact.ts'
@@ -154,7 +155,7 @@ export function installSettingsSection<T>(
 }
 
 
-/** One Loader entry's live Config fields. */
+/** One profile entry or registered namespace and its current settings. */
 export interface SettingsDescriptor {
   ns: SettingsNamespace
   /** Whether the UI may generate a page when no custom page exists. */
@@ -357,6 +358,15 @@ function inheritedConfig(runtime: Fiber['runtime'] & object, inherited: unknown)
   }
 }
 
+interface NamespaceRegistration {
+  schema: z<unknown>
+  base: Record<string, unknown>
+  user: Record<string, unknown>
+  value: unknown
+  revision: number
+  watchers: Set<(next: unknown, prev: unknown) => void | Promise<void>>
+}
+
 /** Project Config schemas into forms and own optional instance-level UI policy. */
 export class SettingsForms extends Service {
   static inject = ['configEditor', 'profileContext']
@@ -364,13 +374,21 @@ export class SettingsForms extends Service {
   private closed = false
   private scheduled = false
   private readonly presentations = new Map<Fiber, { auto?: boolean }>()
-  private readonly scopes = new Map<string, { value: unknown }>()
+  private readonly scopes = new Map<string, NamespaceRegistration>()
 
   constructor(private readonly ownerContext: Context) {
     super(ownerContext, 'settings')
     const ctx = ownerContext
     ctx.effect(() => () => { this.closed = true })
     ctx.on('app-boot/config-reload', () => { this.invalidate() })
+    ctx.effect(() => {
+      const watcher = watch(ctx.profileContext.home, (_event, filename) => {
+        if (this.closed || !['settings.yaml', 'settings.yaml.imported', 'settings-namespaces.yaml'].includes(String(filename))) return
+        try { this.refreshNamespaces() } catch (error) { ctx.logger.warn(error) }
+      })
+      watcher.on('error', (error) => { ctx.logger.warn(error) })
+      return () => { watcher.close() }
+    })
     void ctx.root.loader.await().then(() => this.importLegacyDocument()).catch((error: unknown) => { ctx.logger.error(error) })
   }
 
@@ -415,30 +433,111 @@ export class SettingsForms extends Service {
     }
   }
 
-  /**
-   * Fork-era namespace registration. Official 0.1.7 settings project live Config
-   * through profile forms, so this keeps an in-memory scope for StarPivot plugins
-   * that still call register/get.
+  /** Register a durable namespace owned by the calling fiber.
+   * @param ns Unique namespace, distinct from a configurable profile entry.
+   * @param schema Schema supplying defaults and validating stored values.
+   * @param options Composition values beneath user overrides.
+   * @returns A live scope; watches and registration end with the calling fiber.
    */
-  register<T>(_ns: string, _schema: unknown, options?: { base?: Partial<T> }): SettingsScope<T> {
-    const ns = String(_ns)
-    const current = (options?.base ?? {}) as T
-    this.scopes.set(ns, { value: current })
+  register<T>(ns: string, schema: z<T>, options?: { base?: Partial<T> }): SettingsScope<T> {
+    settingsNamespace(ns)
+    if (this.scopes.has(ns)) throw new Error(`Settings namespace "${ns}" is already registered`)
+    const base = cloneJsonShaped(options?.base ?? {})
+    const stored = this.namespaceDocument()[ns] ?? {}
+    const value = (schema as z<unknown>)(mergeLayers(base, stored))
+    const owner = this.ctx
+    const row: NamespaceRegistration = {
+      schema: schema as z<unknown>, base, user: cloneJsonShaped(stored), value, revision: 0,
+      watchers: new Set(),
+    }
+    owner.effect(() => {
+      this.scopes.set(ns, row)
+      this.ownerContext.emit('settings/document-updated', settingsNamespace(ns), row.revision)
+      return () => {
+        if (this.scopes.get(ns) !== row) return
+        this.scopes.delete(ns)
+        row.watchers.clear()
+        this.ownerContext.emit('settings/document-updated', settingsNamespace(ns), row.revision + 1)
+      }
+    })
     return {
-      get: () => this.scopes.get(ns)?.value as T,
-      watch: () => () => {},
-      update: async (patch: object) => {
-        const prev = (this.scopes.get(ns)?.value ?? {}) as Record<string, unknown>
-        this.scopes.set(ns, { value: { ...prev, ...patch } })
-      },
-      replace: async (section: object) => {
-        this.scopes.set(ns, { value: section })
-      },
+      get: () => this.get<T>(ns) as T,
+      watch: callback => owner.effect(() => {
+        const listener = callback as (next: unknown, prev: unknown) => void | Promise<void>
+        row.watchers.add(listener)
+        return () => { row.watchers.delete(listener) }
+      }),
+      update: patch => this.update(ns, patch),
+      replace: section => this.replace(ns, section),
     }
   }
 
+  /** Read a registered namespace with defaults and composition values resolved.
+   * @param ns Registered namespace.
+   * @returns Current value, or undefined when its owner is absent.
+   */
   get<T>(ns: string): T | undefined {
+    this.refreshNamespaces()
     return this.scopes.get(ns)?.value as T | undefined
+  }
+
+  private namespaceDocument(): Record<string, unknown> {
+    const home = this.ownerContext.profileContext.home
+    const read = (path: string): Record<string, unknown> | undefined => {
+      let text: string
+      try { text = readFileSync(path, 'utf8') }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+        throw error
+      }
+      const parsed: unknown = parse(text)
+      if (parsed === null) return {}
+      if (!isPlainObject(parsed)) throw new TypeError('Settings document must contain a mapping')
+      return parsed
+    }
+    return { ...(read(join(home, 'settings.yaml')) ?? read(join(home, 'settings.yaml.imported')) ?? {}),
+      ...read(join(home, 'settings-namespaces.yaml')) }
+  }
+
+  private publishNamespace(ns: string, row: NamespaceRegistration, user: Record<string, unknown>): void {
+    const value = row.schema(mergeLayers(row.base, user))
+    if (JSON.stringify(row.user) === JSON.stringify(user)) return
+    const prev = row.value
+    row.user = user
+    row.value = value
+    row.revision += 1
+    for (const listener of row.watchers) {
+      try { void Promise.resolve(listener(value, prev)).catch((error: unknown) => { this.ownerContext.logger.warn(error) }) }
+      catch (error) { this.ownerContext.logger.warn(error) }
+    }
+    this.ownerContext.emit('settings/document-updated', settingsNamespace(ns), row.revision)
+  }
+
+  private refreshNamespaces(): void {
+    if (this.scopes.size === 0) return
+    const document = this.namespaceDocument()
+    for (const [ns, row] of this.scopes) this.publishNamespace(ns, row, cloneJsonShaped(document[ns] ?? {}))
+  }
+
+  private async writeNamespace(
+    ns: string,
+    change: (current: Record<string, unknown>, row: NamespaceRegistration) => Record<string, unknown>,
+    expected?: number,
+  ): Promise<void> {
+    const path = join(this.ownerContext.profileContext.home, 'settings-namespaces.yaml')
+    await withFileLock(path, async () => {
+      const row = this.scopes.get(ns)
+      if (row === undefined) throw new Error(`Settings namespace "${ns}" is not registered`)
+      const document = this.namespaceDocument()
+      this.publishNamespace(ns, row, cloneJsonShaped(document[ns] ?? {}))
+      if (expected !== undefined && row.revision !== expected) {
+        throw new SettingsConflictError(settingsNamespace(ns), expected, row.revision)
+      }
+      const next = cloneJsonShaped(change(row.user, row))
+      row.schema(mergeLayers(row.base, next))
+      await writeFileAtomic(path, `${JSON.stringify({ ...document, [ns]: next }, null, 2)}\n`, { mode: 0o600, dirMode: 0o700 })
+      if (this.scopes.get(ns) === row) this.publishNamespace(ns, row, next)
+    })
   }
 
   private invalidate(): void {
@@ -501,35 +600,50 @@ export class SettingsForms extends Service {
       this.revisions.set(id, { ...previous, raw: undefined, revision })
       this.ownerContext.emit('settings/document-updated', previous.ns, revision)
     }
-    return descriptors
+    this.refreshNamespaces()
+    return [...descriptors, ...[...this.scopes].map(([ns, row]) => {
+      const redact = (value: unknown) => options?.redactSecrets ? redactSecrets(row.schema as z<never>, value).value : value
+      return {
+        ns: settingsNamespace(ns), autoGenerate: false, schema: plainSchema(row.schema).toJSON(),
+        value: redact(row.value), base: redact(row.base), user: redact(row.user),
+        revision: row.revision, applies: 'live' as const,
+        secrets: redactSecrets(row.schema as z<never>, row.value).secrets,
+      }
+    })]
   }
 
   /** Merge editable fields into an entry's config.
-   * @param ns Profile entry id.
+   * @param ns Profile entry id or registered namespace.
    * @param patch Fields to merge.
    * @param expectedRevision Revision returned by describe.
    */
   async update(ns: string, patch: object, expectedRevision?: number): Promise<void> {
     const input = cloneJsonShaped(patch)
+    if (this.scopes.has(ns)) {
+      return this.writeNamespace(ns, current => mergeLayers(current, input) as Record<string, unknown>, expectedRevision)
+    }
     await this.write(ns, current => mergeLayers(current, input) as Record<string, unknown>, expectedRevision)
   }
 
   /** Reset all live fields, then set the supplied fields; ordinary config is preserved.
-   * @param ns Profile entry id.
+   * @param ns Profile entry id or registered namespace.
    * @param section Complete form values.
    * @param expectedRevision Revision returned by describe.
    */
   async replace(ns: string, section: object, expectedRevision?: number): Promise<void> {
     const input = cloneJsonShaped(section)
+    if (this.scopes.has(ns)) return this.writeNamespace(ns, () => input, expectedRevision)
     await this.write(ns, (_current, base) => mergeLayers(base, input) as Record<string, unknown>, expectedRevision)
   }
 
   /** Apply field edits without restating redacted secrets; unsetting an array index removes its element.
-   * @param ns Profile entry id.
+   * @param ns Profile entry id or registered namespace.
    * @param ops Ordered form edits.
    * @param expectedRevision Revision returned by describe.
    */
   async mutate(ns: string, ops: readonly SettingsPathOp[], expectedRevision?: number): Promise<void> {
+    if (this.scopes.has(ns)) return this.writeNamespace(ns, (current, row) => ops.reduce(
+      (value, op) => applyPathOp(value, op, row.schema), current), expectedRevision)
     await this.write(ns, (current, base, schema) => ops.reduce((value, op) => {
       if (op.op === 'set') return applyPathOp(value, op, schema)
       const parent = op.path.slice(0, -1).reduce<unknown>((node, key) => member(node, key), value)

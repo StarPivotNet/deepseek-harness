@@ -28,6 +28,9 @@
     },
     {
       "path": "../../../vendor/loader"
+    },
+    {
+      "path": "../../util/atomic-write"
     }
   ]
 }
