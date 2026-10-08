@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Start with [PROJECT_STATUS.md](PROJECT_STATUS.md) for scoped context. DeepSeek Harness is an all-plugin Cordis agent harness. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; follow [docs/AGENTS.md](docs/AGENTS.md) for documentation.
+After these instructions, follow [PROJECT_STATUS.md](PROJECT_STATUS.md#incremental-workflow): read task-owned context, preserve compatibility constraints, implement only authorized scope, run relevant checks, and update only changed knowledge. DeepSeek Harness is an all-plugin Cordis agent harness. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; follow [docs/AGENTS.md](docs/AGENTS.md) for documentation.
 
 ## Pre-stable APIs and released Session data
 
