@@ -333,7 +333,7 @@ export abstract class AttachmentStore extends Service {
    * The returned reference describes the persisted bytes exactly: version one
    * stores submitted video untransformed. The default refuses video on
    * image-only deployments; video-capable implementations override this.
-   * @param input - submitted bytes, declared media type, and optional display name.
+   * @param _input - submitted bytes, declared media type, and optional display name.
    * @returns the durable content-addressed video reference.
    */
   saveVideo(_input: SaveVideoAttachment): Promise<VideoAttachmentRef> {

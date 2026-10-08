@@ -235,6 +235,11 @@ export class WorkspaceController extends TypertRemoteService {
     return this.commands.show(request.workspaceId)
   }
 
+  /**
+   * Stream the workspace snapshot and subsequent workspace changes.
+   * @param signal - Cancellation ending the subscription.
+   * @returns A complete baseline followed by ordered workspace changes.
+   */
   @Remote({ mode: 'stream' })
   follow(signal: AbortSignal): AsyncIterable<WorkspaceFollowFrame> {
     return this.feed.follow(signal)
