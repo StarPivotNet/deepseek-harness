@@ -4,7 +4,7 @@ kind: "package-reference"
 ---
 
 # @deepseek-ai/dsh-client-connection
-Dedicated RPC channels reject duplicate registrations immediately. Their HTTP routes mount when the Web carrier is available and are removed with the registering caller; consumers inject Connection without depending on `webServer`.
+Dedicated RPC channels reject duplicate registrations immediately. Their HTTP routes mount when the Web carrier is available and are removed with the registering caller fiber; consumers inject Connection without depending on `webServer`.
 
 
 English | [中文](README.zh.md)

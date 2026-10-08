@@ -4,7 +4,7 @@ kind: "package-reference"
 ---
 
 # @deepseek-ai/dsh-client-connection
-专用 RPC 通道会立即拒绝重复注册。HTTP 路由在 Web 载体可用时挂载，并随注册调用方卸载；消费者注入 Connection 即可，无需依赖 `webServer`。
+专用 RPC 通道会立即拒绝重复注册。HTTP 路由在 Web 载体可用时挂载，并随注册调用方的 fiber 卸载；消费者注入 Connection 即可，无需依赖 `webServer`。
 
 
 [English](README.md) | 中文
