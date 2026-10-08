@@ -65,6 +65,7 @@ export class HostConnectionService extends Service implements HostConnectionHand
   readonly operator: PeerScope
   private readonly interceptors = new Map<string, ConnectionRpcInterceptor>()
   private readonly fetchRoutes = new Map<string, RegisteredFetchRoute>()
+  private readonly channels = new Set<string>()
 
   /**
    * Provide the Host half over the active HTTP server.
@@ -188,10 +189,20 @@ export class HostConnectionService extends Service implements HostConnectionHand
         await bridge(req, res, fetchHandler)
       },
     }
-    return owner.effect(
-      () => owner.webServer.register(route),
-      `client-connection: ${channel} rpc channel`,
-    )
+    return owner.effect(() => {
+      if (this.channels.has(channel)) throw new Error(`connection: duplicate route ${channel}`)
+      const fiber = owner.inject(['webServer'], (webCtx) => {
+        webCtx.effect(
+          () => webCtx.webServer.register(route),
+          `client-connection: ${channel} rpc channel`,
+        )
+      })
+      this.channels.add(channel)
+      return async () => {
+        await fiber.dispose()
+        this.channels.delete(channel)
+      }
+    }, `client-connection: ${channel} rpc registration`)
   }
 
   private registerInterceptor(

@@ -361,6 +361,7 @@ describe('connection node half', () => {
       calls.push({ endpoint, payload })
       return { ok: true, value: { accepted: true } }
     })
+    await new Promise(resolve => setImmediate(resolve))
     const route = routes.find(candidate => candidate.path === '/rpc')
     expect(route).toBeDefined()
 
@@ -546,6 +547,7 @@ describe('connection node half', () => {
       if (endpoint === 'fail') throw new Error('handler broke')
       return { ok: true, value: null }
     })
+    await new Promise(resolve => setImmediate(resolve))
     const route = routes.find(candidate => candidate.path === '/rpc')!
     const harnessHeaders = {
       host: 'harness.example',

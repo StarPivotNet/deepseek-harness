@@ -4,7 +4,7 @@
 
 web profile 随安装内置的**插件市场**。启动后，设置 → 插件变为发现、已安装，以及随附的配置卡片。发现页会立即读取上次缓存的目录，再在后台从随附 Host 路径 `/plugin-catalog/catalog.json` 刷新（由 [`dsh-host-plugin-catalog`](../../host/plugin-catalog/README.zh.md) 提供）。运营者仍可继续添加更多 http(s) 目录 URL。
 
-Host 半侧（`./host`，Loader id `plugin-marketplace`）在 `/plugin-marketplace` 注册回环 Connection RPC 通道，以及 `/reload`、`/update`、`/reboot` 命令。浏览器半侧（`./client`，Loader id `ui-settings-plugin-marketplace`）通过 `settings.plugins.tab` 槽把发现、已安装两页作为标签注册到插件设置页；其包入口是空的 Host `apply`，因此该行不会把 RPC 通道再注册一次。安装只接受一个 npm 注册表包名。路径、`file:` 和 git spec 会被拒绝。
+Host 半侧（`./host`，Loader id `plugin-marketplace`）在 `/plugin-marketplace` 注册回环 Connection RPC 通道，以及 `/reload`、`/update`、`/reboot` 命令。浏览器半侧（`./client`，Loader id `ui-settings-plugin-marketplace`）通过 `settings.plugins.tab` 槽把发现、已安装两页作为标签注册到插件设置页；其包入口是空的 Host `apply`，因此该行不会把 RPC 通道再注册一次。安装只接受一个 npm 注册表包名。路径、`file:` 和 git spec 会被拒绝。 Host 通过 `profileContext` 读取 CLI 当前配置档。
 
 ## 模型体验
 
