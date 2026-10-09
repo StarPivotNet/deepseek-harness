@@ -71,22 +71,6 @@ interface PromptSection {
 }
 ```
 
-`RegisteredPromptSection` 是一条已注册段在列表中的已求值行。`listSections()` 按拼接顺序返回这些行，且不运行完整组装。
-
-```ts type-equiv
-/** One registered prompt section with its text resolved for a listing. */
-interface RegisteredPromptSection {
-  /** The contributing section's unique name. */
-  name: string
-  /** Concatenation order; lower values render first. */
-  order: number
-  /** The resolved (but not yet interpolated) section text. */
-  text: string
-  /** Whether this contribution is a complete system prompt. */
-  complete: boolean
-}
-```
-
 ## 动态提示词上下文
 
 `PromptContext` 是与 `PromptSection` 对应的缓存安全结构。组装会解析这些贡献并排序；agent loop（智能体循环）仅在完整当前快照发生变化或被压缩（compaction）移除时，才会将其记录在保留的模型历史之后。
@@ -98,8 +82,26 @@ interface PromptContext {
   readonly name: string
   /** Contexts are joined in ascending order. */
   readonly order: number
-  /** Static text or a provider evaluated for each assembly. Empty text contributes nothing. */
+  /** Static text or a provider evaluated at assembly and admission refresh. Empty text contributes nothing. */
   readonly text: string | ((context: AssembleContext) => string)
+  /** Whether to interpolate prompt variables. Defaults to true; false preserves literal text. */
+  readonly interpolate?: boolean
+  /** Keep this operational context when optional runtime context is disabled. */
+  readonly required?: boolean
+}
+```
+
+`required: true` 在可选运行时上下文被抑制时保留操作所需的贡献。`interpolate: false` 原样保留文本，包括看起来像变量的目录名。`AssembledContext` 将已求值文本及其插值选择传给渲染过程。
+
+```ts type-equiv
+/** One resolved dynamic context contribution. */
+interface AssembledContext {
+  /** The contributing context's unique name. */
+  name: string
+  /** The resolved text before variable interpolation. */
+  text: string
+  /** Whether to interpolate prompt variables. Defaults to true; false preserves literal text. */
+  interpolate?: boolean
 }
 ```
 
@@ -151,7 +153,7 @@ getContextOrder(name: PromptContextOrderName): number
 context(context: PromptContext): () => void
 
 /**
- * Suppress every dynamic runtime-context contribution in the calling
+ * Suppress optional dynamic runtime-context contributions in the calling
  * context's scope without changing the services that own or enforce those
  * facts. Multiple suppressors remain independently disposable.
  * @returns the exact Cordis effect disposer.
@@ -178,58 +180,28 @@ tools(provider: (context: AssembleContext) => ToolProviderResult): () => void
 variable(name: string, provider: (context: AssembleContext) => string | undefined): () => void
 
 /**
- * Register a transform that runs after the assembly waterfall and after an
- * effective complete section is restored. Use this when a contribution must
- * see — and may replace — the prompt the model would otherwise receive.
- * Registration and disposal emit `system-prompt/change`.
- * @param hook - receives the post-restore assembly and returns the next one.
- * @returns the exact Cordis effect disposer.
+ * Refresh accepted registered runtime facts for request admission. Contexts
+ * added only by the assembly waterfall retain their accepted values. Current
+ * suppression removes optional contexts, and missing required registrations
+ * are restored in registry order. Sections, tools, and interpolation variables
+ * retain the accepted assembly; their providers and waterfall do not rerun.
+ * @param assembly - accepted assembly for this scope and step.
+ * @param context - the same scope and current plugin-defined assembly fields.
+ * @returns the accepted assembly with current runtime-context provider text.
  */
-afterAssemble(hook: AfterAssemble): () => void
-
-/**
- * List the effective registered prompt sections for one scope, in
- * concatenation order, with each section's text resolved. This is the
- * registry view, not a full assembly: tools, contexts, the assemble
- * waterfall, complete-section restore, and afterAssemble hooks do not run.
- * A function provider is evaluated with the supplied context, so a listing
- * without a scope shows only global sections.
- * @param context - the optional scope and plugin-defined assembly fields.
- * @returns the merged, ordered, text-resolved registered sections.
- */
-listSections(context: AssembleContext = {}): RegisteredPromptSection[]
+refreshContext(assembly: PromptAssembly, context: AssembleContext = {}): PromptAssembly
 
 /**
  * Assemble global and scoped providers, detach tool parameters, apply
  * canonical ordering, then run the assembly waterfall. Scoped sections and
  * variables shadow globals. The returned waterfall value is authoritative
  * except that an effective complete section is restored afterwards as the
- * sole prompt section. Registered {@link afterAssemble} hooks then run in
- * registration order and may replace that restored prompt.
+ * sole prompt section.
  * @param context - the optional scope and plugin-defined assembly fields.
- * @returns the post-waterfall assembly with any complete prompt enforced
- *   and after-assemble hooks applied.
+ * @returns the post-waterfall assembly with any complete prompt enforced.
  */
 async assemble(context: AssembleContext = {}): Promise<PromptAssembly>
 ```
-
-Source: [`packages/core/system-prompt/src/index.ts:361`](../../packages/core/system-prompt/src/index.ts)
-
-<a id="ctxusersystemprompts--usersystemprompts"></a>
-
-### `ctx.userSystemPrompts` — `UserSystemPrompts`
-
-Owns the user prompt library, registered-section replacements, and per-model assembly after cooperative prompt assembly.
-
-```ts cordis-catalog
-/**
- * Read the current library, bindings, and registered-section replacements.
- * @returns a detached snapshot of the resolved settings section.
- */
-current(): UserSystemPromptsSettings
-```
-
-Source: [`packages/core/user-system-prompts/src/index.ts:219`](../../packages/core/user-system-prompts/src/index.ts)
 
 Source: [`packages/core/system-prompt/src/index.ts`](../../packages/core/system-prompt/src/index.ts)
 
@@ -241,7 +213,7 @@ Source: [`packages/core/system-prompt/src/index.ts`](../../packages/core/system-
 
 #### `system-prompt/assemble` — waterfall
 
-Expert waterfall over the assembled sections, contexts, tools, and variables. Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): scoped listeners receive only that scope's assemblies. The returned value is authoritative. A supplied signal controls only this explicit assembly request and must not be retained to control later turns. A registered complete section is restored after this waterfall, so listeners cannot add to or replace that scope's system prompt. Registered `afterAssemble` hooks then run and may replace the restored prompt.
+Expert waterfall over the assembled sections, contexts, tools, and variables. Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): scoped listeners receive only that scope's assemblies. The returned value is authoritative. A supplied signal controls only this explicit assembly request and must not be retained to control later turns. A registered complete section is restored after this waterfall, so listeners cannot add to or replace that scope's system prompt.
 
 ```ts cordis-catalog
 /**
@@ -251,8 +223,7 @@ Expert waterfall over the assembled sections, contexts, tools, and variables. Sc
  * A supplied signal controls only this explicit assembly request and must not
  * be retained to control later turns. A registered complete section is
  * restored after this waterfall, so listeners cannot add to or replace
- * that scope's system prompt. Registered `afterAssemble` hooks then run
- * and may replace the restored prompt.
+ * that scope's system prompt.
  * @param assembly - the mutable assembly built from registered providers.
  * @param context - the caller's per-assembly context.
  * @mode waterfall
@@ -261,8 +232,6 @@ Expert waterfall over the assembled sections, contexts, tools, and variables. Sc
 ```
 
 Types: [Scoped](scope.zh.md)
-
-Source: [`packages/core/system-prompt/src/index.ts:32`](../../packages/core/system-prompt/src/index.ts)
 
 Source: [`packages/core/system-prompt/src/index.ts`](../../packages/core/system-prompt/src/index.ts)
 
@@ -280,8 +249,6 @@ Emitted when any prompt provider changes. This registry notification is unfilter
  */
 'system-prompt/change'(): void
 ```
-
-Source: [`packages/core/system-prompt/src/index.ts:38`](../../packages/core/system-prompt/src/index.ts)
 
 Source: [`packages/core/system-prompt/src/index.ts`](../../packages/core/system-prompt/src/index.ts)
 <!-- END GENERATED cordis-surface -->

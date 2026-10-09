@@ -24,7 +24,7 @@
       "path": "../../core/session"
     },
     {
-      "path": "../../sandbox/sandbox-policy"
+      "path": "../../session/session-projection"
     },
     {
       "path": "../../core/tools"
@@ -36,7 +36,10 @@
       "path": "../../util/home-paths"
     },
     {
-      "path": "../../session/session-projection"
+      "path": "../../session/working-directory"
+    },
+    {
+      "path": "../../sandbox/sandbox-policy"
     }
   ]
 }

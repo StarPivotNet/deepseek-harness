@@ -3,12 +3,12 @@
  * @module @deepseek-ai/dsh-tool-bash-persistent
  */
 
+import type {} from '@deepseek-ai/dsh-working-directory'
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { truncateWithoutSplittingSurrogatePair } from '@deepseek-ai/dsh-output-retention'
-import { sessionWorkingDirectory } from '@deepseek-ai/dsh-sandbox-policy'
 import type { TerminalReadResult, TerminalSessionId } from '@deepseek-ai/dsh-terminal'
 import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -254,10 +254,10 @@ function persistentShells(ctx: Context, config: ResolvedConfig): PersistentShell
     const combinedSignal = AbortSignal.any([signal, lifecycle.signal])
     const creation = (async () => {
       try {
-        const cwd = sessionWorkingDirectory(owner.session)
+        const cwd = await ctx.workingDirectory.ensure(owner, combinedSignal)
         const spawned = await ctx.terminals.spawn(owner, {
           type: config.backendType,
-          ...cwd === undefined ? {} : { cwd },
+          cwd,
         }, combinedSignal)
         live.set(owner, spawned.sessionId)
         if (!ownerCleanupInstalled.has(owner)) {
@@ -439,7 +439,7 @@ function registerPersistentBash(ctx: Context, config: ResolvedConfig): void {
 }
 
 export const name = 'tool-bash-persistent'
-export const inject = ['tools', 'terminals']
+export const inject = ['tools', 'terminals', 'workingDirectory']
 
 /** Configuration for the persistent Bash tool. */
 export interface Config {

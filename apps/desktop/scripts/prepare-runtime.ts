@@ -1,14 +1,15 @@
-/** Prepare the target Electron distribution and pinned pnpm CLI. */
+/** Prepare Desktop resources and publish their versions after every preparation stage succeeds. */
 
-import { packagingStep } from './packaging-step.mjs'
 import { execFileSync } from 'node:child_process'
-import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 import { downloadArtifact } from '@electron/get'
 import extractZip from 'extract-zip'
-import { resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
+import { readPrimaryRuntime } from '../../../packages/skill/tool-workspace-dependencies/src/index.ts'
+import { desktopTargetPlatform, resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
+import { packagingStep } from './packaging-step.mjs'
 import { preparePrimaryRuntime } from './prepare-primary-runtime.ts'
 import { prepareDesktopCli } from './prepare-cli.ts'
 import { prepareCommandLink } from './prepare-command-link.ts'
@@ -16,29 +17,10 @@ import { prepareCommandLink } from './prepare-command-link.ts'
 const BUILD_PATHS = resolveDesktopTargetBuildPaths()
 const RUNTIME_ROOT = BUILD_PATHS.runtime
 
-function preparePnpm(): string {
-  const require = createRequire(import.meta.url)
-  const manifestPath = require.resolve('pnpm')
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { version?: unknown }
-  if (typeof manifest.version !== 'string') throw new Error('desktop runtime: pnpm manifest has no version')
-  const packageDir = dirname(manifestPath)
-  const destination = join(RUNTIME_ROOT, 'pnpm')
-  rmSync(destination, { recursive: true, force: true })
-  cpSync(packageDir, destination, { recursive: true })
-  // In-Host profile management (plugin marketplace installs) resolves pnpm
-  // from PATH by executable name; the npm package only ships JS entries.
-  const binDir = join(destination, 'bin')
-  const unixEntry = join(binDir, 'pnpm')
-  writeFileSync(unixEntry, '#!/bin/sh\nexec "$(dirname "$0")/../../node/node" "$(dirname "$0")/pnpm.cjs" "$@"\n', { mode: 0o755 })
-  writeFileSync(join(binDir, 'pnpm.cmd'), '@echo off\r\n"%~dp0..\\..\\node\\node.exe" "%~dp0pnpm.cjs" %*\r\n')
-  return manifest.version
-}
+type DesktopTarget = ReturnType<typeof desktopTargetPlatform>
 
-async function main(): Promise<void> {
-  const { values } = parseArgs({ options: { 'defer-primary-runtime-smoke': { type: 'boolean', default: false } } })
-  const target = resolveDesktopBuildTarget()
-  const platform = target.startsWith('mac-') ? 'darwin' : target.startsWith('linux-') ? 'linux' : 'win32'
-  const arch = target.endsWith('arm64') ? 'arm64' : 'x64'
+/** Extract the target Electron distribution and return its embedded Node version. */
+async function prepareElectron({ platform, arch }: DesktopTarget): Promise<string> {
   const require = createRequire(import.meta.url)
   const { version } = require('electron/package.json') as { version: string }
   const archive = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'download:electron',
@@ -46,42 +28,62 @@ async function main(): Promise<void> {
   rmSync(BUILD_PATHS.electron, { recursive: true, force: true })
   await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'extract:electron', () => extractZip(archive, { dir: BUILD_PATHS.electron }))
   const executable = join(BUILD_PATHS.electron, platform === 'win32' ? 'electron.exe' : platform === 'linux' ? 'electron' : 'Electron.app/Contents/MacOS/Electron')
-  const nodeVersion = execFileSync(executable, ['-p', 'process.versions.node'], {
+  return execFileSync(executable, ['-p', 'process.versions.node'], {
     encoding: 'utf8', env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
   }).trim()
-  const macosMinimumVersion = platform === 'darwin' ? execFileSync('/usr/libexec/PlistBuddy',
-    ['-c', 'Print LSMinimumSystemVersion', join(BUILD_PATHS.electron, 'Electron.app', 'Contents', 'Info.plist')], { encoding: 'utf8' }).trim() : undefined
-  rmSync(RUNTIME_ROOT, { recursive: true, force: true })
-  mkdirSync(RUNTIME_ROOT, { recursive: true })
-  const pnpmVersion = preparePnpm()
+}
+
+function prepareCli({ platform, arch }: DesktopTarget): void {
   cpSync(join(import.meta.dirname, 'node-bin'), join(RUNTIME_ROOT, 'bin'), { recursive: true })
   chmodSync(join(RUNTIME_ROOT, 'bin', 'node'), 0o755)
+  const cli = join(RUNTIME_ROOT, 'cli')
+  prepareDesktopCli(cli, platform)
+  if (platform === 'darwin') {
+    const minimumVersion = execFileSync('/usr/libexec/PlistBuddy', [
+      '-c', 'Print LSMinimumSystemVersion', join(BUILD_PATHS.electron, 'Electron.app', 'Contents', 'Info.plist'),
+    ], { encoding: 'utf8' }).trim()
+    prepareCommandLink(cli, arch, minimumVersion)
+  }
+  cpSync(join(import.meta.dirname, '..', 'lib', 'command-manager-entry.js'), join(cli, 'command-manager.js'))
+  cpSync(join(import.meta.dirname, 'command-path.ps1'), join(cli, 'command-path.ps1'))
+}
+
+async function main(): Promise<void> {
+  const { values } = parseArgs({ options: { 'defer-primary-runtime-smoke': { type: 'boolean', default: false } } })
+  const target = desktopTargetPlatform(resolveDesktopBuildTarget())
+  rmSync(RUNTIME_ROOT, { recursive: true, force: true })
+  mkdirSync(RUNTIME_ROOT, { recursive: true })
+  const nodeVersion = await prepareElectron(target)
+  await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'prepare:primary-runtime',
+    () => preparePrimaryRuntime({ deferSmoke: values['defer-primary-runtime-smoke'] }))
+  const { pnpm } = await readPrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime'))
+  if (pnpm === undefined) throw new Error('desktop runtime: primary-runtime manifest has no pnpm version')
+  await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'prepare:cli', async () => { prepareCli(target) })
   writeFileSync(join(RUNTIME_ROOT, 'versions.json'), `${JSON.stringify({
     schemaVersion: 1,
     node: nodeVersion,
-    pnpm: pnpmVersion,
+    pnpm,
   }, undefined, 2)}\n`)
-  await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'prepare:cli',
-    async () => prepareDesktopCli(join(RUNTIME_ROOT, 'cli'), platform))
-  if (macosMinimumVersion !== undefined) prepareCommandLink(join(RUNTIME_ROOT, 'cli'), arch, macosMinimumVersion)
-  cpSync(join(import.meta.dirname, '..', 'lib', 'command-manager-entry.js'), join(RUNTIME_ROOT, 'cli', 'command-manager.js'))
-  cpSync(join(import.meta.dirname, 'command-path.ps1'), join(RUNTIME_ROOT, 'cli', 'command-path.ps1'))
-  await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'prepare:primary-runtime',
-    () => preparePrimaryRuntime({ deferSmoke: values['defer-primary-runtime-smoke'] }))
-  mkdirSync(join(RUNTIME_ROOT, 'node'), { recursive: true })
+
+  // Fork Host marketplace/plugin installs resolve `pnpm` and `node` from RUNTIME_ROOT.
   const packedNode = join(
     RUNTIME_ROOT,
     'primary-runtime',
     'dependencies',
     'node',
     'bin',
-    platform === 'win32' ? 'node.exe' : 'node',
+    target.platform === 'win32' ? 'node.exe' : 'node',
   )
-  const dest = join(RUNTIME_ROOT, 'node', platform === 'win32' ? 'node.exe' : 'node')
-  if (!existsSync(dest)) {
-    cpSync(existsSync(packedNode) ? packedNode : process.execPath, dest)
-    if (platform !== 'win32') chmodSync(dest, 0o755)
-  }
+  const destNodeDir = join(RUNTIME_ROOT, 'node')
+  mkdirSync(destNodeDir, { recursive: true })
+  const destNode = join(destNodeDir, target.platform === 'win32' ? 'node.exe' : 'node')
+  cpSync(packedNode, destNode)
+  if (target.platform !== 'win32') chmodSync(destNode, 0o755)
+  const packedPnpm = join(RUNTIME_ROOT, 'primary-runtime', 'dependencies', 'pnpm')
+  const destPnpm = join(RUNTIME_ROOT, 'pnpm')
+  rmSync(destPnpm, { recursive: true, force: true })
+  cpSync(packedPnpm, destPnpm, { recursive: true })
+
 }
 
 await main()

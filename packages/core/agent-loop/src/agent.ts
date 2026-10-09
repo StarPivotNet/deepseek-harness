@@ -88,8 +88,6 @@ function abortedCancelCause(signal: AbortSignal): AgentCancelCause | undefined {
       return { kind: cause.kind }
     case 'hook':
       return { kind: 'hook', reason: cause.reason }
-    case 'automation':
-      return { kind: 'automation', ruleId: cause.ruleId }
     /* v8 ignore next -- cancel accepts the closed AgentCancelCause union */
     default:
       return assertNever(cause)
@@ -113,8 +111,6 @@ export class ReactLoopAgent implements Agent {
   private requestHeaderLogged = false
   /** Surface generation at attachment or the preceding built request. */
   private requestSurfaceGeneration: number
-  /** Host rewrite continuation: start a turn from the current surface with no inbox claim. */
-  private surfaceContinuation = false
   private readonly runtimeContext: RuntimeContextProjection
   /** Process-local revision of assistant frames for this attached Session. */
   private assistantStreamRevision = 0
@@ -168,14 +164,6 @@ export class ReactLoopAgent implements Agent {
     this.send(input, 'next-turn', true)
   }
 
-  continueFromSurface(): void {
-    if (this.phase.kind !== 'idle') {
-      throw new Error(`agent "${this.id}" cannot continue from the surface while ${this.phase.kind}`)
-    }
-    this.surfaceContinuation = true
-    this.wakeDriver()
-  }
-
   steer(input: UserMessage): void {
     this.send(input, 'next-step', true)
   }
@@ -189,7 +177,6 @@ export class ReactLoopAgent implements Agent {
       this.inbox.clear()
       if (this.phase.kind !== 'idle') this.phase.wakeRequested = false
     }
-    this.surfaceContinuation = false
     if (this.phase.kind !== 'idle') this.phase.abort.abort(cause)
   }
 
@@ -284,14 +271,16 @@ export class ReactLoopAgent implements Agent {
     const claimed = this.inbox.claim(target, position.turn)
     const assembly = await this.loopCtx.systemPrompt.assemble(assembleContextFor(this, signal))
     signal.throwIfAborted()
-    const sections = renderContextSections(assembly)
-    const context = this.runtimeContext.project(joinContextSections(sections), sections)
     const decision = await this.dispatch.waterfall(
       'agent/pre-step', { messages: claimed, ...position, signal },
-      (): Promise<PreStepDecision> => Promise.resolve<PreStepDecision>({
-        kind: 'enter',
-        messages: context === undefined ? claimed : [...claimed, context],
-      }),
+      (): Promise<PreStepDecision> => {
+        const sections = renderContextSections(assembly)
+        const context = this.runtimeContext.project(joinContextSections(sections), sections)
+        return Promise.resolve<PreStepDecision>({
+          kind: 'enter',
+          messages: context === undefined ? claimed : [...claimed, context],
+        })
+      },
     )
     signal.throwIfAborted()
     if (decision.kind === 'reject') return decision
@@ -335,14 +324,8 @@ export class ReactLoopAgent implements Agent {
         // A removed waking message or an enter decision rewritten to empty
         // still owns the initial turn boundary, but it spends no model call.
         if (phase.step === 0 && decision.messages.length === 0) {
-          const continuation = this.surfaceContinuation
-          this.surfaceContinuation = false
-          if (!continuation) {
-            turnEnds = { kind: 'completed' }
-            return false
-          }
-        } else if (phase.step === 0) {
-          this.surfaceContinuation = false
+          turnEnds = { kind: 'completed' }
+          return false
         }
         signal.throwIfAborted()
         this.session.append('step/start', { turn, step })
@@ -421,15 +404,14 @@ export class ReactLoopAgent implements Agent {
     signal.throwIfAborted()
 
     const { assembly } = decision
+    const renderedPrompt = renderPrompt(assembly)
     let firstAttempt = true
     while (true) {
       const { config, preparedCall } = await this.prepareRequest(turn, step, signal)
-      const renderedPrompt = preparedCall?.systemPrompt !== undefined && preparedCall.systemPrompt.length > 0
-        ? renderPrompt({
-          ...assembly,
-          sections: [{ name: 'model:system-prompt', text: preparedCall.systemPrompt }],
-        })
-        : renderPrompt(assembly)
+      const currentContext = this.loopCtx.systemPrompt.refreshContext(assembly, assembleContextFor(this, signal))
+      const sections = renderContextSections(currentContext)
+      const context = this.runtimeContext.project(joinContextSections(sections), sections)
+      signal.throwIfAborted()
       const startsRequestSeries = firstAttempt && decision.startsRequestSeries === true
       const commits = this.systemPrompt.project(renderedPrompt, {
         inHistory: preparedCall?.systemPromptUpdate === 'in-history',
@@ -440,10 +422,21 @@ export class ReactLoopAgent implements Agent {
       for (const { message, intent } of commits) {
         this.session.append('system/message', { turn, step, message }, intent)
       }
+      let contextAdmitted = false
       if (firstAttempt) {
         for (const message of decision.messages) {
-          this.session.append('user/message', message, { surfaceOp: 'append' })
+          if (message.source.kind === 'runtime-context') {
+            if (context !== undefined && !contextAdmitted) {
+              this.session.append('user/message', context, { surfaceOp: 'append' })
+              contextAdmitted = true
+            }
+          } else {
+            this.session.append('user/message', message, { surfaceOp: 'append' })
+          }
         }
+      }
+      if (context !== undefined && !contextAdmitted) {
+        this.session.append('user/message', context, { surfaceOp: 'append' })
       }
       firstAttempt = false
       const request = this.buildRequest(config, preparedCall, assembly.tools, { turn, step }, startsRequestSeries, signal)

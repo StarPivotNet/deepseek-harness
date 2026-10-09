@@ -27,7 +27,6 @@ import { ItemRetainer, TextRetainer } from '@deepseek-ai/dsh-output-retention'
 import type { RetainedItems } from '@deepseek-ai/dsh-output-retention'
 import type { SubprocessHandle, SubprocessOutcome, SubprocessOutputRead, SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import type { SaveTextSpill, SpillRef } from '@deepseek-ai/dsh-spill'
-import { sessionSearchRoots, sessionWorkingDirectory } from '@deepseek-ai/dsh-sandbox-policy'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 
 /**
@@ -187,7 +186,7 @@ export function resolveRgPath(): Promise<string> {
 /**
  * Run the packaged ripgrep binary with a plain argv vector and return its
  * complete raw stdout. The working directory is the calling agent's session
- * cwd (`exec.agent.session.header.cwd`) when available, else
+ * current directory when available, else
  * `process.cwd()`. `exec.signal` is forwarded so the cooperative tool timeout
  * (`@deepseek-ai/dsh-tool-call-timeout-policy`) and caller cancellation terminate the
  * process tree.
@@ -212,7 +211,7 @@ export function resolveRgPath(): Promise<string> {
  * creation time becomes `SEARCH_ABORTED` instead.
  *
  * @param ctx - the plugin context; execution uses its `subprocess` service.
- * @param exec - the tool-execution context; supplies the session cwd and the abort signal.
+ * @param exec - the tool-execution context; supplies the owning Agent and the abort signal.
  * @param toolName - `glob` or `grep`, used in error messages.
  * @param argv - the ripgrep arguments (every model value an unquoted argv element; no shell layer exists).
  * @param rawOutputMaxBytes - cap on the complete raw stdout the tool will parse.
@@ -232,8 +231,9 @@ export async function runRipgrep(
   if (exec.signal.aborted) {
     throw new SearchError(`${toolName} was aborted before completion (tool timeout or caller cancellation)`, 'SEARCH_ABORTED')
   }
-  const cwd = exec.agent === undefined ? undefined : sessionWorkingDirectory(exec.agent.session)
-  const workdir = cwd ?? process.cwd()
+  const workdir = exec.agent === undefined
+    ? process.cwd()
+    : await ctx.workingDirectory.ensure(exec.agent, exec.signal)
   let handle: SubprocessHandle
   try {
     handle = ctx.subprocess.spawn({
@@ -298,21 +298,6 @@ export async function runRipgrep(
  * @param workdir - the resolved workdir the command ran in.
  * @returns the workdir-relative display path when possible, else `path` unchanged.
  */
-
-/**
- * Absolute folders a default grep/glob should search: the session cwd plus
- * existing additional workspace folders. Absent without a session or policy.
- * @param ctx - plugin context; reads optional `sandboxPolicy`.
- * @param exec - tool execution supplying the session.
- * @returns search roots, or `undefined` when the call has no session policy.
- */
-export function searchRootsFor(ctx: Context, exec: ToolExecution): string[] | undefined {
-  const session = exec.agent?.session
-  const policy = ctx.get('sandboxPolicy')
-  if (session === undefined || policy === undefined || typeof policy.foldersOf !== 'function') return undefined
-  return sessionSearchRoots(policy.foldersOf(session))
-}
-
 export function toWorkdirRelative(path: string, workdir: string): string {
   if (!isAbsolute(path)) return path
   const rel = relative(workdir, path)

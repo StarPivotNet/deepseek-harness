@@ -92,12 +92,12 @@ export interface ISessions {
   /**
    * Resolve an already discovered direct-parent address without opening it.
    * @param id - possible addressed child id.
-   * @returns a retained or loaded-catalog address, without retaining a new selection or scope.
+   * @returns a retained, catalog-derived, or unknown-mode listed address, without retaining a new selection or scope.
    */
   subagentAddress(id: SessionId): SubagentAddress | undefined
 
   /**
-   * Load all Session projections once per connection; retry an unsuccessful initial read.
+   * Read projections without starting migration; retry failed or migration-deferred reads.
    * @param sessionId - Session to inspect without opening its conversation.
    * @returns completion of the current or newly started refresh.
    */
@@ -135,6 +135,8 @@ export interface ISessions {
     atSeq?: number
     increaseTitle?: boolean
     onCreated?: (childId: SessionId) => void
+    /** False refuses source migration; omission preserves the Host default. */
+    allowMigration?: boolean
   }): Promise<SessionId>
   /**
    * Restore the Completed reminder so a listed Session returns to that section.

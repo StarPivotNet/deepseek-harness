@@ -4,6 +4,7 @@
  * @module @deepseek-ai/dsh-tool-skill
  */
 
+import type {} from '@deepseek-ai/dsh-working-directory'
 import { createHash } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
@@ -11,7 +12,6 @@ import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionSeq, type UserMessage } from '@deepseek-ai/dsh-session'
-import { sessionWorkingDirectory } from '@deepseek-ai/dsh-sandbox-policy'
 import {
   escapeText,
   isModelInvocable,
@@ -23,22 +23,7 @@ import {
 } from '@deepseek-ai/dsh-skill'
 
 export const name = 'tool-skill'
-export const inject = ['agents', 'tools', 'skills']
-
-/** Session cwd plus existing additional workspace folders for skill discovery. */
-function skillLookup(ctx: Context, agent: Agent | undefined, signal: AbortSignal) {
-  const extraRoots = agent === undefined
-    ? undefined
-    : ctx.get('sandboxPolicy')?.foldersOf(agent.session).additional
-      .filter(folder => !folder.missing)
-      .map(folder => folder.path)
-  return {
-    cwd: agent === undefined ? undefined : sessionWorkingDirectory(agent.session),
-    ...extraRoots === undefined || extraRoots.length === 0 ? {} : { extraRoots },
-    signal,
-    scope: agent,
-  }
-}
+export const inject = ['agents', 'tools', 'skills', 'workingDirectory']
 
 const DEFAULT_CATALOG_DESCRIPTION_MAX_LENGTH = 500
 /**
@@ -146,7 +131,8 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
       // The agent is its own scope key, so the lookup resolves the layered
       // registry exactly as this agent's composition sees it.
-      const lookup = skillLookup(ctx, exec.agent, exec.signal)
+      const cwd = exec.agent === undefined ? undefined : await ctx.workingDirectory.ensure(exec.agent, exec.signal)
+      const lookup = { cwd, signal: exec.signal, scope: exec.agent }
       const summary = (await ctx.skills.list(lookup)).find(skill => skill.name === args.name)
       if (!summary) {
         throw new Error(`skill "${args.name}" is unknown or no longer available`)
@@ -199,7 +185,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     const names = invokedSkillNames(messages)
     if (names.length === 0) return decision
     signal.throwIfAborted()
-    const lookup = skillLookup(ctx, agent, signal)
+    const lookup = { cwd: await ctx.workingDirectory.ensure(agent, signal), signal, scope: agent }
     const injections: UserMessage[] = []
     for (const name of names) {
       const skill = await ctx.skills.get(name, lookup)
@@ -235,7 +221,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     signal.throwIfAborted()
     const toolVisible = ctx.tools.get(skillTool.name, agent) === skillTool
     const snapshot = toolVisible
-      ? await ctx.skills.snapshot(skillLookup(ctx, agent, signal))
+      ? await ctx.skills.snapshot({ cwd: await ctx.workingDirectory.ensure(agent, signal), signal, scope: agent })
       : { skills: [], complete: true }
     signal.throwIfAborted()
     if (!snapshot.complete) return decision
