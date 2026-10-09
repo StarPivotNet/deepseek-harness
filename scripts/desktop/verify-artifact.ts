@@ -109,7 +109,7 @@ export function verifyArchiveStructure(extractRoot: string): readonly string[] {
   steps.push('dsh runtime inside asar')
 
   if (!existsSync(join(resources, 'runtime', 'versions.json'))) fail('Resources/runtime/versions.json is missing')
-  if (!existsSync(join(resources, 'runtime', 'pnpm', 'bin', 'pnpm.mjs'))) fail('Resources/runtime/pnpm/bin/pnpm.mjs is missing')
+  if (!existsSync(join(resources, 'runtime', 'primary-runtime', 'dependencies', 'pnpm', 'bin', 'pnpm.mjs'))) fail('Resources/runtime/primary-runtime/dependencies/pnpm/bin/pnpm.mjs is missing')
   steps.push('runtime pnpm staged')
 
   if (!existsSync(join(resources, 'app.asar.unpacked', 'dsh'))) fail('app.asar.unpacked/dsh is missing (native payload not unpacked)')
