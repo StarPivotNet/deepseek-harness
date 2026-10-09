@@ -68,6 +68,8 @@ const INTACT_PATCH = [
   '  config:',
   '    catalogUrls:',
   '      - /plugin-catalog/catalog.json',
+  '- id: ui-settings-plugin-marketplace',
+  "  name: '@deepseek-ai/dsh-client-ui-settings-plugin-marketplace'",
   '',
 ].join('\n')
 

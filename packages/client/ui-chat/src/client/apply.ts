@@ -215,7 +215,7 @@ export function apply(ctx: Context): void {
       'conversation.message.images': { kind: 'single', scope: 'session' },
     },
     inject: (sessionId: SessionId): ChatFlowDataInjected => {
-      const binding = ctx.sessions.binding(sessionId)
+      const binding = sessions.binding(sessionId)
       if (binding === undefined) throw new Error(`ui-chat: unknown session "${sessionId}"`)
       return nodeSources(binding)
     },

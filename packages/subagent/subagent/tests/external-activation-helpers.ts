@@ -41,6 +41,7 @@ export async function externalTestParent(ctx: Context, cwd?: string): Promise<Ag
     inbox,
     send: (message, target) => { inbox.append(target, message) },
     followup: (message) => { inbox.append('next-turn', message) },
+    continueFromSurface: () => {},
     steer: (message) => { inbox.append('next-step', message) },
     inject: (message) => { inbox.append('next-step', message) },
     cancel: (_cause, options) => { if (!options?.keepInbox) inbox.clear() },

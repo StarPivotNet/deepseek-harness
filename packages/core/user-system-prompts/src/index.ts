@@ -197,8 +197,8 @@ export function applyUserSystemPromptOverrides(
   assembly: PromptAssembly,
   settings: UserSystemPromptsSettings,
 ): PromptAssembly {
-  if (settings.overrides.length === 0) return assembly
-  const byName = new Map(settings.overrides.map(entry => [entry.name, entry.text]))
+  if ((settings.overrides ?? []).length === 0) return assembly
+  const byName = new Map((settings.overrides ?? []).map(entry => [entry.name, entry.text]))
   let changed = false
   const sections = assembly.sections.map((section) => {
     const text = byName.get(section.name)

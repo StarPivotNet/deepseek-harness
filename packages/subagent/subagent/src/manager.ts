@@ -570,12 +570,16 @@ export class SubagentManager {
         'UNAUTHORIZED',
       )
     }
-    const delivery = sender.status !== 'idle' && readBusyDelivery(this.ctx, 'reportBusy') === 'queue'
-      ? 'queue'
-      : 'steer'
+    if (sender.status !== 'idle' && readBusyDelivery(this.ctx, 'reportBusy') === 'queue') {
+      return this.deliverToChild(sender, targetId, content, {
+        signal: options.signal,
+        delivery: 'queue',
+        source: { kind: 'plugin', plugin: 'subagent-delivery' },
+      })
+    }
     return this.deliverToChild(sender, targetId, content, {
       signal: options.signal,
-      delivery,
+      delivery: 'steer',
     })
   }
 

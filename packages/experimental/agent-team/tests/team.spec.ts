@@ -9,7 +9,7 @@ import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-test
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionLogOffset, SessionId, type Session, type SessionEvent } from '@deepseek-ai/dsh-session'
 import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
-import SubagentService, { snapshotSubagentDescriptor } from '@deepseek-ai/dsh-subagent'
+import SubagentService from '@deepseek-ai/dsh-subagent'
 import { deliverSubagentPrompt, type HostPromptDeliverer } from '@deepseek-ai/dsh-subagent/internal'
 import * as SubagentFork from '@deepseek-ai/dsh-subagent-fork-in-process'
 import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
@@ -542,11 +542,12 @@ describe('Team identity and provisioning', () => {
       meta: { parentSession: lead.id },
       agentOptions: { provider: 'mock', model: 'mock' },
     })
-    child.agent.session.append('subagent/descriptor', snapshotSubagentDescriptor({
+    child.agent.session.append('subagent/descriptor', {
+      version: 3,
       mode: 'one-shot',
       provider: 'spawn',
       label: 'synthetic one-shot',
-    }))
+    })
     expect(ctx.agentTeams.tryMembership(child.agent)).toBeUndefined()
     expect(() => ctx.agentTeams.membership(child.agent)).toThrow(expect.objectContaining({ code: 'TEAM_NOT_MEMBER' }))
     await child.dispose()

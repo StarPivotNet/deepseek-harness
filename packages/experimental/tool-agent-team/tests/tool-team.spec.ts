@@ -671,13 +671,17 @@ describe('dsh-tool-team', () => {
       })
     })
 
-    const run = await ctx.subagents.start('spawn', {
+    const run = await ctx.subagents.startActivation({
+      delivery: 'caller',
+      provider: 'spawn',
       label: 'plain reviewer',
-      prompt: [{ type: 'text', text: 'review the delivery' }],
-      parent: lead,
+      request: {
+        prompt: [{ type: 'text', text: 'review the delivery' }],
+        parent: lead,
+      },
       signal: SIGNAL,
     })
-    const child = await waitRunning(ctx, run.id)
+    const child = await waitRunning(ctx, run.childId)
     expect(created).toEqual([{ hasDescriptor: false, membership: undefined }])
     const childAssembly = await assembly(ctx, child)
     expect(childAssembly.tools.map(schema => schema.name).some(name => TOOL_NAMES.includes(name))).toBe(false)

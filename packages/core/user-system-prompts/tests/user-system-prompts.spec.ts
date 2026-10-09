@@ -265,7 +265,8 @@ describe('UserSystemPrompts', () => {
     const assembly = await ctx.systemPrompt.assemble()
     expect(assembly.sections.map(section => section.name)).toEqual([
       'harness:identity',
-      'deployment:persona',
+      'deployment:persona-prefix',
+      'deployment:persona-suffix',
       'user-system-prompt:style',
       'user-system-prompt:rules',
     ])
@@ -300,7 +301,7 @@ describe('UserSystemPrompts', () => {
   it('leaves assembly alone when the library is empty', async () => {
     const { ctx } = await boot()
     expect((await ctx.systemPrompt.assemble()).sections.map(section => section.name))
-      .toEqual(['harness:identity', 'deployment:persona'])
+      .toEqual(['harness:identity', 'deployment:persona-prefix', 'deployment:persona-suffix'])
     expect(ctx.userSystemPrompts.current()).toEqual({ prompts: [], bindings: [], overrides: [] })
     await ctx.fiber.dispose()
   })

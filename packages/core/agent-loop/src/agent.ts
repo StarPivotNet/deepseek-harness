@@ -86,6 +86,8 @@ function abortedCancelCause(signal: AbortSignal): AgentCancelCause | undefined {
     case 'parent':
     case 'disposed':
       return { kind: cause.kind }
+    case 'automation':
+      return { kind: 'automation', ruleId: cause.ruleId }
     case 'hook':
       return { kind: 'hook', reason: cause.reason }
     /* v8 ignore next -- cancel accepts the closed AgentCancelCause union */
@@ -118,6 +120,7 @@ export class ReactLoopAgent implements Agent {
   private readonly systemPrompt: SystemPromptProjection
   /** Identities fully frozen by this loop; weak references do not retain replaced history. */
   private readonly frozenMessages = new WeakSet<Message>()
+  private surfaceContinuation = false
 
   constructor(
     private loopCtx: Context,
@@ -164,6 +167,14 @@ export class ReactLoopAgent implements Agent {
     this.send(input, 'next-turn', true)
   }
 
+  continueFromSurface(): void {
+    if (this.phase.kind !== 'idle') {
+      throw new Error(`agent "${this.id}" cannot continue from the surface while ${this.phase.kind}`)
+    }
+    this.surfaceContinuation = true
+    this.wakeDriver()
+  }
+
   steer(input: UserMessage): void {
     this.send(input, 'next-step', true)
   }
@@ -173,6 +184,7 @@ export class ReactLoopAgent implements Agent {
   }
 
   cancel(cause: AgentCancelCause, options: CancelOptions = {}): void {
+    this.surfaceContinuation = false
     if (!options.keepInbox) {
       this.inbox.clear()
       if (this.phase.kind !== 'idle') this.phase.wakeRequested = false
@@ -324,8 +336,14 @@ export class ReactLoopAgent implements Agent {
         // A removed waking message or an enter decision rewritten to empty
         // still owns the initial turn boundary, but it spends no model call.
         if (phase.step === 0 && decision.messages.length === 0) {
-          turnEnds = { kind: 'completed' }
-          return false
+          const continuation = this.surfaceContinuation
+          this.surfaceContinuation = false
+          if (!continuation) {
+            turnEnds = { kind: 'completed' }
+            return false
+          }
+        } else if (phase.step === 0) {
+          this.surfaceContinuation = false
         }
         signal.throwIfAborted()
         this.session.append('step/start', { turn, step })

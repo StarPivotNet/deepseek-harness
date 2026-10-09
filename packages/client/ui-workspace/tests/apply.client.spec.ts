@@ -514,7 +514,7 @@ describe('ui-workspace apply', () => {
     // Fork goes through the navigation service, which leaves the child unselected.
     const forkSession = vi.spyOn(b.ctx.uiWorkspace, 'forkSession')
     const fork = faceOf(entry(b.slots, MENU_ITEM, 'fork')) as ForkSessionInjected
-    using source = b.ctx.sessions.retain(sid('session'), { source: 'controllerOperation' })
+    using source = (b.ctx.get('sessions') as unknown as ISessions).retain(sid('session'), { source: 'controllerOperation' })
     await source.ready
     b.retain.mockClear()
     fork.forkSession('session' as never)
@@ -566,7 +566,7 @@ describe('ui-workspace apply', () => {
       declare(b.slots, 'sidebar.workspaces', 'shell.overlay')
       await b.ctx.plugin({ inject: [...inject], apply }).await()
       if (state !== 'absent') {
-        const source = b.ctx.sessions.retain(sid('source'), { source: 'controllerOperation' })
+        const source = (b.ctx.get('sessions') as unknown as ISessions).retain(sid('source'), { source: 'controllerOperation' })
         onTestFinished(() => { source.release() })
         await source.ready
         b.history.set({ openState: state === 'closed' ? 'open' : state, subagent: null })
@@ -651,7 +651,7 @@ describe('ui-workspace apply', () => {
     onTestFinished(() => b.ctx.fiber.dispose())
     declare(b.slots, 'sidebar.workspaces', 'shell.overlay')
     await b.ctx.plugin({ inject: [...inject], apply }).await()
-    using source = b.ctx.sessions.retain(sid('source'), { source: 'controllerOperation' })
+    using source = (b.ctx.get('sessions') as unknown as ISessions).retain(sid('source'), { source: 'controllerOperation' })
     await source.ready
     b.history.set({ openState: 'open', subagent: {
       address: { parentSessionId: sid('parent'), childSessionId: sid('source'), mode: 'one-shot' },
@@ -677,7 +677,7 @@ describe('ui-workspace apply', () => {
     onTestFinished(() => b.ctx.fiber.dispose())
     declare(b.slots, 'sidebar.workspaces', 'shell.overlay')
     await b.ctx.plugin({ inject: [...inject], apply }).await()
-    using source = b.ctx.sessions.retain(sid('source'), { source: 'controllerOperation' })
+    using source = (b.ctx.get('sessions') as unknown as ISessions).retain(sid('source'), { source: 'controllerOperation' })
     await source.ready
     b.retain.mockClear()
     const error = kind === 'ordinary'

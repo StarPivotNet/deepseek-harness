@@ -86,14 +86,22 @@ export abstract class SettingsProvider extends Service {
     })
     return {
       get: () => this.scopes.get(key)?.value as T,
-      watch: () => () => {},
+      watch: (callback) => {
+        const listener = (ns: SettingsNamespace) => {
+          if (String(ns) !== key) return
+          const next = this.scopes.get(key)?.value as T
+          void callback(next, next)
+        }
+        const stop = this.ctx.on('settings/document-updated', listener)
+        return () => { stop() }
+      },
       update: async (patch: object) => {
         await this.update(key, patch)
       },
       replace: async (section: object) => {
-        this.validate(key, section)
-        this.scopes.set(key, { value: section, schema, owner })
-        await this.persist(key as SettingsNamespace, section as Record<string, unknown>)
+        const validated = this.validate(key, section) ?? section
+        this.scopes.set(key, { value: validated, schema, owner })
+        await this.persist(key as SettingsNamespace, validated as Record<string, unknown>)
         this.ctx.emit('settings/document-updated', key as SettingsNamespace, 0)
       },
     }
@@ -112,21 +120,35 @@ export abstract class SettingsProvider extends Service {
     const held = this.scopes.get(key)
     const prev = (held?.value ?? {}) as Record<string, unknown>
     const next = { ...prev, ...patch }
-    this.validate(key, next)
+    const validated = (this.validate(key, next) ?? next) as Record<string, unknown>
     this.scopes.set(key, {
-      value: next,
+      value: validated,
       ...held?.schema === undefined ? {} : { schema: held.schema },
       ...held?.owner === undefined ? {} : { owner: held.owner },
     })
-    await this.persist(key as SettingsNamespace, next)
+    await this.persist(key as SettingsNamespace, validated)
     this.ctx.emit('settings/document-updated', key as SettingsNamespace, 0)
   }
 
-  private validate(ns: string, value: unknown): void {
+  async replace(ns: string, section: object): Promise<void> {
+    const key = String(ns)
+    const held = this.scopes.get(key)
+    const validated = this.validate(key, section) ?? section
+    this.scopes.set(key, {
+      value: validated,
+      ...held?.schema === undefined ? {} : { schema: held.schema },
+      ...held?.owner === undefined ? {} : { owner: held.owner },
+    })
+    await this.persist(key as SettingsNamespace, validated as Record<string, unknown>)
+    this.ctx.emit('settings/document-updated', key as SettingsNamespace, 0)
+  }
+
+  private validate(ns: string, value: unknown): unknown {
     const schema = this.scopes.get(ns)?.schema
     if (typeof schema === 'function') {
-      (schema as (input: unknown) => unknown)(value)
+      return (schema as (input: unknown) => unknown)(value)
     }
+    return value
   }
 }
 
@@ -143,12 +165,23 @@ interface SettingsSectionHooks<T> {
  * as the source instead of registering a durable namespace.
  */
 export function installSettingsSection<T>(
-  _ctx: Context,
-  _ns: SettingsNamespace,
-  _schema: z<T>,
+  ctx: Context,
+  ns: SettingsNamespace,
+  schema: z<T>,
   entry: T,
   hooks: SettingsSectionHooks<T>,
 ): void {
+  const settings = ctx.get('settings') as SettingsProvider | SettingsForms | undefined
+  if (settings !== undefined && 'register' in settings && typeof settings.register === 'function') {
+    const scope = settings.register<T>(ns, schema, { base: entry })
+    hooks.setSource(() => scope.get())
+    hooks.onChange()
+    ctx.effect(() => {
+      const stop = scope.watch(() => { hooks.setSource(() => scope.get()); hooks.onChange() })
+      return () => { stop() }
+    }, 'installSettingsSection.watch()')
+    return
+  }
   hooks.setSource(() => entry)
   hooks.onChange()
 }
