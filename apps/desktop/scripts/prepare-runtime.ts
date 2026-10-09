@@ -65,7 +65,7 @@ async function main(): Promise<void> {
     pnpm,
   }, undefined, 2)}\n`)
 
-  // Fork Host marketplace/plugin installs resolve `pnpm` and `node` from RUNTIME_ROOT.
+  // Host marketplace installs still resolve `node` from RUNTIME_ROOT/node.
   const packedNode = join(
     RUNTIME_ROOT,
     'primary-runtime',
@@ -79,11 +79,6 @@ async function main(): Promise<void> {
   const destNode = join(destNodeDir, target.platform === 'win32' ? 'node.exe' : 'node')
   cpSync(packedNode, destNode)
   if (target.platform !== 'win32') chmodSync(destNode, 0o755)
-  const packedPnpm = join(RUNTIME_ROOT, 'primary-runtime', 'dependencies', 'pnpm')
-  const destPnpm = join(RUNTIME_ROOT, 'pnpm')
-  rmSync(destPnpm, { recursive: true, force: true })
-  cpSync(packedPnpm, destPnpm, { recursive: true })
-
 }
 
 await main()
