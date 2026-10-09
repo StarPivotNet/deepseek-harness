@@ -440,7 +440,7 @@ function prepareDesktopRuntime(platform: DesktopPlatform): PreparedDesktopRuntim
   const runtime = join(targetRoot, 'runtime')
   const dsh = join(targetRoot, 'dsh')
   const nodeEntry = join(runtime, 'node', platform === 'win32' ? 'node.exe' : 'node')
-  for (const [label, path] of [['runtime node', nodeEntry], ['runtime pnpm', join(runtime, 'pnpm', 'bin', 'pnpm.mjs')], ['dsh node_modules', join(dsh, 'node_modules')]] as const) {
+  for (const [label, path] of [['runtime node', nodeEntry], ['runtime pnpm', join(runtime, 'primary-runtime', 'dependencies', 'pnpm', 'bin', 'pnpm.mjs')], ['dsh node_modules', join(dsh, 'node_modules')]] as const) {
     if (!existsSync(path)) throw new Error(`desktop pack: prepared ${label} is missing at ${path}`)
   }
   return { runtime, dsh }
@@ -457,7 +457,7 @@ function reusePreparedRuntime(platform: DesktopPlatform): PreparedDesktopRuntime
   const runtime = join(targetRoot, 'runtime')
   const dsh = join(targetRoot, 'dsh')
   const nodeEntry = join(runtime, 'node', platform === 'win32' ? 'node.exe' : 'node')
-  for (const [label, path] of [['runtime node', nodeEntry], ['runtime pnpm', join(runtime, 'pnpm', 'bin', 'pnpm.mjs')], ['dsh node_modules', join(dsh, 'node_modules')]] as const) {
+  for (const [label, path] of [['runtime node', nodeEntry], ['runtime pnpm', join(runtime, 'primary-runtime', 'dependencies', 'pnpm', 'bin', 'pnpm.mjs')], ['dsh node_modules', join(dsh, 'node_modules')]] as const) {
     if (!existsSync(path)) {
       throw new Error(`desktop pack: --skip-build needs a prepared ${label} at ${path}; run without --skip-build`)
     }
