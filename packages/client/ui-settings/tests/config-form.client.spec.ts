@@ -90,11 +90,13 @@ describe('ConfigFormController', () => {
     const describeCall = vi.fn().mockResolvedValueOnce(described({ preference: 'dark' }, 3))
     const { mirror, scope } = derivedScope({ describe: describeCall })
     expect(scope.getSnapshot()).toEqual({
-      status: 'loading', value: undefined, revision: undefined, writable: false,
+      status: 'loading', value: undefined, base: undefined, user: undefined,
+      revision: undefined, writable: false, mode: 'host',
     })
     await mirror.load()
     expect(scope.getSnapshot()).toEqual({
-      status: 'ready', value: { preference: 'dark' }, revision: 3, writable: true,
+      status: 'ready', value: { preference: 'dark' }, base: undefined, user: undefined,
+      revision: 3, writable: true, mode: 'host',
     })
   })
 

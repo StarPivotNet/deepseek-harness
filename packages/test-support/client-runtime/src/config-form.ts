@@ -32,7 +32,7 @@ export interface StubConfigForm<T> {
 export function stubConfigForm<T>(): StubConfigForm<T> {
   let snapshot: ConfigFormSnapshot<T> = {
     status: 'loading', value: undefined, base: undefined, user: undefined,
-    revision: undefined, writable: false,
+    revision: undefined, writable: false, mode: 'host',
   }
   const listeners = new Set<() => void>()
   const set = vi.fn(() => Promise.resolve(true))

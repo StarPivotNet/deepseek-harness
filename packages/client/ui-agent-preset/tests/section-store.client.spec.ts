@@ -7,7 +7,7 @@ import { en } from '../src/client/locales.ts'
 
 function fixture() {
   const form = createSnapshotStore<ConfigFormSnapshot<{ selectedDefault: string }>>({
-    status: 'ready', writable: true, revision: 7, value: { selectedDefault: 'minimal' }, base: {}, user: {},
+    status: 'ready', writable: true, revision: 7, value: { selectedDefault: 'minimal' }, base: {}, user: {}, mode: 'host',
   })
   const remote = { agentPresets: {
     list: vi.fn(async (): Promise<{ ok: true; value: { presets: AgentPresetRow[] } }> => ({

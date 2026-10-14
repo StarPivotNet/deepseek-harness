@@ -33,7 +33,7 @@ const { models: _protocolCatalog, ...protocolFields } = deepSeekConfigFields
 const modelOverride: z<ModelOverride> = z.object({
   ...catalogModelFields,
   // No default, unlike a models entry: an absent list materializes as [], which reads as inherited.
-  inputModalities: z.array(z.union(['text', 'image'] as const)),
+  inputModalities: z.array(z.union(['text', 'image', 'video'] as const)),
 })
 
 export const Config = z.object({

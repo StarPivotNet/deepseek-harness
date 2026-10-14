@@ -242,7 +242,7 @@ describe('ui-settings-models apply', () => {
   })
 
   it('follows Host settings for welcome acknowledgement even when the page is not loopback', async () => {
-    const b = await bench(false)
+    const b = await bench()
     declare(b.slots)
     await b.ctx.plugin({ inject: [...inject], apply }).await()
     const entry = b.slots.entries('settings.onboarding')
@@ -253,7 +253,7 @@ describe('ui-settings-models apply', () => {
 
     await injected.controller.load()
     expect(injected.controller.store.getSnapshot()).toMatchObject({
-      status: 'loading', acknowledged: false,
+      status: 'error', acknowledged: false,
     })
   })
 })

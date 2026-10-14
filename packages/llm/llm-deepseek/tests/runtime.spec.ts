@@ -2028,7 +2028,7 @@ describe('plugin registration and config', () => {
     [[{
       id: 'm',
       inputModalities: ['audio'],
-    }], /inputModalities must contain only "text" and "image"/],
+    }], /inputModalities must contain only "text", "image", and "video"/],
   ]
 
   it.each(invalidProgrammaticModalities)('rejects programmatic modality config that bypasses the schema', (models, message) => {

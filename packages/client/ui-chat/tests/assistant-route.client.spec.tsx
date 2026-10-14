@@ -28,7 +28,6 @@ import { chatViewDefinition } from '../src/client/conversation-nodes/chat-snapsh
 import { turnProcessDefinition } from '../src/client/conversation-nodes/turn-process.ts'
 import type { AssistantChatData, ChatNode, ChatRequestHeaderChatData } from '../src/client/contract/chat-nodes.ts'
 import type { AssistantRouteOwnerProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type { AssistantMarkdownProps } from '../src/client/chat/AssistantMarkdown.tsx'
 import { AssistantNodeView } from '../src/client/chat/AssistantNodeView.tsx'
 import { zh } from '../src/client/locale.ts'
 
@@ -282,7 +281,6 @@ describe.skip('chat fold per-step request identity', () => {
 })
 
 const t = makeTranslate(zh, commonZh)
-const renderMessageImages: AssistantMarkdownProps['renderMessageImages'] = () => null
 type RouteRenderSlot = PropsRenderSlots<'conversation.chat.assistantRoute'>['renderSlot']
 
 afterEach(cleanup)
@@ -346,7 +344,6 @@ describe.skip('assistant clock-line slot', () => {
           openFile: () => {},
           inspectCall: () => {},
           forkAt: () => {},
-          renderMessageImages,
           fileMentions: () => undefined,
           renderSlot,
           SessionProvider: () => null,
@@ -384,7 +381,6 @@ describe.skip('assistant clock-line slot', () => {
           openFile: () => {},
           inspectCall: () => {},
           forkAt: () => {},
-          renderMessageImages,
           fileMentions: () => undefined,
           renderSlot,
           SessionProvider: () => null,
@@ -406,7 +402,6 @@ describe.skip('assistant clock-line slot', () => {
           openFile: () => {},
           inspectCall: () => {},
           forkAt: () => {},
-          renderMessageImages,
           fileMentions: () => undefined,
           renderSlot,
           SessionProvider: () => null,
@@ -431,7 +426,6 @@ describe.skip('assistant clock-line slot', () => {
           openFile: () => {},
           inspectCall: () => {},
           forkAt: () => {},
-          renderMessageImages,
           fileMentions: () => undefined,
           renderSlot,
           SessionProvider: () => null,

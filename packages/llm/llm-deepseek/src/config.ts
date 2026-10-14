@@ -12,7 +12,7 @@ import { DEFAULT_MODELS } from './models.ts'
 import { DEFAULT_STREAM_IDLE_TIMEOUT_MS, DEFAULT_CONTEXT_WINDOW, DEFAULT_MAX_TOKENS, DEFAULT_MAX_INLINE_REQUEST_IMAGE_BYTES, DEFAULT_IMAGE_OFFLOAD_BYTE_QUANTUM, DEFAULT_INLINE_IMAGE_OFFLOAD_BYTE_QUANTUM, DEFAULT_IMAGE_OFFLOAD_COUNT_QUANTUM, DEFAULT_FILE_EXPIRY_SECONDS, DEFAULT_FILE_REFRESH_MARGIN_SECONDS, DEFAULT_FILE_QUOTA_CLEANUP_BATCH, DEFAULT_FILES_API_TIMEOUT_MS } from './defaults.ts'
 import { DEFAULT_MAX_IMAGES_PER_REQUEST, DEFAULT_MAX_REQUEST_FILES_BYTES, DEFAULT_REQUEST_IMAGE_MAX_BYTES } from './request-pricing.ts'
 
-const MODEL_MODALITIES = ['text', 'image'] as const satisfies readonly ModelModality[]
+const MODEL_MODALITIES = ['text', 'image', 'video'] as const satisfies readonly ModelModality[]
 
 /** Shared Messages request configuration, without provider credential selection. */
 export interface Config {
@@ -94,7 +94,7 @@ export const deepSeekConfigFields = {
   reasoningEffort: z.union(['off', 'low', 'high', 'max']).volatile(),
   maxTokens: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_MAX_TOKENS).volatile(),
   defaultContextWindow: z.number().step(1).min(1).default(DEFAULT_CONTEXT_WINDOW).volatile(),
-  models: z.array(catalogModel).default(DEFAULT_MODELS as never).volatile(),
+  models: z.array(catalogModel).default(DEFAULT_MODELS).volatile(),
   streamIdleTimeoutMs: z.number().min(Number.MIN_VALUE).max(MAX_TIMER_DELAY_MS).default(DEFAULT_STREAM_IDLE_TIMEOUT_MS).volatile(),
   maxRequestFilesBytes: z.number().step(1).min(1).default(DEFAULT_MAX_REQUEST_FILES_BYTES).volatile(),
   maxInlineRequestImageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_INLINE_REQUEST_IMAGE_BYTES).volatile(),
@@ -147,9 +147,9 @@ function resolveModels(models: readonly DeepSeekCatalogModel[] | undefined): Dee
     if (inputModalities.length === 0) {
       throw new Error(`llm-deepseek: catalog model "${model.id}" inputModalities must not be empty`)
     }
-    if (inputModalities.some(modality => modality !== 'text' && modality !== 'image')) {
+    if (inputModalities.some(modality => !MODEL_MODALITIES.includes(modality))) {
       throw new Error(
-        `llm-deepseek: catalog model "${model.id}" inputModalities must contain only "text" and "image"`,
+        `llm-deepseek: catalog model "${model.id}" inputModalities must contain only "text", "image", and "video"`,
       )
     }
     if (new Set(inputModalities).size !== inputModalities.length) {

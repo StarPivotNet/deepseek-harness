@@ -296,6 +296,13 @@ export class WorkspaceController extends TypertRemoteService {
         case 'pinned':
           yield { type: 'pinned', pinnedSessionIds: sessions(frame.pinnedSessionIds) }
           break
+        case 'hidden':
+          if (frame.hiddenWorkspaceIds.some(workspaceId => delivered.has(workspaceId) && !visible(workspaceId))) {
+            yield { type: 'replace', value: filtered(this.feed.baseline()) }
+          } else {
+            yield { type: 'hidden', hiddenWorkspaceIds: frame.hiddenWorkspaceIds.filter(visible) }
+          }
+          break
         /* v8 ignore next -- closed follow-frame union. */
         default:
           assertNever(frame)
