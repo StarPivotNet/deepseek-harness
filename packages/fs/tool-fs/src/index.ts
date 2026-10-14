@@ -25,6 +25,14 @@ export const inject = ['tools', 'fs', 'systemPrompt', 'workingDirectory']
 
 /** Plugin config (all optional — `Config` supplies the defaults). */
 export interface Config {
+  /** Register `read` and its guidance. Defaults to true. */
+  read?: boolean
+  /** Register `read_image` while an attachment store is mounted. Defaults to true. */
+  readImage?: boolean
+  /** Register `write` and its guidance. Defaults to true. */
+  write?: boolean
+  /** Register `edit` and its guidance. Defaults to true. */
+  edit?: boolean
   /** Default and maximum number of lines returned by one `read` call. */
   readLimit?: number
   /** Maximum characters returned for a single line before truncation. */
@@ -36,13 +44,17 @@ export interface Config {
 }
 
 export const Config: z<Config> = z.object({
+  read: z.boolean().default(true),
+  readImage: z.boolean().default(true),
+  write: z.boolean().default(true),
+  edit: z.boolean().default(true),
   readLimit: z.number().default(READ_LIMIT),
   readMaxLineLength: z.number().default(READ_MAX_LINE_LENGTH),
   readMaxBytes: z.number().default(READ_MAX_BYTES),
   readStreamMinSize: z.number().default(STREAM_MIN_SIZE),
 })
 
-/** The shape after schemastery applied the defaults. */
+/** Configuration after schemastery applied the defaults. */
 type ResolvedConfig = Required<Config>
 
 /** Every read cap counts lines/chars/bytes — a positive integer, or windowing arithmetic misbehaves silently. */
@@ -52,7 +64,7 @@ function assertPositiveInteger(name: string, value: number): void {
   }
 }
 
-/** Register the full `read`/`write`/`edit` filesystem tool suite, plus `read_image`/`read_video` while `attachments` is mounted. */
+/** Register the selected filesystem tools; `read_image` and `read_video` additionally require a mounted attachment store. */
 export function apply(ctx: Context, config: Config): void {
   // schemastery (Config) has already filled every defaulted field.
   const resolved = config as ResolvedConfig
@@ -60,24 +72,30 @@ export function apply(ctx: Context, config: Config): void {
   assertPositiveInteger('readMaxLineLength', resolved.readMaxLineLength)
   assertPositiveInteger('readMaxBytes', resolved.readMaxBytes)
   assertPositiveInteger('readStreamMinSize', resolved.readStreamMinSize)
-  applyReadTool(ctx, {
-    limit: resolved.readLimit,
-    maxLineLength: resolved.readMaxLineLength,
-    maxBytes: resolved.readMaxBytes,
-    streamMinSize: resolved.readStreamMinSize,
-  })
+  if (resolved.read) {
+    applyReadTool(ctx, {
+      limit: resolved.readLimit,
+      maxLineLength: resolved.readMaxLineLength,
+      maxBytes: resolved.readMaxBytes,
+      streamMinSize: resolved.readStreamMinSize,
+    })
+  }
   // read_image and read_video are composition-conditional: without a mounted
   // attachment store the deployment cannot durably commit media bytes, so the
   // tools never register; each execute body keeps a defensive re-check for
   // direct callers.
-  ctx.inject(['attachments'], (mediaCtx) => {
-    applyReadImageTool(mediaCtx)
-    applyReadVideoTool(mediaCtx)
-  })
+  if (resolved.readImage) {
+    ctx.inject(['attachments'], (mediaCtx) => {
+      applyReadImageTool(mediaCtx)
+      applyReadVideoTool(mediaCtx)
+    })
+  }
   // One escalation API shared by both mutating tools: advertisement gating,
   // per-call policy resolution, and denial-marker mapping, all keyed off whether
   // the mounted ctx.fs confines (ctx.fs.sandboxMode).
-  const sandbox = new FsSandboxController(ctx)
-  applyWriteTool(ctx, sandbox)
-  applyEditTool(ctx, sandbox)
+  if (resolved.write || resolved.edit) {
+    const sandbox = new FsSandboxController(ctx)
+    if (resolved.write) applyWriteTool(ctx, sandbox)
+    if (resolved.edit) applyEditTool(ctx, sandbox)
+  }
 }

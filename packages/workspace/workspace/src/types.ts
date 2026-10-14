@@ -7,7 +7,7 @@
 
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type {} from '@deepseek-ai/dsh-typert-protocol'
+import type { TypertResource } from '@deepseek-ai/dsh-typert-protocol'
 
 /**
  * Identifies one workspace record. A generated uuid, never the path: path
@@ -16,6 +16,11 @@ import type {} from '@deepseek-ai/dsh-typert-protocol'
 export type WorkspaceId = Branded<'WorkspaceId'>
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface TypertResourceMap {
+    /** One Workspace; the Workspace Controller registers its default `workspaceId` wire field. */
+    workspace: TypertResource<WorkspaceId>
+  }
+
   interface RemoteErrorDetailsMap {
     /** No registration carries that Workspace identity. */
     'workspace/not-found': { readonly workspaceId: WorkspaceId }
@@ -55,11 +60,13 @@ export interface SessionActivity {
 }
 
 /**
-  * One workspace: a stable id over an existing primary directory, optional
+ * One workspace: a stable id over an existing primary directory, optional
  * additional folders, a display title, and an ordered candidate account of
  * sessions. Membership requires both an id in that account and a session
- * whose canonical effective home equals the workspace path. Consumers only see
- * this interface; the implementation stays private.
+ * whose canonical effective home equals the workspace path. An existing
+ * candidate stays when its fully qualified home cannot resolve because a path
+ * component is missing. Consumers only see this interface; the implementation
+ * stays private.
  */
 export interface Workspace {
   /** Stable record id (generated uuid). */
@@ -94,8 +101,12 @@ export interface Workspace {
    * prepended at attach, explicit reordering goes through
    * `insertSessionBefore`, and activity never reorders. The durable candidate
    * account is filtered synchronously: missing headers, invalid homes, and
-   * canonical membership-home mismatches are never returned. A subsequent
-   * workspace mutation prunes those filtered candidates durably.
+   * canonical membership-home mismatches are never returned. A fully qualified
+   * home whose realpath or directory stat fails with ENOENT preserves an
+   * existing candidate, including a dangling symlink; other filesystem
+   * failures do not. A subsequent workspace mutation prunes filtered
+   * candidates, not missing-directory candidates. This does not admit new
+   * sessions or recreate directories.
    */
   readonly sessionIds: readonly SessionId[]
 

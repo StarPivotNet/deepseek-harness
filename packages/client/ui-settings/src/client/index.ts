@@ -1,7 +1,7 @@
 /** Shared configuration forms and their Host describe mirror. */
 import type { Context } from '@deepseek-ai/cordis'
-// Type-only: the ctx.remote merge, the fixed Host facts, and the carrier's
-// `connection/reset` lifecycle event, all through the assembly package.
+// Type-only: the ctx.remote merge and the carrier's `connection/reset`
+// lifecycle event, all through the assembly package.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only pair supplying `$on` and its key face without dragging a build
 // artifact into the Host graph (rationale beside the same pair in
@@ -38,8 +38,11 @@ export const inject = ['remote', 'remote.settings']
  */
 export function apply(ctx: Context): void {
   const schema = new SettingsSchemaService(ctx)
-  // Host persistence for loopback and `--trusted-host` pages alike; keying off
-  // isLoopback leaves a LAN phone with no document.
+  // Product persistence is always the Host document, including `--trusted-host`
+  // pages and every authenticated browser. Keying off isLoopback leaves a LAN
+  // phone with no document. `memory` stays available only for explicit
+  // compositions and tests
+  // (.agents/notes/implemented/bug-fix/2026-09-15-authenticated-browser-host-preferences.md).
   const persistence = 'host' as const
   const mirror = new SettingsDescribeMirror(ctx, persistence)
   ctx.effect(() => {

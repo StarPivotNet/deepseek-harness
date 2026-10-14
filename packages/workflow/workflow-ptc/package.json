@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-workflow-ptc",
   "description": "Workflow orchestration in the shared sandboxed Node PTC runtime",
-  "version": "0.2.1-alpha.2",
+  "version": "0.2.1-alpha.3",
   "publishConfig": {
     "access": "public"
   },
@@ -20,12 +20,10 @@
     },
     "./src/*": "./src/*",
     "./package.json": "./package.json",
-    "./worker": {
-      "types": "./lib/types/worker.d.ts",
-      "default": "./lib/worker.cjs"
-    }
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
+    "locale/*.json",
     "lib/index.js",
     "lib/types/**/*.d.ts"
   ],
@@ -73,7 +71,6 @@
     "@deepseek-ai/dsh-subprocess-local": "workspace:*",
     "@deepseek-ai/dsh-sandbox-local": "workspace:*",
     "@deepseek-ai/dsh-session-persistence-jsonl": "workspace:*",
-    "@deepseek-ai/dsh-working-directory": "workspace:*",
-    "tsx": "^4.19.2"
+    "@deepseek-ai/dsh-working-directory": "workspace:*"
   }
 }

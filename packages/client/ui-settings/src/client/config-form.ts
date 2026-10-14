@@ -53,6 +53,8 @@ export class ConfigFormController<T> implements ConfigForm<T> {
   private writeGeneration = 0
   private disposed = false
   private readonly unsubscribe: (() => void) | undefined
+  private readonly persistence: 'host' | 'memory'
+  private readonly schema: SettingsSchemaService
   /**
    * Revision answered by a superseded write still ahead of the mirror: the
    * mirror only folds the LATEST settlement in, so a queued successor takes
@@ -64,19 +66,23 @@ export class ConfigFormController<T> implements ConfigForm<T> {
    * @param ctx - the providing plugin's context, whose `remote.settings`
    * namespace carries this form's writes (reads ride the mirror).
    * @param spec - namespace identity and optional narrowing decoder.
-   * @param mirror - the shared describe mirror this scope derives from.
-   * @param persistence - `host` reads and writes the Host document (the product
-   *   composition, including `--trusted-host` pages). `memory` is only for
-   *   explicit compositions and tests: it never touches the wire.
+   * @param mirror - the shared describe mirror this form derives from.
    * @param schema - settings-owned schema operations.
+   * @param persistence - `host` reads and writes the Host document (the product
+   *   composition, including `--trusted-host` pages and every authenticated
+   *   browser). `memory` is only for explicit compositions and tests: it never
+   *   touches the wire. Defaults to `host`, so callers that predate the mode
+   *   keep Host persistence.
    */
   constructor(
     private readonly ctx: Context,
     private readonly spec: ConfigFormSpec<T>,
     private readonly mirror: SettingsDescribeMirror,
-    private readonly persistence: 'host' | 'memory',
-    private readonly schema: SettingsSchemaService,
+    schema: SettingsSchemaService,
+    persistence: 'host' | 'memory' = 'host',
   ) {
+    this.schema = schema
+    this.persistence = persistence
     this.store = createSnapshotStore<ConfigFormSnapshot<T>>({
       status: persistence === 'host' ? 'loading' : 'unavailable',
       value: undefined,
@@ -269,12 +275,13 @@ export class ConfigForms extends Service {
   constructor(ctx: Context, config: {
     mirror: SettingsDescribeMirror
     schema: SettingsSchemaService
-    persistence: 'host' | 'memory'
+    /** Omitted callers keep Host persistence, including every authenticated browser. */
+    persistence?: 'host' | 'memory'
   }) {
     super(ctx, 'configForms')
     this.mirror = config.mirror
     this.schema = config.schema
-    this.persistence = config.persistence
+    this.persistence = config.persistence ?? 'host'
     this.owner = ctx
     this.developerTools = new DeveloperToolsPreference(this.get(DEVELOPER_TOOLS_NAMESPACE))
     ctx.effect(() => async () => {
@@ -302,7 +309,7 @@ export class ConfigForms extends Service {
     const existing = this.forms.get(entryId)
     if (existing !== undefined) return existing as ConfigFormController<T>
     const form = new ConfigFormController<T>(
-      this.owner, { namespace: entryId }, this.mirror, this.persistence, this.schema,
+      this.owner, { namespace: entryId }, this.mirror, this.schema, this.persistence,
     )
     this.forms.set(entryId, form)
     void this.mirror.ensure()

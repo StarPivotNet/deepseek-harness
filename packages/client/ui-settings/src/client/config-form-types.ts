@@ -47,7 +47,7 @@ export interface ConfigForm<T> {
   subscribe(listener: () => void): () => void
   /**
    * Queue one atomic namespace mutation. All operations share one revision
-   * fence, Host validation, persistence decision, and recovery read. Supplying
+   * fence, Host validation, and recovery read. Supplying
    * `expectedRevision` preserves an earlier read as the fence instead of using
    * the latest queued or mirrored revision.
    * @param ops - ordered field operations copied when queued.

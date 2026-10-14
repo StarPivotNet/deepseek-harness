@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-settings/README.md
 /:
-  en: e08567a5d44448b5
-  zh: ea5aeda53ad4ab59
+  en: 3b83cc5d2fb6a2c9
+  zh: fc005b5f7c719bdb
 /deepseek-ai-dsh-client-ui-settings:
   en: 720600abd76a4a91
   zh: 822bda08efbfc3e4
 /deepseek-ai-dsh-client-ui-settings/summary:
-  en: 75ce6a15b88d0464
-  zh: ab8e0f54b2f42c63
+  en: dd15223c0876448c
+  zh: 8702efd9043fd8ad
 /deepseek-ai-dsh-client-ui-settings/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
@@ -18,32 +18,38 @@
   en: 2417d8409aad6ca7
   zh: 449eee623a2f334b
 /deepseek-ai-dsh-client-ui-settings/use-this-package/binding-a-namespace:
-  en: d4d9dd00548536e0
-  zh: 456277110f0b0ccf
+  en: b2585629b53bd24f
+  zh: b75751535a57fb78
+/deepseek-ai-dsh-client-ui-settings/use-this-package/configuration-forms:
+  en: ebd06d57e1ce674b
+  zh: d2274029bae8cb34
 /deepseek-ai-dsh-client-ui-settings/use-this-package/following-served-namespaces:
   en: 2edd420502bebce1
   zh: 6624abe01110c012
 /deepseek-ai-dsh-client-ui-settings/use-this-package/filling-the-settings-slots:
-  en: f8f3692893baa32c
-  zh: fd95dbcd439c79e5
+  en: d33adfc070099bcc
+  zh: f79e7566352acf92
 /deepseek-ai-dsh-client-ui-settings/use-this-package/observable-success-and-failures:
-  en: 89653dbe1347b63e
-  zh: 78db241b28c9be64
+  en: e8ae281f9be2486b
+  zh: d8651cb791c6ffe5
 /deepseek-ai-dsh-client-ui-settings/understand-the-implementation:
   en: d756fe51d9456fb4
   zh: 41de582aace7332f
 /deepseek-ai-dsh-client-ui-settings/understand-the-implementation/the-describe-mirror:
-  en: 2d8f3ff0f62e170f
-  zh: 9f8fd368b9f0e69b
+  en: b06e09e978a6dedc
+  zh: 20faa8a74f7d8723
 /deepseek-ai-dsh-client-ui-settings/understand-the-implementation/scope-derivation:
   en: ce017c88b674ee6b
   zh: 3d0dc433040381b7
+/deepseek-ai-dsh-client-ui-settings/understand-the-implementation/shared-entry-writes:
+  en: 8b787503e5740cfd
+  zh: ef23b6a309b6ec9d
 /deepseek-ai-dsh-client-ui-settings/understand-the-implementation/schema-service:
-  en: 2e933711aed70953
-  zh: 15ff849f66f9dbd7
+  en: a935c5f94048714b
+  zh: 28088db30fc2b756
 /deepseek-ai-dsh-client-ui-settings/further-exploration:
-  en: 9cfba9dc2d800d27
-  zh: 33e7a0c8bc76933d
+  en: a61d8d3fe74ebd96
+  zh: 43721e0274ebccf2
 /deepseek-ai-dsh-client-ui-settings/model-experience:
   en: 3120df665299c634
   zh: 1d9f365d091d0d2a
@@ -51,8 +57,8 @@
   en: ca75c51c89c2c9b0
   zh: de54f3467ef3b9be
 /deepseek-ai-dsh-client-ui-settings/known-limitations-and-deferred-work:
-  en: ef7205ab07746a3a
-  zh: 88323c26c9898d75
+  en: 36956824eb99eeda
+  zh: 217708d981ccf1de
 /deepseek-ai-dsh-client-ui-settings/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: 3bb0c20c93f16f98
