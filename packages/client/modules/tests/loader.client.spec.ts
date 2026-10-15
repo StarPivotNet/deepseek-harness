@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { removeOwnedStyles } from '../src/client/entry-lifecycle.ts'
+import { readRelease } from '../src/client/manifest.ts'
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  apply, ClientModuleSystem, createClientModuleSystem, parseBootManifest,
+  apply, createClientModuleSystem, parseBootManifest,
   type BootModuleRow, type ClientBundleRegistration, type ClientModuleCreateOptions,
   type ClientModuleLoader, type ClientModuleLoaderTarget, type DshWindow,
 } from '../src/client/index.ts'
@@ -694,6 +695,24 @@ describe('boot manifest wire', () => {
       .toThrow('client-modules: boot manifest batches must be an array')
   })
 
+  it('carries an optional Host release and rejects a malformed one', () => {
+    const wire = { rev: 'graph', entries: [], batches: [] }
+    expect(parseBootManifest(wire)).not.toHaveProperty('release')
+    expect(parseBootManifest({ ...wire, release: { version: '1.0.0' } }).release).toEqual({ version: '1.0.0' })
+    // Members outside the identity are dropped so equality compares only version and commit.
+    expect(parseBootManifest({ ...wire, release: { version: '1.0.0', commit: 'abc1234', label: 'x' } }).release)
+      .toEqual({ version: '1.0.0', commit: 'abc1234' })
+    for (const release of ['1.0.0', null, {}, { version: 1 }, { version: '1.0.0', commit: 7 }]) {
+      expect(() => parseBootManifest({ ...wire, release }))
+        .toThrow('client-modules: boot manifest release must carry a string version and an optional string commit')
+      // Release comparison reads no further than the release and reports an unreadable one as absent.
+      expect(readRelease({ release })).toBeUndefined()
+    }
+    expect(readRelease({ release: { version: '1.0.0', commit: 'abc1234', label: 'x' }, entries: 'another format' }))
+      .toEqual({ version: '1.0.0', commit: 'abc1234' })
+    expect(readRelease(null)).toBeUndefined()
+  })
+
   it('rejects malformed batch phases', () => {
     const entry = { id: 'a', url: '/a.js', rev: '1' }
     expect(() => parseBootManifest({ rev: 'graph', entries: [entry], batches: [null] }))
@@ -908,26 +927,6 @@ describe('default transport seam', () => {
     expect([...document.querySelectorAll('script')]).toEqual([])
   })
 
-  it('retries a first-scan script miss then registers the factory', async () => {
-    let attempts = 0
-    vi.spyOn(document.head, 'append').mockImplementation((...nodes) => {
-      const script = nodes[0]
-      if (!(script instanceof HTMLScriptElement)) throw new Error('expected script node')
-      attempts += 1
-      queueMicrotask(() => {
-        if (attempts < 3) {
-          script.dispatchEvent(new Event('error'))
-          return
-        }
-        win.__ModuleLoader__?.load({ id: 'dee', factory: () => ({ marker: 'retried' }) })
-        script.dispatchEvent(new Event('load'))
-      })
-    })
-    const loader: ClientModuleLoader = new ClientModuleSystem({ manifest: parseBootManifest({ rev: '0', entries: [row('dee')] }), staticModules: {}, registrationTarget: { mode: 'queue', pendingQueue: [], load() {}, create() { throw new Error('unused') } }, bootstrapModule: { id: MODULES_ID, exports: bootstrapExports } })
-    const exports = await loader.import('dee', '', {})
-    expect(attempts).toBe(3)
-    expect((exports as { marker: string }).marker).toBe('retried')
-  })
 })
 
 

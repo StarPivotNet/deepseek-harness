@@ -212,6 +212,33 @@ describe('experimental workspace constraints', () => {
     },
   )
 
+  it('allows StarPivot product packages that still live under packages/experimental', () => {
+    const owners = [
+      ['packages/experimental/hooks-claude-code', '@deepseek-ai/dsh-hooks-claude-code'],
+      ['packages/experimental/hooks-codex', '@deepseek-ai/dsh-hooks-codex'],
+      ['packages/experimental/skill-badge', '@deepseek-ai/dsh-skill-badge'],
+      ['packages/experimental/tool-ralph', '@deepseek-ai/dsh-tool-ralph'],
+      ['packages/experimental/webhook', '@deepseek-ai/dsh-webhook'],
+      ['packages/experimental/webhook-github', '@deepseek-ai/dsh-webhook-github'],
+    ] as const
+    const names = owners.map(([, name]) => name)
+    const manifests = [
+      ...owners.map(([dir, name]) => ({ dir, manifest: { name } })),
+      {
+        dir: 'apps/cli',
+        manifest: { name: '@deepseek-ai/dsh', dependencies: Object.fromEntries(names.map(name => [name, 'workspace:*'])) },
+      },
+      {
+        dir: 'packages/bundle/base',
+        manifest: {
+          name: '@deepseek-ai/dsh-base',
+          dependencies: { '@deepseek-ai/dsh-skill-badge': 'workspace:*', '@deepseek-ai/dsh-tool-ralph': 'workspace:*' },
+        },
+      },
+    ] satisfies WorkspaceManifest[]
+    expect(checkExperimentalDependencyIsolation(manifests, [])).toEqual([])
+  })
+
   it('allows the dsh installation to ship the optional bundles the launcher names, and nothing else experimental', () => {
     const listed = { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' }
     const installation = { dir: 'apps/cli', manifest: { name: '@deepseek-ai/dsh', dependencies: listed } } satisfies WorkspaceManifest
@@ -349,6 +376,13 @@ describe('package payload constraints', () => {
       } })).toEqual([expect.stringContaining('package.json files must be')])
     },
   )
+
+  it('exempts the private plugin market generator from release rules in its own directory only', () => {
+    const dir = 'apps/plugin-market-generator'
+    const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
+    expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
+    expect(checkWorkspaceManifest({ dir: 'apps/other-tool', manifest })).not.toEqual([])
+  })
 
   it('rejects locale publication entries without their resource exports', () => {
     const dir = 'packages/experimental/auto-review'

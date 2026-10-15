@@ -12,7 +12,7 @@
  */
 
 import { repairSseJsonResponse } from './sse-json-repair.ts'
-import { parseRequestVideoMarker, VIDEO_REQUEST_MARKER_PREFIX } from './context.ts'
+import { parseRequestVideoMarker, readEmbeddedVideoMarker, VIDEO_REQUEST_MARKER_PREFIX } from './context.ts'
 
 type FetchFn = typeof globalThis.fetch
 
@@ -152,22 +152,20 @@ function stripMarkerString(
   while (true) {
     const start = rest.indexOf(VIDEO_REQUEST_MARKER_PREFIX)
     if (start === -1) return result + rest
-    const end = rest.indexOf(']', start)
-    if (end === -1) return result + rest
-    const attachmentId = parseRequestVideoMarker(rest.slice(start, end + 1))
-    if (attachmentId === undefined) {
-      result += rest.slice(0, end + 1)
-      rest = rest.slice(end + 1)
+    const marker = readEmbeddedVideoMarker(rest.slice(start))
+    if (marker === undefined) {
+      result += rest.slice(0, start + VIDEO_REQUEST_MARKER_PREFIX.length)
+      rest = rest.slice(start + VIDEO_REQUEST_MARKER_PREFIX.length)
       continue
     }
-    const url = videos.get(attachmentId)
+    const url = videos.get(marker.attachmentId)
     result += rest.slice(0, start)
     if (url === undefined) {
       result += UNAVAILABLE_VIDEO_TEXT
     } else {
       collected.push(videoUrlItem(url))
     }
-    rest = rest.slice(end + 1)
+    rest = rest.slice(start + marker.length)
   }
 }
 

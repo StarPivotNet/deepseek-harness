@@ -93,8 +93,8 @@ describe('catalog-route model discovery', () => {
     expect(models.map(model => model.id).sort())
       .toEqual(getBuiltinModels('deepseek').map(model => model.id).sort())
     expect(models.every(model => (model.contextWindow ?? 0) > 0 && (model.maxTokens ?? 0) > 0)).toBe(true)
-    const flash = models.find(model => model.id === 'deepseek-v4-flash')
-    expect(flash?.reasoningEfforts).toEqual({ off: null, low: 'low', high: 'high', max: 'max' })
+    const flash = models.find(model => model.id === 'deepseek-flash')
+    expect(flash?.reasoningEfforts).toEqual({ low: 'low', high: 'high', max: 'max' })
     expect(flash?.supportsReasoningEffort).toBeUndefined()
     expect(server.paths).toEqual([])
   })
@@ -108,8 +108,8 @@ describe('catalog-route model discovery', () => {
     const ctx = await harness()
     const models = await ctx.llm.discoverModels('llm-pi-ai', { provider: 'xai' })
     const grok = models.find(model => model.id === 'grok-4.3')
-    expect(grok?.reasoningEfforts).toMatchObject({ off: null, high: 'high' })
-    expect(grok?.supportsReasoningEffort).toBe(false)
+    expect(grok?.reasoningEfforts).toMatchObject({ off: 'none', low: 'low', medium: 'medium', high: 'high' })
+    expect(grok?.supportsReasoningEffort).toBeUndefined()
   })
 
   it('says where a route the catalog does not describe must get its models', async () => {
@@ -124,19 +124,13 @@ describe('catalog-route model discovery', () => {
     await expect(discoverModels({})).rejects.toThrow(/set a baseURL/)
   })
 
-  it('asks the shipped FAC endpoint when the draft names no base URL', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      expect(String(input)).toBe('https://new.fastaicode.top/v1/models')
-      return new Response(JSON.stringify({ data: [{ id: 'fac-chat', name: 'FAC Chat' }] }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      })
-    })
+  it('refuses a provider the installed catalog does not describe when the draft names no base URL', async () => {
+    const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     const ctx = await harness()
     await expect(ctx.llm.discoverModels('llm-pi-ai', { provider: 'fac' }))
-      .resolves.toEqual([{ id: 'fac-chat', name: 'FAC Chat' }])
-    expect(fetchMock).toHaveBeenCalledOnce()
+      .rejects.toThrow(/set a baseURL/)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
 

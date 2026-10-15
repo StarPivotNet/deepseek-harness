@@ -16,6 +16,7 @@ import dynamicRemote from '@deepseek-ai/dsh-cordis-host-runner/remote'
 import pluginManagerRemote from '@deepseek-ai/dsh-plugin-manager/remote'
 import automationRemote from '@deepseek-ai/dsh-automation/remote'
 import pluginRegistryProbeRemote from '@deepseek-ai/dsh-client-ui-plugin-manager/remote'
+import pluginMarketRemote from '@deepseek-ai/dsh-plugin-market/remote'
 import pluginInventoryRemote from '@deepseek-ai/dsh-host-plugin-inventory/remote'
 import messageFeedbackRemote from '@deepseek-ai/dsh-message-feedback/remote'
 import permissionPresetsRemote from '@deepseek-ai/dsh-permission-presets/remote'
@@ -29,6 +30,8 @@ import workspaceRemote from '@deepseek-ai/dsh-api-workspace-controller/remote'
 import terminalRemote from '@deepseek-ai/dsh-api-terminal-controller/remote'
 import workspaceFilesRemote from '@deepseek-ai/dsh-api-workspace-files/remote'
 import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
+import { installConnectionApi } from './connection-api.ts'
 
 export type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 export type {
@@ -41,6 +44,11 @@ export type {
 export type {} from '@deepseek-ai/dsh-plugin-manager/remote'
 export type {} from '@deepseek-ai/dsh-automation/remote'
 export type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/remote'
+export type {} from '@deepseek-ai/dsh-plugin-market/remote'
+export type {
+  MarketCompatibility, MarketIndexSummary, MarketInstallation, MarketInstallationStatus, MarketListingEntry, MarketListingVersion,
+  MarketQuery, MarketSearchResult, MarketSort,
+} from '@deepseek-ai/dsh-plugin-market/types'
 export type { PluginInventorySnapshot } from '@deepseek-ai/dsh-host-plugin-inventory/types'
 export type {} from '@deepseek-ai/dsh-agent-preset-registry/remote'
 export type {} from '@deepseek-ai/dsh-user-questions/remote'
@@ -185,7 +193,8 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
     for (const contribution of [
       productAnalyticsRemote, agentPresetsRemote, commandsRemote, settingsControllerRemote, accountRemote,
       goalsRemote, llmRemote, dynamicRemote, scheduleRemote,
-      pluginInventoryRemote, pluginManagerRemote, pluginRegistryProbeRemote, messageFeedbackRemote, sessionFeedbackRemote,
+      pluginInventoryRemote, pluginManagerRemote, pluginMarketRemote, pluginRegistryProbeRemote,
+      messageFeedbackRemote, sessionFeedbackRemote,
       fileUploadsRemote, sessionReferencesRemote, permissionPresetsRemote, subagentsRemote,
       sessionRemote, jobRemote, workspaceRemote, workspaceFilesRemote, automationRemote, terminalRemote,
       officeToPdfRemote, userQuestionsRemote,
@@ -196,9 +205,20 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
     for (const dispose of disposers.reverse()) await dispose()
     throw error
   }
+  const connection = ctx.get('connection') as ConnectionHandle | undefined
+  let uninstallApi: (() => void) | undefined
+  // Namespace services live on cousin fibers created by $mount. This assembly
+  // only injects remote, so ctx.remote.llm here throws without inject.
+  // Read them from a child that declares the namespaces after they exist.
+  if (connection !== undefined) {
+    await ctx.inject(['remote.llm', 'remote.settings'], (scope) => {
+      uninstallApi = installConnectionApi(connection, scope.remote)
+    })
+  }
   // Unwound in reverse mount order, so a namespace never outlives one mounted
   // after it.
   return async () => {
+    uninstallApi?.()
     for (const dispose of disposers.reverse()) await dispose()
   }
 }

@@ -68,6 +68,82 @@ interface ListingTopProvider {
   max_completion_tokens?: unknown
 }
 
+/** Known reasoning levels a listing may disclose. */
+const REASONING_LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const
+
+/** Wire aliases a listing uses for the canonical levels. */
+const REASONING_ALIASES: Readonly<Record<string, typeof REASONING_LEVELS[number]>> = {
+  none: 'off',
+  disabled: 'off',
+  ultra: 'max',
+  xhigh: 'xhigh',
+  x_high: 'xhigh',
+  'extra-high': 'xhigh',
+  'extra_high': 'xhigh',
+}
+
+/** One listing effort token after its label and wire value are separated. */
+interface ListingEffort {
+  level?: string
+  wire?: string | null
+}
+
+/**
+ * Read one listing effort token. Unknown tokens are dropped; a label-only
+ * known level uses that level as its wire value, except `off`, which means
+ * "supported, send nothing".
+ * @param raw - one effort token from a listing row.
+ * @returns the canonical level and wire spelling, or undefined.
+ */
+function readEffortToken(raw: unknown): ListingEffort | undefined {
+  if (typeof raw === 'string') {
+    const level = canonicalReasoningLevel(raw)
+    return level === undefined ? undefined : { level, wire: level === 'off' ? null : level }
+  }
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const record = raw as { value?: unknown; id?: unknown; label?: unknown; default?: unknown }
+  const named = label(record.value, record.id, record.label)
+  const level = named === undefined ? undefined : canonicalReasoningLevel(named)
+  if (level === undefined) return undefined
+  const wire = typeof record.value === 'string' && record.value.length > 0
+    ? record.value
+    : typeof record.id === 'string' && record.id.length > 0
+      ? record.id
+      : level === 'off' ? null : level
+  return { level, wire }
+}
+
+/** Map a listing label onto a canonical reasoning level. */
+function canonicalReasoningLevel(raw: string): typeof REASONING_LEVELS[number] | undefined {
+  const normalized = raw.trim().toLowerCase().replace(/[\s_]+/g, '-')
+  if ((REASONING_LEVELS as readonly string[]).includes(normalized)) return normalized as typeof REASONING_LEVELS[number]
+  return REASONING_ALIASES[normalized]
+}
+
+/**
+ * Read the reasoning fields a listing disclosed. An empty or unknown list
+ * discloses nothing.
+ * @param entry - one listing row.
+ * @returns discovered reasoning fields, or an empty object.
+ */
+function readReasoning(entry: ListingEntry | null): Pick<LlmDiscoveredModel, 'reasoningEfforts' | 'supportsReasoningEffort'> {
+  const raw = entry?.reasoningEfforts ?? entry?.reasoning_efforts
+  const efforts = Array.isArray(raw)
+    ? raw.map(readEffortToken).filter((token): token is ListingEffort => token?.level !== undefined)
+    : []
+  const reasoningEntries = efforts.flatMap(token =>
+    token.level === undefined ? [] : [[token.level, token.wire ?? null] as const],
+  )
+  const reasoningEfforts = reasoningEntries.length === 0
+    ? undefined
+    : Object.fromEntries(reasoningEntries)
+  const supports = entry?.supportsReasoningEffort ?? entry?.supports_reasoning_effort
+  return {
+    ...reasoningEfforts === undefined ? {} : { reasoningEfforts },
+    ...typeof supports === 'boolean' ? { supportsReasoningEffort: supports } : {},
+  }
+}
+
 /** One entry of a supported `GET /models` reply. */
 interface ListingEntry {
   id?: unknown
@@ -85,6 +161,10 @@ interface ListingEntry {
   maxTokens?: unknown
   limit?: ListingLimit | null
   top_provider?: ListingTopProvider | null
+  reasoningEfforts?: unknown
+  reasoning_efforts?: unknown
+  supportsReasoningEffort?: unknown
+  supports_reasoning_effort?: unknown
 }
 
 /** A positive integer field of a listing entry, or `undefined` when absent or unusable. */
@@ -219,11 +299,13 @@ function readListing(body: unknown): LlmDiscoveredModel[] {
       entry?.limit?.output,
       entry?.top_provider?.max_completion_tokens,
     )
+    const reasoning = readReasoning(entry)
     models.push({
       id,
       name,
       ...contextWindow === undefined ? {} : { contextWindow },
       ...maxTokens === undefined ? {} : { maxTokens },
+      ...reasoning,
     })
   }
   return models
@@ -266,6 +348,20 @@ export interface StoredModelDiscoveryProfile {
  * @throws LlmError when the protocol has no readable listing, the endpoint
  *   refuses or fails the request, or the reply is not a model listing.
  */
+
+/**
+ * Project one installed catalog model's reasoning map onto the discovery reply.
+ * Null wire values are omitted: discovery reports only levels the model can send.
+ * @param model - one installed pi-ai model.
+ * @returns disclosed reasoning fields, or an empty object.
+ */
+function catalogReasoning(model: { reasoning?: unknown; thinkingLevelMap?: Readonly<Record<string, string | null>> }): Pick<LlmDiscoveredModel, 'reasoningEfforts'> {
+  const map = model.thinkingLevelMap
+  if (map === undefined) return {}
+  const efforts = Object.entries(map).filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].length > 0)
+  return efforts.length === 0 ? {} : { reasoningEfforts: Object.fromEntries(efforts) }
+}
+
 export async function discoverModels(
   request: LlmModelDiscoveryOperation,
   storedProfile?: () => StoredModelDiscoveryProfile | undefined,
@@ -275,13 +371,15 @@ export async function discoverModels(
   if (request.provider !== undefined) {
     const installed = catalogModels(request.provider)
     if (installed.size > 0) {
-      return [...installed.values()].map(model => ({
+      const projected = [...installed.values()].map(model => ({
         id: model.id,
         name: model.name,
         contextWindow: model.contextWindow,
         maxTokens: model.maxTokens,
         inputModalities: [...model.input],
+        ...catalogReasoning(model),
       }))
+      return projected
     }
   }
   if (request.baseURL === undefined || request.baseURL.length === 0) {

@@ -34,6 +34,21 @@ export function parseRequestVideoMarker(text: string): string | undefined {
   return attachmentId.length > 0 ? attachmentId : undefined
 }
 
+
+/**
+ * Read one video marker embedded in text, including the id between the prefix and its closing bracket.
+ * @param text - text that starts at a video marker prefix.
+ * @returns the attachment id and consumed length, or undefined when the text is not a complete marker.
+ */
+export function readEmbeddedVideoMarker(text: string): { attachmentId: string; length: number } | undefined {
+  if (!text.startsWith(VIDEO_REQUEST_MARKER_PREFIX)) return undefined
+  const end = text.indexOf(VIDEO_REQUEST_MARKER_SUFFIX, VIDEO_REQUEST_MARKER_PREFIX.length)
+  if (end === -1) return undefined
+  const attachmentId = text.slice(VIDEO_REQUEST_MARKER_PREFIX.length, end)
+  if (attachmentId.length === 0 || attachmentId.includes(VIDEO_REQUEST_MARKER_SUFFIX)) return undefined
+  return { attachmentId, length: end + VIDEO_REQUEST_MARKER_SUFFIX.length }
+}
+
 /** Join the text blocks of a harness message. */
 function flattenText(message: RequestMessage): string {
   return message.content

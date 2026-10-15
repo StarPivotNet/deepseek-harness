@@ -323,7 +323,7 @@ describe('hand-declared providers', () => {
       'acme-gateway': { baseURL: 'https://acme.test', models: [{ id: '111' }] },
     }, 'deferred').get('acme-gateway')!
     const failure = 'llm-pi-ai: provider "acme-gateway" model "111" needs an api; '
-      + 'the installed catalog does not describe it, so set the route\'s api to the wire protocol its endpoint speaks'
+      + 'the installed catalog does not describe it, so set the route\'s api or this model\'s api to the wire protocol its endpoint speaks'
 
     expect(profile.catalogError).toBe(failure)
     expect(profile.modelErrors.get('111')).toBe(failure)

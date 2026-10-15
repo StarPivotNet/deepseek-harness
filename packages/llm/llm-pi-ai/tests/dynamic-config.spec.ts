@@ -88,7 +88,7 @@ describe('request-level dynamic profiles', () => {
     await writeFile(join(dir, '.credentials.yaml'), 'version: 1\nrefs:\n  PI_DYNAMIC_KEY: fake-key\n', { mode: 0o600 })
     const ctx = await boot(dir, stored)
     const failure = 'llm-pi-ai: provider "openrouter" model "111" needs an api; '
-      + 'the installed catalog does not describe it, so set the route\'s api to the wire protocol its endpoint speaks'
+      + 'the installed catalog does not describe it, so set the route\'s api or this model\'s api to the wire protocol its endpoint speaks'
 
     expect(ctx.llm.listProviders()).toEqual([{ id: 'openrouter', name: 'openrouter' }])
     expect(ctx.llm.listConfigurableProviders()).toContainEqual({
