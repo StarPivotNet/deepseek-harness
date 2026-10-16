@@ -66,7 +66,8 @@ export interface WelcomeAuthentication {
 }
 
 /**
- * Decide whether a startup or sign-out requires the welcome entry.
+ * Report whether neither authentication route is configured.
+ * Startup, sign-out, and session expiry open the workspace regardless of this value.
  * @param authentication - current account and independently stored API-key facts.
  * @returns true only when neither authentication route is configured.
  */

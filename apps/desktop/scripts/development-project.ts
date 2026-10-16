@@ -66,7 +66,24 @@ function removeOwnedPath(path: string): void {
 
 function linkDirectory(source: string, destination: string): void {
   mkdirSync(dirname(destination), { recursive: true })
-  symlinkSync(realpathSync(source), destination, process.platform === 'win32' ? 'junction' : 'dir')
+  let resolved: string
+  try {
+    resolved = realpathSync(source)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error(`desktop development: dangling workspace link ${source}`)
+    }
+    throw error
+  }
+  symlinkSync(resolved, destination, process.platform === 'win32' ? 'junction' : 'dir')
+}
+
+function isResolvableDirectory(path: string): boolean {
+  try {
+    return lstatSync(path).isDirectory() && existsSync(join(path, '.'))
+  } catch {
+    return false
+  }
 }
 
 function mirrorDependencyLinks(sourceRoot: string, destinationRoot: string): string[] {
@@ -78,12 +95,15 @@ function mirrorDependencyLinks(sourceRoot: string, destinationRoot: string): str
       mkdirSync(join(destinationRoot, entry.name), { recursive: true })
       for (const scoped of readdirSync(source, { withFileTypes: true })) {
         if (!scoped.isDirectory() && !scoped.isSymbolicLink()) continue
-        linkDirectory(join(source, scoped.name), join(destinationRoot, entry.name, scoped.name))
+        const scopedSource = join(source, scoped.name)
+        if (!isResolvableDirectory(scopedSource)) continue
+        linkDirectory(scopedSource, join(destinationRoot, entry.name, scoped.name))
         names.push(`${entry.name}/${scoped.name}`)
       }
       continue
     }
     if (entry.isDirectory() || entry.isSymbolicLink()) {
+      if (!isResolvableDirectory(source)) continue
       linkDirectory(source, join(destinationRoot, entry.name))
       names.push(entry.name)
     }
@@ -96,6 +116,7 @@ function mirrorWorkspaceDependencies(roots: readonly string[], destinationRoot: 
   const names: string[] = []
   const visited = new Set<string>()
   const visit = (directory: string): void => {
+    if (!isResolvableDirectory(directory)) return
     const source = realpathSync(directory)
     if (visited.has(source)) return
     visited.add(source)
