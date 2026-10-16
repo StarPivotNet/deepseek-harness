@@ -188,6 +188,7 @@ describe('ModelSelect reasoning effort', () => {
   it('keeps the effort pane open after the root cell unmounts with no relatedTarget', () => {
     const directory = createSnapshotStore<ModelDirectoryState>(state())
     render(<ModelSelect
+      renderSlot={renderLabel}
       locked={false}
       available
       directory={directory}
@@ -223,6 +224,7 @@ describe('ModelSelect reasoning effort', () => {
       <div>
         <button type="button">outside</button>
         <ModelSelect
+          renderSlot={renderLabel}
           locked={false}
           available
           directory={directory}

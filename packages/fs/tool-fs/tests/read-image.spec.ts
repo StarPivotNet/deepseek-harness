@@ -798,7 +798,7 @@ describe('registration surface', () => {
   it('registers only read_image without text guidance', async () => {
     const ctx = await setup({ toolFs: { read: false, write: false, edit: false } })
     try {
-      expect(ctx.tools.schemas().map(tool => tool.name)).toEqual(['read_image'])
+      expect(ctx.tools.schemas().map(tool => tool.name).sort()).toEqual(['read_image', 'read_video'])
       expect((await ctx.systemPrompt.assemble()).sections.some(section => section.name.startsWith('tool:'))).toBe(false)
       await writeFile(join(dir, 'red.png'), PNG_1X1)
       const result = await readImage(ctx, { file_path: 'red.png' }, agentOn('vision-model'))
@@ -826,11 +826,11 @@ describe('registration surface', () => {
       const attachment = await ctx.plugin(LocalAttachmentStore, { dshHome: home })
       const plugin = await ctx.plugin(ToolFs, { read: false, write: false, edit: false })
       const names = () => ctx.tools.schemas().map(tool => tool.name).sort()
-      expect(names()).toEqual(['read_image'])
+      expect(names()).toEqual(['read_image', 'read_video'])
       await attachment.dispose()
       expect(names()).toEqual([])
       await ctx.plugin(LocalAttachmentStore, { dshHome: home })
-      expect(names()).toEqual(['read_image'])
+      expect(names()).toEqual(['read_image', 'read_video'])
       await plugin.dispose()
       expect(names()).toEqual([])
     } finally {
