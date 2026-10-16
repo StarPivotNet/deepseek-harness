@@ -39,6 +39,7 @@ describe('client-ui-update host', () => {
     await ctx.plugin(MemorySettings).await()
     const handlerRef: { current: ConnectionRpcHandler | undefined } = { current: undefined }
     ctx.provide('connection', fakeConnection(handlerRef))
+    ctx.provide('webServer', { register: () => () => {} })
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify([{
       tag_name: 'dsh-v1.2.4',
       html_url: 'https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v1.2.4',
@@ -72,6 +73,7 @@ describe('client-ui-update host', () => {
     await ctx.plugin(MemorySettings).await()
     const handlerRef: { current: ConnectionRpcHandler | undefined } = { current: undefined }
     ctx.provide('connection', fakeConnection(handlerRef))
+    ctx.provide('webServer', { register: () => () => {} })
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify([{
       tag_name: 'dsh-v1.2.4',
       html_url: 'https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v1.2.4',
@@ -99,6 +101,7 @@ describe('client-ui-update host', () => {
     await ctx.plugin(MemorySettings).await()
     const handlerRef: { current: ConnectionRpcHandler | undefined } = { current: undefined }
     ctx.provide('connection', fakeConnection(handlerRef))
+    ctx.provide('webServer', { register: () => () => {} })
     let seen: AbortSignal | undefined
     const fetchImpl = vi.fn((_input: unknown, init?: { signal?: AbortSignal }) => {
       seen = init?.signal
