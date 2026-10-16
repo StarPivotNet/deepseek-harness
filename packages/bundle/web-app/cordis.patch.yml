@@ -256,7 +256,7 @@
     # policy; an advertised public URL contributes nothing to it.
     - id: connection
       name: '@deepseek-ai/dsh-client-connection'
-      inject: [webStartup]
+      inject: [webStartup, webServer]
       config:
         # Keep invocation authorities (each --trusted-host value) when adding
         # deployment values, for example: ['app.internal', ...ctx.webStartup.trustedHosts].
