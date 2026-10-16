@@ -55,9 +55,7 @@ import {
 } from '../ids.ts'
 
 export const name = 'plugin-marketplace'
-// rpc.handle registers its channel route immediately, so webServer must be
-// declared or the reflection guard refuses the access when rows mount early.
-export const inject = ['loader', 'profile', 'connection', 'webServer']
+export const inject = ['loader', 'profile', 'connection']
 export {
   MARKETPLACE_BUNDLE_PACKAGE,
   MARKETPLACE_CLIENT_ENTRY_ID,

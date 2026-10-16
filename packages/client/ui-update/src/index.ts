@@ -49,9 +49,7 @@ export {
 /** Cordis plugin name. */
 export const name = 'client-ui-update'
 
-// rpc.handle registers its channel route immediately, so webServer must be
-// declared or the reflection guard refuses the access when rows mount early.
-export const inject = ['connection', 'settings', 'webServer']
+export const inject = ['connection', 'settings']
 
 /** Plugin config, validated by the same-named schemastery schema. */
 export interface Config {
