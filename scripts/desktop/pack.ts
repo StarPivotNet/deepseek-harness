@@ -466,6 +466,23 @@ function reusePreparedRuntime(platform: DesktopPlatform): PreparedDesktopRuntime
 }
 
 /**
+ * Extra resources beyond the asar: the bundled Node runtime plus the icon
+ * files the packaged main process reads by name at startup. The window icon
+ * ships on every platform; the tray bitmap is a Windows-only concept and the
+ * macOS menu bar intentionally keeps no icon.
+ * @param platform - packaged platform.
+ * @param prepared - verified resource roots from the prepare chain.
+ * @returns the electron-builder `extraResources` entries.
+ */
+export function extraResourcesFor(platform: DesktopPlatform, prepared: PreparedDesktopRuntime) {
+  return [
+    { from: prepared.runtime, to: 'runtime' },
+    { from: join(desktopRoot, 'resources', 'icon-windows.png'), to: 'icon.png' },
+    ...(platform === 'win32' ? [{ from: join(desktopRoot, 'resources', 'tray-windows.ico'), to: 'tray.ico' }] : []),
+  ]
+}
+
+/**
  * Write the electron-builder config that ships the prepared runtime resources.
  * @param version - desktop package version.
  * @param platform - packaged platform.
@@ -506,9 +523,7 @@ function writeBuilderConfig(version: string, platform: DesktopPlatform, prepared
     asarUnpack: [
       '**/*.{node,dylib,dll,so,exe}',
     ],
-    extraResources: [
-      { from: prepared.runtime, to: 'runtime' },
-    ],
+    extraResources: extraResourcesFor(platform, prepared),
     asar: true,
     artifactName: platform === 'darwin'
       ? 'DeepSeek Harness-${version}-mac.${ext}'

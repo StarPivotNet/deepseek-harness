@@ -12,12 +12,14 @@ import {
   desktopVersion,
   DESKTOP_RELEASE_NOTES_MAX_CHARS,
   expectedArtifacts,
+  extraResourcesFor,
   GITHUB_RELEASE_BODY_MAX_CHARS,
   parsePlatform,
   installedElectronVersion,
   pinStagedElectronVersion,
   pnpmBin,
   verifyDesktopTag,
+  type DesktopPlatform,
 } from './pack.ts'
 
 describe('desktop release naming', () => {
@@ -56,7 +58,9 @@ describe('desktop release naming', () => {
     })
     expect(pinned.dependencies).toBeUndefined()
     expect(pinned.devDependencies).toBeUndefined()
-    expect(installedElectronVersion()).toBe('44.0.0')
+    // The staged manifest carries no version ranges; electron-builder reads
+    // this installed release instead.
+    expect(installedElectronVersion()).toMatch(/^\d+\.\d+\.\d+$/)
   })
 
   it('writes a dependency-free staged manifest so Windows electron-builder skips pnpm list', () => {
@@ -175,5 +179,16 @@ describe('desktop builder targets', () => {
     expect(source).toContain("{ from: prepared.dsh, to: 'dsh', filter: ['**/*'] }")
     expect(source).toContain("{ from: join(prepared.dsh, 'node_modules'), to: 'dsh/node_modules', filter: ['**/*'] }")
     expect(source).toContain("'**/*.{node,dylib,dll,so,exe}'")
+  })
+
+  it('ships the startup icon files the packaged main process reads by name', () => {
+    const prepared = { runtime: '/tmp/runtime', dsh: '/tmp/dsh' }
+    const destinations = (platform: DesktopPlatform) => extraResourcesFor(platform, prepared).map(entry => entry.to)
+    expect(destinations('win32')).toEqual(['runtime', 'icon.png', 'tray.ico'])
+    expect(destinations('darwin')).toEqual(['runtime', 'icon.png'])
+    expect(destinations('linux')).toEqual(['runtime', 'icon.png'])
+    const win = extraResourcesFor('win32', prepared)
+    expect(win[1]?.from.endsWith('icon-windows.png')).toBe(true)
+    expect(win[2]?.from.endsWith('tray-windows.ico')).toBe(true)
   })
 })
