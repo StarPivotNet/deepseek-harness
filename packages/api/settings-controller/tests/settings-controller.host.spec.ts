@@ -19,6 +19,7 @@ describe('settings Remote', () => {
       'describe', 'update', 'replace', 'mutate', 'openSettingsDocument',
     ])
     expect(ctx.get('credentialsController')).toBeDefined()
+    expect(ctx.get('systemPromptCatalog')).toBeDefined()
   })
 
   it('redacts every described layer and applies mutations through the consumer', async () => {
