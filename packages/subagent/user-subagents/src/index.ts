@@ -1,15 +1,15 @@
 /**
  * User-authored subagent definition library.
  *
- * Settings owns the library. The model-facing delegation tool reads it live
- * and applies a selected definition's persona and tool filter at start.
+ * The live plugin Config owns the library; the Settings page writes it through
+ * the entry's settings namespace. The model-facing delegation tool reads it
+ * live and applies a selected definition's persona and tool filter at start.
  *
  * @module @deepseek-ai/dsh-user-subagents
  */
 
-import { Context, Service } from '@deepseek-ai/cordis'
+import { Context, Service, type Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -17,9 +17,6 @@ declare module '@deepseek-ai/cordis' {
     userSubagents: UserSubagents
   }
 }
-
-/** Settings namespace carrying the user subagent-definition library. */
-export const USER_SUBAGENTS_SETTINGS_NAMESPACE = settingsNamespace('user-subagents')
 
 /** Prompt / definition id: lowercase start, then letters, digits, hyphens, or underscores. */
 export const USER_SUBAGENT_ID = /^[a-z][a-z0-9_-]*$/
@@ -47,11 +44,6 @@ export interface UserSubagentDefinition {
 export interface UserSubagentsSettings {
   /** User-authored definitions. */
   definitions: UserSubagentDefinition[]
-}
-
-/** Empty composition entry: no user definitions until Settings supplies some. */
-export const EMPTY_USER_SUBAGENTS: UserSubagentsSettings = {
-  definitions: [],
 }
 
 const DEFINITION_SCHEMA: z<UserSubagentDefinition> = z.object({
@@ -132,32 +124,23 @@ export function compositionFromUserSubagent(definition: UserSubagentDefinition):
   }
 }
 
-/** Plugin config: the composition entry is always empty; Settings holds the library. */
-export interface Config {}
+/** Composition config: the live definition library held by the settings document. */
+export interface Config {
+  /** User-authored definitions. */
+  definitions: Volatile<UserSubagentDefinition[]>
+}
 
 /**
  * Owns the user subagent-definition library the delegation tool reads.
  */
 export class UserSubagents extends Service {
-  static Config: z<Config> = z.object({})
+  static Config = z.object({
+    definitions: z.array(DEFINITION_SCHEMA).default([]).volatile(),
+  })
   static inject = []
 
-  private source: () => UserSubagentsSettings
-
-  constructor(ctx: Context, _config: Config) {
+  constructor(ctx: Context, private readonly config: Config) {
     super(ctx, 'userSubagents')
-    this.source = () => EMPTY_USER_SUBAGENTS
-    installSettingsSection(
-      ctx,
-      USER_SUBAGENTS_SETTINGS_NAMESPACE,
-      USER_SUBAGENTS_SETTINGS_SCHEMA,
-      EMPTY_USER_SUBAGENTS,
-      {
-        setSource: (current) => { this.source = current },
-        onChange: () => {},
-        validate: validateUserSubagents,
-      },
-    )
   }
 
   /**
@@ -165,7 +148,7 @@ export class UserSubagents extends Service {
    * @returns a detached snapshot of the resolved settings section.
    */
   current(): UserSubagentsSettings {
-    return structuredClone(this.source())
+    return { definitions: structuredClone(this.config.definitions.get()) as UserSubagentDefinition[] }
   }
 
   /**
@@ -174,7 +157,7 @@ export class UserSubagents extends Service {
    * @returns the matching definition, or undefined.
    */
   get(id: string): UserSubagentDefinition | undefined {
-    return findUserSubagent(this.source(), id)
+    return findUserSubagent(this.current(), id)
   }
 }
 

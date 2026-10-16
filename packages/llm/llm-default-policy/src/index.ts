@@ -5,19 +5,12 @@
  * @module @deepseek-ai/dsh-llm-default-policy
  */
 
-import { Context, Service } from '@deepseek-ai/cordis'
+import { Context, Service, type Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { resolveRetryPolicy } from '@deepseek-ai/dsh-llm'
 import type { ResolvedRetryPolicy, RetryPolicyConfig } from '@deepseek-ai/dsh-llm'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
-import {
-  DEFAULT_MAX_RETRIES,
-  DEFAULT_STREAM_IDLE_TIMEOUT_MS,
-  DEFAULT_UNLIMITED,
-  LLM_DEFAULT_POLICY_SETTINGS_NAMESPACE,
-  LlmDefaultPolicySettingsSchema,
-} from './settings.ts'
+import { DEFAULT_MAX_RETRIES, DEFAULT_STREAM_IDLE_TIMEOUT_MS, DEFAULT_UNLIMITED } from './settings.ts'
 import type { LlmDefaultPolicySettings } from './defaults.ts'
 
 export {
@@ -40,33 +33,14 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-/** Composition entry; every field is optional and resolves to product defaults. */
+/** Composition config: the live product-wide defaults held by the settings document. */
 export interface Config {
   /** Finite retries after the first request when unlimited is off (default 5). */
-  maxRetries?: number
+  maxRetries: Volatile<number>
   /** Unbounded retry of every model-request failure (default false). */
-  unlimited?: boolean
+  unlimited: Volatile<boolean>
   /** Outstanding-read idle interval in milliseconds (default 300000). */
-  streamIdleTimeoutMs?: number
-}
-
-function assertSettings(value: LlmDefaultPolicySettings, path: string): LlmDefaultPolicySettings {
-  const maxRetries = value.maxRetries
-  if (!Number.isSafeInteger(maxRetries) || maxRetries < 0) {
-    throw new Error(`${path}.maxRetries must be a non-negative safe integer`)
-  }
-  if (typeof value.unlimited !== 'boolean') {
-    throw new Error(`${path}.unlimited must be a boolean`)
-  }
-  const streamIdleTimeoutMs = value.streamIdleTimeoutMs
-  if (!Number.isFinite(streamIdleTimeoutMs)
-    || streamIdleTimeoutMs <= 0
-    || streamIdleTimeoutMs > MAX_TIMER_DELAY_MS) {
-    throw new Error(
-      `${path}.streamIdleTimeoutMs must be a positive finite number no greater than ${MAX_TIMER_DELAY_MS}`,
-    )
-  }
-  return value
+  streamIdleTimeoutMs: Volatile<number>
 }
 
 /**
@@ -113,40 +87,22 @@ export function resolveStreamIdleTimeoutMs(
 
 /**
  * Owns the product-wide default retry budget and stream-idle timeout.
- * The composition entry remains usable without a settings provider; when one
- * is mounted, its user layer is read live.
+ * The live volatile Config holds the values; the Settings page edits them
+ * through this entry's settings namespace.
  */
 export class LlmDefaultPolicyConfig extends Service {
-  static Config: z<Config> = z.object({
-    maxRetries: z.number().step(1).min(0).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_MAX_RETRIES),
-    unlimited: z.boolean().default(DEFAULT_UNLIMITED),
+  static Config = z.object({
+    maxRetries: z.number().step(1).min(0).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_MAX_RETRIES).volatile(),
+    unlimited: z.boolean().default(DEFAULT_UNLIMITED).volatile(),
     streamIdleTimeoutMs: z.number()
       .min(Number.MIN_VALUE)
       .max(MAX_TIMER_DELAY_MS)
-      .default(DEFAULT_STREAM_IDLE_TIMEOUT_MS),
+      .default(DEFAULT_STREAM_IDLE_TIMEOUT_MS)
+      .volatile(),
   })
 
-  private source: () => LlmDefaultPolicySettings
-
-  constructor(ctx: Context, config: Config) {
+  constructor(ctx: Context, private readonly config: Config) {
     super(ctx, 'llmDefaultPolicy')
-    const entry = assertSettings({
-      maxRetries: config.maxRetries ?? DEFAULT_MAX_RETRIES,
-      unlimited: config.unlimited ?? DEFAULT_UNLIMITED,
-      streamIdleTimeoutMs: config.streamIdleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS,
-    }, 'llm-default-policy')
-    this.source = () => entry
-    installSettingsSection(
-      ctx,
-      settingsNamespace(LLM_DEFAULT_POLICY_SETTINGS_NAMESPACE),
-      LlmDefaultPolicySettingsSchema,
-      entry,
-      {
-        setSource: (current) => { this.source = current },
-        onChange: () => {},
-        validate: (value) => { assertSettings(value, 'llm-default-policy') },
-      },
-    )
   }
 
   /**
@@ -154,7 +110,11 @@ export class LlmDefaultPolicyConfig extends Service {
    * @returns a detached retry budget and stream-idle interval.
    */
   current(): LlmDefaultPolicySettings {
-    return this.source()
+    return {
+      maxRetries: this.config.maxRetries.get(),
+      unlimited: this.config.unlimited.get(),
+      streamIdleTimeoutMs: this.config.streamIdleTimeoutMs.get(),
+    }
   }
 }
 

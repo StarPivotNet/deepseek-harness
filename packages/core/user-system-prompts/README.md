@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-User-authored system-prompt library and per-model assembly. `UserSystemPrompts` provides `ctx.userSystemPrompts` and registers the `user-system-prompts` Settings section. The composition entry is empty; a mounted settings provider layers the user's library and bindings over it.
+User-authored system-prompt library and per-model assembly. `UserSystemPrompts` provides `ctx.userSystemPrompts` and exposes the `user-system-prompts` settings namespace from its live volatile Config. The Settings page writes the library and bindings through the entry's settings namespace.
 
 The settings page owns create, edit, delete, per-model multi-select, order, override, and replacements of registered plugin sections. This package applies stored section replacements, then the matching model's selected prompts, after cooperative assembly and after any complete-section restore.
 

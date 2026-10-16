@@ -2,9 +2,9 @@
 
 [English](README.md) | 中文
 
-用户编写的子代理定义库。`UserSubagents` 提供 `ctx.userSubagents`，并注册 `user-subagents` Settings 分节。组合配置项为空；挂载的设置提供方在其上叠加用户的定义。
+用户编写的子代理定义库。`UserSubagents` 提供 `ctx.userSubagents`，并从实时 volatile Config 暴露 `user-subagents` settings 命名空间；设置页通过该条目的 settings 命名空间写入定义库。
 
-设置页负责创建、编辑、删除。[`dsh-tool-subagent`](../tool-subagent/README.md) 读取实时库，并在启动时应用所选定义的 persona 与工具过滤。
+设置页负责创建、编辑、删除。[`dsh-tool-subagent`](../tool-subagent/README.zh.md) 读取实时库，并在启动时应用所选定义的 persona 与工具过滤。
 
 - `ctx.userSubagents.current()` 返回一份独立的 `{ definitions }` 快照。
 - `ctx.userSubagents.get(id)` 返回一条定义；id 缺失时返回 `undefined`。

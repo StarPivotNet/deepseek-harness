@@ -4,7 +4,7 @@ English | [中文](README.zh.md)
 
 Product-wide default retry budget and stream-idle timeout used when a provider route omits its own values. `LlmDefaultPolicyConfig` provides `ctx.llmDefaultPolicy`. DeepSeek and pi-ai adapters read the same service instead of each inventing a second default.
 
-The plugin config is optional and defaults to five finite retries, unlimited off, and a five-minute stream-idle interval. That composition entry is the base of the `llm-default-policy` Settings section; a mounted settings provider layers the user's choice over it and changes are visible on the next `current()` read. The Web General settings row writes that section.
+The plugin config defaults to five finite retries, unlimited off, and a five-minute stream-idle interval. The live volatile Config is the `llm-default-policy` settings section; the Web General settings row writes it and changes are visible on the next `current()` read.
 
 - `ctx.llmDefaultPolicy.current()` returns a detached `{ maxRetries, unlimited, streamIdleTimeoutMs }` record.
 - `resolveProviderRetryPolicy(config, defaults, path)` resolves a provider-owned `retryPolicy`, or the product-wide default when the provider omitted one. Unlimited maps to always mode; otherwise normal mode uses `maxRetries`.
@@ -23,4 +23,3 @@ Changing the default affects only later adapter registrations that still omit th
 ## Known Limitations and Deferred Work
 
 - The service owns one process-wide default; per-provider overrides remain on each adapter's own configuration.
-- Without a settings provider, the composition entry cannot retain a later user choice.

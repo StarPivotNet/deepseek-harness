@@ -1,34 +1,15 @@
-/** User subagent-definition library layered over a real settings provider. */
+/** User subagent-definition library over the live volatile Config. */
 
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { SettingsProvider } from '@deepseek-ai/dsh-settings'
-import type { SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import UserSubagents, {
   compositionFromUserSubagent,
   findUserSubagent,
-  USER_SUBAGENTS_SETTINGS_NAMESPACE,
   USER_SUBAGENTS_SETTINGS_SCHEMA,
   validateUserSubagents,
   type UserSubagentDefinition,
 } from '../src/index.ts'
-
-class MemorySettings extends SettingsProvider {
-  doc: Record<string, unknown> = {}
-
-  get writable(): boolean {
-    return true
-  }
-
-  protected load(): Promise<Record<string, unknown>> {
-    return Promise.resolve(structuredClone(this.doc))
-  }
-
-  protected persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void> {
-    this.doc = { ...this.doc, [ns]: structuredClone(section) }
-    return Promise.resolve()
-  }
-}
+import { liveConfig } from '../../../settings/settings/tests/live-config.ts'
 
 const REVIEWER = {
   id: 'reviewer',
@@ -38,10 +19,9 @@ const REVIEWER = {
   deny: ['edit', 'write'],
 }
 
-async function boot(): Promise<{ ctx: Context }> {
+async function boot(definitions: UserSubagentDefinition[] = []): Promise<{ ctx: Context }> {
   const ctx = new Context()
-  await ctx.plugin(MemorySettings).await()
-  await ctx.plugin(UserSubagents)
+  await liveConfig(ctx, UserSubagents, { definitions })
   return { ctx }
 }
 
@@ -152,10 +132,7 @@ describe('UserSubagents', () => {
   })
 
   it('serves a stored definition through current() and get()', async () => {
-    const { ctx } = await boot()
-    await ctx.settings.replace(USER_SUBAGENTS_SETTINGS_NAMESPACE, {
-      definitions: [REVIEWER],
-    })
+    const { ctx } = await boot([REVIEWER])
     expect(ctx.userSubagents.get('reviewer')).toMatchObject(REVIEWER)
     expect(ctx.userSubagents.current().definitions[0]?.deny).toEqual(['edit', 'write'])
     await ctx.fiber.dispose()

@@ -1,42 +1,22 @@
-/** User system-prompt library layered over a real settings provider. */
+/** User system-prompt library layered over a real prompt assembly. */
 
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { SettingsProvider } from '@deepseek-ai/dsh-settings'
-import type { SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import UserSystemPrompts, {
   applyUserSystemPromptOverrides,
   applyUserSystemPrompts,
-  USER_SYSTEM_PROMPTS_SETTINGS_NAMESPACE,
   validateUserSystemPrompts,
 } from '../src/index.ts'
-
-class MemorySettings extends SettingsProvider {
-  doc: Record<string, unknown> = {}
-
-  get writable(): boolean {
-    return true
-  }
-
-  protected load(): Promise<Record<string, unknown>> {
-    return Promise.resolve(structuredClone(this.doc))
-  }
-
-  protected persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void> {
-    this.doc = { ...this.doc, [ns]: structuredClone(section) }
-    return Promise.resolve()
-  }
-}
+import type { UserSystemPromptsSettings } from '../src/index.ts'
 
 const STYLE = { id: 'style', name: 'Style', text: 'Be concise.' }
 const RULES = { id: 'rules', name: 'Rules', text: 'Never guess.' }
 
-async function boot(): Promise<{ ctx: Context }> {
+async function boot(settings: UserSystemPromptsSettings): Promise<{ ctx: Context }> {
   const ctx = new Context()
-  await ctx.plugin(MemorySettings).await()
   await ctx.plugin(SystemPrompt, { personaPrefix: 'You are the deployment persona.' })
-  await ctx.plugin(UserSystemPrompts)
+  await ctx.plugin(UserSystemPrompts, settings)
   ctx.systemPrompt.variable('provider', () => 'deepseek-official')
   ctx.systemPrompt.variable('model', () => 'deepseek-v4-flash')
   return { ctx }
@@ -251,8 +231,7 @@ describe('applyUserSystemPromptOverrides', () => {
 
 describe('UserSystemPrompts', () => {
   it('appends the bound prompts for the assembled model', async () => {
-    const { ctx } = await boot()
-    await ctx.settings.replace(USER_SYSTEM_PROMPTS_SETTINGS_NAMESPACE, {
+    const { ctx } = await boot({
       prompts: [STYLE, RULES],
       bindings: [{
         provider: 'deepseek-official',
@@ -260,6 +239,7 @@ describe('UserSystemPrompts', () => {
         promptIds: ['style', 'rules'],
         override: false,
       }],
+      overrides: [],
     })
 
     const assembly = await ctx.systemPrompt.assemble()
@@ -275,14 +255,7 @@ describe('UserSystemPrompts', () => {
   })
 
   it('overrides a complete preset persona when the binding says so', async () => {
-    const { ctx } = await boot()
-    ctx.systemPrompt.section({
-      name: 'preset:persona',
-      order: 1,
-      text: 'Exact preset prompt.',
-      complete: true,
-    })
-    await ctx.settings.replace(USER_SYSTEM_PROMPTS_SETTINGS_NAMESPACE, {
+    const { ctx } = await boot({
       prompts: [STYLE],
       bindings: [{
         provider: 'deepseek-official',
@@ -290,6 +263,13 @@ describe('UserSystemPrompts', () => {
         promptIds: ['style'],
         override: true,
       }],
+      overrides: [],
+    })
+    ctx.systemPrompt.section({
+      name: 'preset:persona',
+      order: 1,
+      text: 'Exact preset prompt.',
+      complete: true,
     })
 
     expect((await ctx.systemPrompt.assemble()).sections).toEqual([
@@ -299,7 +279,7 @@ describe('UserSystemPrompts', () => {
   })
 
   it('leaves assembly alone when the library is empty', async () => {
-    const { ctx } = await boot()
+    const { ctx } = await boot({ prompts: [], bindings: [], overrides: [] })
     expect((await ctx.systemPrompt.assemble()).sections.map(section => section.name))
       .toEqual(['harness:identity', 'deployment:persona-prefix', 'deployment:persona-suffix'])
     expect(ctx.userSystemPrompts.current()).toEqual({ prompts: [], bindings: [], overrides: [] })
@@ -307,8 +287,7 @@ describe('UserSystemPrompts', () => {
   })
 
   it('replaces a registered section from a stored override', async () => {
-    const { ctx } = await boot()
-    await ctx.settings.replace(USER_SYSTEM_PROMPTS_SETTINGS_NAMESPACE, {
+    const { ctx } = await boot({
       prompts: [],
       bindings: [],
       overrides: [{ name: 'harness:identity', text: 'Custom opener.' }],

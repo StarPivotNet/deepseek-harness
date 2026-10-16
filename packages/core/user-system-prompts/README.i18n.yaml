@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/core/user-system-prompts/README.md
-README.md: 8bce1b4d3070d712421318ad365b23fc756b43fc
-README.zh.md: 0bae6f3c22404ff1a23bd133b86419f21cecc1a7
+/dsh-user-system-prompts:
+  en: 332fa6f496998cc9
+  zh: 51f69b09d00e4b61
+/dsh-user-system-prompts/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/dsh-user-system-prompts/model-experience/selected-user-prompts:
+  en: f25ccf2f75a13a0d
+  zh: 3d161872705988f7
+/dsh-user-system-prompts/model-experience/selected-user-prompts/what-the-model-sees:
+  en: 9944253f72f4eddc
+  zh: 1c8dcee322444531
+/dsh-user-system-prompts/model-experience/selected-user-prompts/token-effect:
+  en: 705f6d739a9fc85d
+  zh: a37bd4058b56d78d
+/dsh-user-system-prompts/model-experience/selected-user-prompts/kv-cache-effect:
+  en: 40032774dd06ec34
+  zh: b6e33200967e3ac0
+/dsh-user-system-prompts/known-limitations-and-deferred-work:
+  en: fd80465867b815fd
+  zh: 9245c15bbfcade9f

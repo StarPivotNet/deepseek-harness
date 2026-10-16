@@ -4,7 +4,7 @@
 
 产品级默认重试预算与流空闲超时，供省略自身取值的提供方路由使用。`LlmDefaultPolicyConfig` 提供 `ctx.llmDefaultPolicy`。DeepSeek 与 pi-ai 适配器读取同一服务，而不是各自再发明一套默认值。
 
-插件配置可选，默认值为有限重试五次、关闭无限重试、以及五分钟流空闲间隔。该组合配置项构成 Settings 中 `llm-default-policy` 分节的基础层；挂载的设置提供方在其上叠加用户选择，更改会在下一次调用 `current()` 时可见。Web「通用设置」行写入该分节。
+插件配置默认值为有限重试五次、关闭无限重试、以及五分钟流空闲间隔。实时 volatile Config 即 Settings 中的 `llm-default-policy` 分节；Web「通用设置」行写入该分节，更改会在下一次调用 `current()` 时可见。
 
 - `ctx.llmDefaultPolicy.current()` 返回一份独立的 `{ maxRetries, unlimited, streamIdleTimeoutMs }` 记录。
 - `resolveProviderRetryPolicy(config, defaults, path)` 解析提供方自有的 `retryPolicy`；提供方省略时使用产品级默认值。无限对应 always 模式，否则 normal 模式使用 `maxRetries`。
@@ -23,4 +23,3 @@
 ## 已知限制与暂缓事项
 
 - 该服务只拥有一项进程级默认值；按提供方覆盖仍写在各适配器自己的配置上。
-- 未挂载设置提供方时，组合配置项无法保留之后的用户选择。

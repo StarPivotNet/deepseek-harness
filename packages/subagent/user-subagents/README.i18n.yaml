@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/subagent/user-subagents/README.md
-README.md: 60b1384376998001de50360a96598dcdf4c96353
-README.zh.md: b5df1285a1ced13d6b01b28ace9cb5cc007af1e2
+/dsh-user-subagents:
+  en: 83a4db154b4b6be9
+  zh: 25323e8e14379c3e
+/dsh-user-subagents/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/dsh-user-subagents/model-experience/selected-user-definition:
+  en: acbdf266bccd6242
+  zh: 733dac0e9deaaed6
+/dsh-user-subagents/model-experience/selected-user-definition/what-the-model-sees:
+  en: ec7afbd81ad5485c
+  zh: 5c5be88fd0e5f227
+/dsh-user-subagents/model-experience/selected-user-definition/token-effect:
+  en: de4f6f17ccde4a00
+  zh: df263f04f4cf844c
+/dsh-user-subagents/model-experience/selected-user-definition/kv-cache-effect:
+  en: 0e9697211582276c
+  zh: c45c89d663e1cc14
+/dsh-user-subagents/known-limitations-and-deferred-work:
+  en: be3da81a92a1a7f7
+  zh: fd801071f9332373

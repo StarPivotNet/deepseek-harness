@@ -1,86 +1,53 @@
-/** Product-wide default policy layered over a real settings provider. */
+/** Product-wide default policy over the live volatile Config. */
 
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import LlmDefaultPolicyConfig, {
-  LLM_DEFAULT_POLICY_SETTINGS_NAMESPACE,
   resolveProviderRetryPolicy,
   resolveStreamIdleTimeoutMs,
 } from '../src/index.ts'
-import { SettingsProvider, settingsNamespace } from '@deepseek-ai/dsh-settings'
-import type { SettingsNamespace } from '@deepseek-ai/dsh-settings'
-
-const NS = settingsNamespace(LLM_DEFAULT_POLICY_SETTINGS_NAMESPACE)
-
-/** The smallest real provider: one in-memory document, always writable. */
-class MemorySettings extends SettingsProvider {
-  doc: Record<string, unknown> = {}
-
-  get writable(): boolean {
-    return true
-  }
-
-  protected load(): Promise<Record<string, unknown>> {
-    return Promise.resolve(structuredClone(this.doc))
-  }
-
-  protected persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void> {
-    this.doc = { ...this.doc, [ns]: structuredClone(section) }
-    return Promise.resolve()
-  }
-}
-
-async function boot(config: Record<string, unknown> = {}): Promise<{
-  ctx: Context
-  settingsFiber: Context['fiber']
-  policy: LlmDefaultPolicyConfig
-}> {
-  const ctx = new Context()
-  const settingsFiber = ctx.plugin(MemorySettings)
-  await settingsFiber.await()
-  await ctx.plugin(LlmDefaultPolicyConfig, config)
-  return { ctx, settingsFiber, policy: ctx.llmDefaultPolicy }
-}
+import { liveConfig } from '../../../settings/settings/tests/live-config.ts'
 
 describe('LlmDefaultPolicyConfig', () => {
-  it('resolves product defaults without a settings write', async () => {
-    const bench = await boot()
-    expect(bench.policy.current()).toEqual({
+  it('resolves product defaults without a write', async () => {
+    const ctx = new Context()
+    await liveConfig(ctx, LlmDefaultPolicyConfig)
+    expect(ctx.llmDefaultPolicy.current()).toEqual({
       maxRetries: 5,
       unlimited: false,
       streamIdleTimeoutMs: 300_000,
     })
-    await bench.ctx.fiber.dispose()
+    await ctx.fiber.dispose()
   })
 
-  it('layers a user section over the composition entry', async () => {
-    const bench = await boot()
-    await bench.settingsFiber.ctx.settings.replace(NS, {
+  it('applies a written section over the composition base', async () => {
+    const ctx = new Context()
+    const config = await liveConfig(ctx, LlmDefaultPolicyConfig)
+    await config.replace({
       maxRetries: 8,
       unlimited: true,
       streamIdleTimeoutMs: 60_000,
     })
-    expect(bench.policy.current()).toEqual({
+    expect(ctx.llmDefaultPolicy.current()).toEqual({
       maxRetries: 8,
       unlimited: true,
       streamIdleTimeoutMs: 60_000,
     })
-    await bench.ctx.fiber.dispose()
+    await ctx.fiber.dispose()
   })
 
-  it('falls back to the composition entry when the settings provider detaches', async () => {
-    const bench = await boot({ maxRetries: 3 })
-    await bench.settingsFiber.ctx.settings.replace(NS, {
-      maxRetries: 9,
-    })
-    expect(bench.policy.current().maxRetries).toBe(9)
-    await bench.settingsFiber.dispose()
-    expect(bench.policy.current()).toEqual({
+  it('keeps the composition base when the user layer resets to it', async () => {
+    const ctx = new Context()
+    const config = await liveConfig(ctx, LlmDefaultPolicyConfig, { maxRetries: 3 })
+    await config.replace({ maxRetries: 9 })
+    expect(ctx.llmDefaultPolicy.current().maxRetries).toBe(9)
+    await config.replace({ maxRetries: 3 })
+    expect(ctx.llmDefaultPolicy.current()).toEqual({
       maxRetries: 3,
       unlimited: false,
       streamIdleTimeoutMs: 300_000,
     })
-    await bench.ctx.fiber.dispose()
+    await ctx.fiber.dispose()
   })
 
   it('keeps the composition entry when no settings provider is mounted', async () => {
@@ -94,11 +61,11 @@ describe('LlmDefaultPolicyConfig', () => {
     await ctx.fiber.dispose()
   })
 
-  it('rejects an invalid stored section at registration', async () => {
-    const bench = await boot()
-    await expect(bench.settingsFiber.ctx.settings.replace(NS, { maxRetries: -1 }))
-      .rejects.toThrow(/maxRetries/)
-    await bench.ctx.fiber.dispose()
+  it('rejects an out-of-range write', async () => {
+    const ctx = new Context()
+    const config = await liveConfig(ctx, LlmDefaultPolicyConfig)
+    await expect(config.replace({ maxRetries: -1 })).rejects.toThrow(/maxRetries/)
+    await ctx.fiber.dispose()
   })
 })
 

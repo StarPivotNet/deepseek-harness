@@ -1,18 +1,18 @@
 /**
  * User-authored system-prompt library and per-model assembly.
  *
- * Settings owns the library, registered-section replacements, and bindings.
- * Assembly reads them live, replaces matching registered section texts, then
- * applies the matching model's selected prompts after cooperative assembly
- * and any complete-section restore, so a model override replaces the prompt
- * the model would otherwise receive.
+ * The live plugin Config owns the library, registered-section replacements,
+ * and bindings; the Settings page writes them through the entry's settings
+ * namespace. Assembly reads them live, replaces matching registered section
+ * texts, then applies the matching model's selected prompts after cooperative
+ * assembly and any complete-section restore, so a model override replaces the
+ * prompt the model would otherwise receive.
  *
  * @module @deepseek-ai/dsh-user-system-prompts
  */
 
-import { Context, Service } from '@deepseek-ai/cordis'
+import { Context, Service, type Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 import type { PromptAssembly } from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 
@@ -22,9 +22,6 @@ declare module '@deepseek-ai/cordis' {
     userSystemPrompts: UserSystemPrompts
   }
 }
-
-/** Settings namespace carrying the user prompt library and model bindings. */
-export const USER_SYSTEM_PROMPTS_SETTINGS_NAMESPACE = settingsNamespace('user-system-prompts')
 
 /** One user-authored prompt in the library. */
 export interface UserSystemPrompt {
@@ -66,13 +63,6 @@ export interface UserSystemPromptsSettings {
   overrides: UserSystemPromptSectionOverride[]
 }
 
-/** Empty composition entry: no user prompts until Settings supplies some. */
-export const EMPTY_USER_SYSTEM_PROMPTS: UserSystemPromptsSettings = {
-  prompts: [],
-  bindings: [],
-  overrides: [],
-}
-
 /** Prompt id: lowercase start, then letters, digits, hyphens, or underscores. */
 const PROMPT_ID = /^[a-z][a-z0-9_-]*$/
 
@@ -94,17 +84,10 @@ const OVERRIDE_SCHEMA: z<UserSystemPromptSectionOverride> = z.object({
   text: z.string().default(''),
 })
 
-/** Schema of the user-system-prompts settings section. */
-export const USER_SYSTEM_PROMPTS_SETTINGS_SCHEMA: z<UserSystemPromptsSettings> = z.object({
-  prompts: z.array(PROMPT_SCHEMA).default([]),
-  bindings: z.array(BINDING_SCHEMA).default([]),
-  overrides: z.array(OVERRIDE_SCHEMA).default([]),
-})
-
 /**
  * Reject duplicate ids, duplicate model keys, unknown binding references, and
- * unusable identifiers. Called from settings registration so a bad document
- * fails at write rather than silently dropping a prompt at assembly.
+ * unusable identifiers. The settings page applies these checks before a write;
+ * the schema cannot express the cross-field rules.
  * @param value - schema-valid settings section.
  */
 export function validateUserSystemPrompts(value: UserSystemPromptsSettings): void {
@@ -209,35 +192,32 @@ export function applyUserSystemPromptOverrides(
   return changed ? { ...assembly, sections } : assembly
 }
 
-/** Plugin config: the composition entry is always empty; Settings holds the library. */
-export interface Config {}
+/** Composition config: the live user library held by the settings document. */
+export interface Config {
+  /** User-authored prompts. */
+  prompts: Volatile<UserSystemPrompt[]>
+  /** Per-model ordered selections over {@link prompts}. */
+  bindings: Volatile<UserSystemPromptBinding[]>
+  /** Replacements keyed by registered section name. */
+  overrides: Volatile<UserSystemPromptSectionOverride[]>
+}
 
 /**
  * Owns the user prompt library, registered-section replacements, and
  * per-model assembly after cooperative prompt assembly.
  */
 export class UserSystemPrompts extends Service {
-  static Config: z<Config> = z.object({})
+  static Config = z.object({
+    prompts: z.array(PROMPT_SCHEMA).default([]).volatile(),
+    bindings: z.array(BINDING_SCHEMA).default([]).volatile(),
+    overrides: z.array(OVERRIDE_SCHEMA).default([]).volatile(),
+  })
   static inject = ['systemPrompt']
 
-  private source: () => UserSystemPromptsSettings
-
-  constructor(ctx: Context, _config: Config) {
+  constructor(ctx: Context, private readonly config: Config) {
     super(ctx, 'userSystemPrompts')
-    this.source = () => EMPTY_USER_SYSTEM_PROMPTS
-    installSettingsSection(
-      ctx,
-      USER_SYSTEM_PROMPTS_SETTINGS_NAMESPACE,
-      USER_SYSTEM_PROMPTS_SETTINGS_SCHEMA,
-      EMPTY_USER_SYSTEM_PROMPTS,
-      {
-        setSource: (current) => { this.source = current },
-        onChange: () => {},
-        validate: validateUserSystemPrompts,
-      },
-    )
     ctx.effect(() => ctx.systemPrompt.afterAssemble((assembly) => {
-      const settings = this.source()
+      const settings = this.current()
       return applyUserSystemPrompts(
         applyUserSystemPromptOverrides(assembly, settings),
         settings,
@@ -252,7 +232,11 @@ export class UserSystemPrompts extends Service {
    * @returns a detached snapshot of the resolved settings section.
    */
   current(): UserSystemPromptsSettings {
-    return structuredClone(this.source())
+    return {
+      prompts: structuredClone(this.config.prompts.get()) as UserSystemPrompt[],
+      bindings: structuredClone(this.config.bindings.get()) as UserSystemPromptBinding[],
+      overrides: structuredClone(this.config.overrides.get()) as UserSystemPromptSectionOverride[],
+    }
   }
 }
 

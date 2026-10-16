@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-User-authored subagent definition library. `UserSubagents` provides `ctx.userSubagents` and registers the `user-subagents` Settings section. The composition entry is empty; a mounted settings provider layers the user's definitions over it.
+User-authored subagent definition library. `UserSubagents` provides `ctx.userSubagents` and exposes the `user-subagents` settings namespace from its live volatile Config; the Settings page writes the library through the entry's settings namespace.
 
 The settings page owns create, edit, and delete. [`dsh-tool-subagent`](../tool-subagent/README.md) reads the live library and applies a selected definition's persona and tool filter at start.
 

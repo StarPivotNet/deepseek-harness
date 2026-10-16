@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-用户编写的系统提示词库，以及按模型组装。`UserSystemPrompts` 提供 `ctx.userSystemPrompts`，并注册 `user-system-prompts` Settings 分节。组合配置项为空；挂载的设置提供方在其上叠加用户的提示词库与绑定。
+用户编写的系统提示词库，以及按模型组装。`UserSystemPrompts` 提供 `ctx.userSystemPrompts`，并从实时 volatile Config 暴露 `user-system-prompts` settings 命名空间。设置页通过该条目的 settings 命名空间写入提示词库与绑定。
 
 设置页负责创建、编辑、删除，以及按模型多选、排序、覆盖，并替换已注册的插件段。本包在协作式组装之后、以及任何 complete 段还原之后，先应用已存储的段替换，再应用当前模型选中的提示词。
 
