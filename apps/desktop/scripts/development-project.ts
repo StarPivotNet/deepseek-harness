@@ -79,8 +79,10 @@ function linkDirectory(source: string, destination: string): void {
 }
 
 function isResolvableDirectory(path: string): boolean {
+  // Follow symlinks: pnpm workspace links are symlinks, and lstatSync().isDirectory()
+  // is false for them, which silently dropped every transitive workspace dependency.
   try {
-    return lstatSync(path).isDirectory() && existsSync(join(path, '.'))
+    return existsSync(join(path, '.'))
   } catch {
     return false
   }
