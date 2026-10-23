@@ -213,7 +213,8 @@
    single darwin rule carries the drag over its own box — below the top strip
    (40–100px: the strip's 52px foot with the row's -12px tuck). The brand rides
    that box (SidebarRoot renders the wordmark as a plain span there, so the
-   global interactive no-drag rule never subtracts it); the dedicated New
+   global interactive no-drag rule never subtracts it; only the local-build
+   fallbacks opt out through .copyVersion); the dedicated New
    Session button below keeps the pointer and keyboard paths. Safe as a drag
    source: it precedes the sidebar's overlay slots in document order, so their
    no-drag still wins. */
@@ -309,6 +310,14 @@
   white-space: nowrap;
 }
 
+/* Local-build fallbacks copy the version, also on macOS, where the
+   surrounding brand is a window-drag surface. */
+.copyVersion {
+  display: inline-flex;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
 .localBuildTitle {
   font-size: 12px;
   line-height: 13px;
@@ -331,8 +340,10 @@
   color: var(--dsw-alias-label-secondary);
 }
 
-.iconButton:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+@media (hover: hover) {
+  .iconButton:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 /* The toggle is flush with .logoRow, which clips its own overflow, so an outward ring loses
@@ -356,12 +367,14 @@
   display: none;
 }
 
-.collapsed .toggle:hover .panelIcon {
-  display: inline;
-}
+@media (hover: hover) {
+  .collapsed .toggle:hover .panelIcon {
+    display: inline;
+  }
 
-.collapsed .toggle:hover .railMark {
-  display: none;
+  .collapsed .toggle:hover .railMark {
+    display: none;
+  }
 }
 
 .railMark {
@@ -417,8 +430,10 @@
   overflow: hidden;
 }
 
-.newSession:hover {
-  background: var(--dsw-alias-button-floating-hover);
+@media (hover: hover) {
+  .newSession:hover {
+    background: var(--dsw-alias-button-floating-hover);
+  }
 }
 
 /* macOS: the themed elevated fill reads as a foreign slab on the vibrancy
@@ -428,16 +443,20 @@
   background: rgb(255 255 255 / 0.55);
 }
 
-:global([data-platform='darwin']) .newSession:hover {
-  background: rgb(255 255 255 / 0.3);
+@media (hover: hover) {
+  :global([data-platform='darwin']) .newSession:hover {
+    background: rgb(255 255 255 / 0.3);
+  }
 }
 
 :global([data-platform='darwin']) :global([data-ds-dark-theme]) .newSession {
   background: rgb(255 255 255 / 0.15);
 }
 
-:global([data-platform='darwin']) :global([data-ds-dark-theme]) .newSession:hover {
-  background: rgb(255 255 255 / 0.2);
+@media (hover: hover) {
+  :global([data-platform='darwin']) :global([data-ds-dark-theme]) .newSession:hover {
+    background: rgb(255 255 255 / 0.2);
+  }
 }
 
 .collapsed .newSession {
@@ -451,8 +470,10 @@
   background: transparent;
 }
 
-.collapsed .newSession:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+@media (hover: hover) {
+  .collapsed .newSession:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 .newSessionLabel {
@@ -466,7 +487,18 @@
 }
 
 .newSessionLabelMask { flex: 1; min-width: 0; }
-.newSession:is(:hover, :focus-visible) .newSessionLabelMask:has(+ .newSessionShortcut) { overflow: hidden; mask-image: linear-gradient(to right, black calc(100% - 16px), transparent); }
+
+.newSession:focus-visible .newSessionLabelMask:has(+ .newSessionShortcut) {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, black calc(100% - 16px), transparent);
+}
+
+@media (hover: hover) {
+  .newSession:hover .newSessionLabelMask:has(+ .newSessionShortcut) {
+    overflow: hidden;
+    mask-image: linear-gradient(to right, black calc(100% - 16px), transparent);
+  }
+}
 .newSessionContent { display: flex; width: 100cqw; align-items: center; justify-content: center; gap: 6px; }
 .newSessionContent > svg { flex: none; }
 
@@ -478,7 +510,15 @@
   font-weight: 400;
 }
 
-.newSession:is(:hover, :focus-visible) .newSessionShortcut { opacity: 1; }
+.newSession:focus-visible .newSessionShortcut {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .newSession:hover .newSessionShortcut {
+    opacity: 1;
+  }
+}
 
 /* New Session siblings: official list occupants and known third-party DOM
    injections share the capsule geometry. Occupants may still own extra
@@ -604,7 +644,7 @@
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   margin-bottom: 8px;
 }
 
@@ -628,8 +668,10 @@
   cursor: pointer;
 }
 
-.panelRow:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+@media (hover: hover) {
+  .panelRow:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 .panelRow.panelActive {
@@ -640,6 +682,21 @@
 .panelRow:focus-visible {
   outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
   outline-offset: -2px;
+}
+
+/* The More launcher keeps the panel rows' geometry inside the menu's anchor wrapper. */
+.moreAnchor {
+  display: flex;
+  flex-direction: column;
+}
+
+.panelRow[aria-expanded='true'] {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.moreMenu {
+  width: 288px;
+  max-width: calc(100vw - 24px);
 }
 
 .panelGlyph {

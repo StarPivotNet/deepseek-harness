@@ -8,6 +8,10 @@
  * @module @deepseek-ai/dsh-session-stats/types
  */
 
+import type { SessionProjectionSummaryExcluded } from '@deepseek-ai/dsh-session-projection/types'
+
+// Marks this file a module so the declaration below AUGMENTS the projection
+// table instead of declaring an ambient module.
 export {}
 
 /**
@@ -85,8 +89,12 @@ export interface SessionStatsProjection {
 
 declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionMap {
-    /** Whole-log turn/step counts and wall times; see {@link SessionStatsProjection}. */
-    sessionStats: SessionStatsProjection
+    /**
+     * Whole-log turn/step counts and wall times; see
+     * {@link SessionStatsProjection}. Excluded from Session summary payloads:
+     * no list row renders these figures.
+     */
+    sessionStats: SessionProjectionSummaryExcluded<SessionStatsProjection>
     /** Whole-log tokens, duration, and UTC calendar/model rows; see {@link SessionUsageProjection}. */
     sessionUsage: SessionUsageProjection
   }

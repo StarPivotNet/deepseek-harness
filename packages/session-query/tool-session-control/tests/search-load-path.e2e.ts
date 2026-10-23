@@ -93,10 +93,10 @@ it('returns a recent title match without opening an unrelated broken older log',
   await appendFile(join(persistenceRoot, olderLog as string), '{broken json}\n')
   const opened = vi.spyOn(ctx.sessionPersistence, 'open')
 
-  const result = await ctx.tools.execute({
-    signal: new AbortController().signal, callId: ToolCallId('search-title'),
-    name: 'session_control_search', arguments: { query: 'diagnosis', limit: 1 },
-  })
+  const result = (await ctx.tools.execute({
+    signal: new AbortController().signal,
+    calls: [{ type: 'tool-call', id: ToolCallId('search-title'), name: 'session_control_search', arguments: JSON.stringify({ query: 'diagnosis', limit: 1 }) }],
+  })).results[0]!.result
   expect(result.isError).not.toBe(true)
   const text = result.content.filter(block => block.type === 'text').map(block => block.text).join('')
   expect(text).toContain('newer-match')

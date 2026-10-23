@@ -37,6 +37,18 @@ class TestSessionQueryEngine extends SessionQueryEngine {
   }
 }
 
+
+async function executeTool(ctx: Context, input: { signal: AbortSignal; callId: ToolCallId; name: string; arguments: unknown; agent?: Agent }): Promise<import('@deepseek-ai/dsh-tools').ToolExecutionResult> {
+  const batch = await ctx.tools.execute({
+    calls: [{ type: 'tool-call', id: input.callId, name: input.name, arguments: JSON.stringify(input.arguments ?? {}) }],
+    signal: input.signal,
+    ...input.agent === undefined ? {} : { agent: input.agent },
+  })
+  const result = batch.results[0]?.result
+  if (result === undefined) throw new Error('tool batch returned no result')
+  return result
+}
+
 async function directoryHarness(): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SessionProjectionRegistry)
@@ -65,8 +77,6 @@ async function harness(): Promise<Context> {
   await ctx.plugin(Storage)
   ctx.storage.backend.register('memory', new MemoryStorageBackend())
   const facility = new DomainFacility(ctx, { backend: 'memory', routes: {} })
-  ctx.storage.mount('domain', facility)
-  ctx.provide('storageDomain', facility)
   ctx.provide('sessionPersistence', { list: () => Promise.resolve([]) } as never)
   await ctx.plugin(SessionTitle, {
     fallbackMaxWords: 5,
@@ -74,12 +84,13 @@ async function harness(): Promise<Context> {
     maxTitleBytes: 80,
   })
   await ctx.plugin(WorkspaceRegistry)
+  void facility
   return ctx
 }
 
 let calls = 0
 function callTool(ctx: Context, name: string, args: unknown) {
-  return ctx.tools.execute({
+  return executeTool(ctx, {
     signal: new AbortController().signal,
     callId: ToolCallId('call-' + String(++calls)),
     name,

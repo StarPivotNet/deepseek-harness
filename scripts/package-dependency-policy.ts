@@ -51,6 +51,8 @@ const DUPLICATE_SAFE_PACKAGES: readonly string[] = [
  * prominent heading in the pull request description.
  */
 const SAFE_HOST_DEPENDENCY_EXPORTS = {
+  '@deepseek-ai/dsh-atomic-write': ['withFileLock'],
+  '@deepseek-ai/dsh-computer-use/brand': ['ComputerUseProviderName'],
   '@deepseek-ai/dsh-credentials': ['credentialKey'],
   '@deepseek-ai/dsh-deque': ['Deque'],
   '@deepseek-ai/dsh-llm': ['callConfigEquals'],
@@ -66,6 +68,9 @@ const PEER_REQUIRED_HOST_EXPORTS = {
     'packageExportsBundle', 'readProfileManifest', 'readProfilePatches', 'reconcileProfilePlugins',
     'runProfilePnpm', 'writeProfilePatches',
   ],
+  // CUA checks UserQuestionError and preserves AttachmentError from image admission.
+  '@deepseek-ai/dsh-attachment': ['admitEncodedImages'],
+  '@deepseek-ai/dsh-user-questions': ['UserQuestionError'],
   // `instanceof` checks need the translator's own class instance.
   '@deepseek-ai/dsh-experimental-translator': ['TranslationError'],
   '@deepseek-ai/dsh-scope': ['carrierKeyOf', 'createScope', 'scopeOf', 'scopeTarget'],

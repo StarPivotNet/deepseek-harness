@@ -1,15 +1,15 @@
 /** Session Controller fork boundaries, lineage, and inherited model routing. */
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import AgentRegistry, { agentEvents } from '@deepseek-ai/dsh-agent'
+import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent, AgentHandle, CreateAgentOptions } from '@deepseek-ai/dsh-agent'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import { mountAgentLoopTestDependencies, mountAgentLoopTestHarness } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { BasicCompactionEngine } from '@deepseek-ai/dsh-compaction-basic'
 import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import { ToolCallId, createMessage, createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
-import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'
 import SessionStore, { TOOL_OUTCOME_UNKNOWN, SESSION_FORMAT_VERSION, SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { Session, SessionEvent, SessionHeader, SessionId } from '@deepseek-ai/dsh-session'
 import { SessionPersistenceRevision, type SessionPersistenceSnapshot } from '@deepseek-ai/dsh-session-persistence'
@@ -33,6 +33,7 @@ async function composed(workspaces: readonly Workspace[] = []): Promise<Context>
   const ctx = new Context()
   await ctx.plugin(SessionStore)
   await ctx.plugin(SystemPrompt, { personaPrefix: '' })
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
   installSessionReadTestServices(ctx)
   ctx.provide('workspaceRegistry', { list: () => workspaces, archivedSessionIds: [] } as never)
@@ -91,7 +92,7 @@ async function liveAgent(
   return session
 }
 
-const remote = (ctx: Context) => createSessionTestRemote(ctx, {
+const remote = async (ctx: Context) => await createSessionTestRemote(ctx, {
   defaultModelSelection: () => ({ provider: 'default-provider', model: 'default-model' }),
   cwd: '/tmp',
 })
@@ -107,8 +108,11 @@ describe('sessions.fork', () => {
     const ctx = await composed()
     try {
       const source = ctx.sessions.prepare(sid('current-cold'), { meta: { cwd: '/proj' } })
+      const detach = ctx.effect(() => ctx.sessions.enter(source))
+      ctx.sessions.announce(source)
       source.append('turn/start', { turn: 1 })
       source.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+      await detach()
       const snapshot: SessionPersistenceSnapshot = {
         header: source.header,
         revision: SessionPersistenceRevision('test:cold-source'),
@@ -121,7 +125,7 @@ describe('sessions.fork', () => {
       }) as never)
       const open = vi.spyOn(ctx.sessionPersistence, 'open')
 
-      const response = await remote(ctx).fork({
+      const response = await (await remote(ctx)).fork({
         sessionId: source.id,
         ...allowMigration === undefined ? {} : { allowMigration },
       })
@@ -151,7 +155,7 @@ describe('sessions.fork', () => {
       const observe = vi.spyOn(ctx.sessionQuery, 'observeSession')
       const create = vi.spyOn(ctx.agents, 'create')
 
-      await expect(remote(ctx).fork({ sessionId: sourceId, allowMigration: false })).resolves.toMatchObject({
+      await expect((await remote(ctx)).fork({ sessionId: sourceId, allowMigration: false })).resolves.toMatchObject({
         ok: false, error: { code: 'session/migration-required', details: { sessionId: sourceId } },
       })
       expect(stat).toHaveBeenCalledExactlyOnceWith(sourceId)
@@ -172,7 +176,7 @@ describe('sessions.fork', () => {
       const stat = vi.fn(() => Promise.reject(new Error('unexpected metadata read')))
       ctx.provide('sessionPersistence', testSessionPersistence(ctx, { stat }) as never)
 
-      const result = await remote(ctx).fork({ sessionId: source.id, allowMigration: false })
+      const result = await (await remote(ctx)).fork({ sessionId: source.id, allowMigration: false })
 
       if (!result.ok) throw result.error
       expect(stat).not.toHaveBeenCalled()
@@ -200,7 +204,7 @@ describe('sessions.fork', () => {
         return finish.promise
       })
       ctx.provide('sessionPersistence', testSessionPersistence(ctx, { stat }) as never)
-      const operation = remote(ctx).fork({ sessionId: sourceId, allowMigration: false })
+      const operation = (await remote(ctx)).fork({ sessionId: sourceId, allowMigration: false })
       try {
         await entered.promise
         const live = ctx.sessions.create(sourceId, { meta: source.header })
@@ -230,7 +234,7 @@ describe('sessions.fork', () => {
       const observe = vi.spyOn(ctx.sessionQuery, 'observeSession')
       const create = vi.spyOn(ctx.agents, 'create')
 
-      await expect(remote(ctx).fork({ sessionId: sourceId, allowMigration: false })).resolves.toMatchObject({
+      await expect((await remote(ctx)).fork({ sessionId: sourceId, allowMigration: false })).resolves.toMatchObject({
         ok: false, error: { code: 'gateway/internal', message: 'source metadata unavailable' },
       })
 
@@ -263,9 +267,9 @@ describe('sessions.fork', () => {
       expect(compacted.at(-1)).toMatchObject({ type: 'compaction/end', data: { turn: null } })
       source.inbox.append('next-turn', message('queued after compaction'))
 
-      const response = await createSessionTestRemote(ctx, {
+      const response = await (await createSessionTestRemote(ctx, {
         defaultModelSelection: () => ({ provider: 'mock', model: 'mock' }), cwd: '/tmp',
-      }).fork({ sessionId: source.id })
+      })).fork({ sessionId: source.id })
 
       if (!response.ok) throw response.error
       const child = ctx.agents.get(response.value.sessionId)!
@@ -305,9 +309,9 @@ describe('sessions.fork', () => {
         }
         const original = source.session.snapshotEvents()
         const atSeq = anchor === 'omitted' ? undefined : boundary
-        const response = await createSessionTestRemote(ctx, {
+        const response = await (await createSessionTestRemote(ctx, {
           defaultModelSelection: () => ({ provider: 'mock', model: 'mock' }), cwd: '/tmp',
-        }).fork({ sessionId: source.id, ...(atSeq === undefined ? {} : { atSeq }) })
+        })).fork({ sessionId: source.id, ...(atSeq === undefined ? {} : { atSeq }) })
         if (!response.ok) throw response.error
         const child = ctx.agents.get(response.value.sessionId)!
         const requestCount = adapter.requests.length
@@ -325,17 +329,17 @@ describe('sessions.fork', () => {
     },
   )
 
-  it('cuts exactly at a completed turn and records lineage and cwd', async () => {
+  it('cuts exactly at a completed turn and retains cwd without source lineage', async () => {
     const ctx = await composed()
     const source = await liveAgent(ctx, 'session-source', 2)
-    const response = await remote(ctx).fork(request({ sessionId: source.id, atSeq: 2 }))
+    const response = await (await remote(ctx)).fork(request({ sessionId: source.id, atSeq: 2 }))
     expect(response.ok ? null : response.error).toBeNull()
     if (!response.ok) return
     const child = ctx.sessions.get(response.value.sessionId)
     expect(child?.snapshotEvents().map(event => event.type)).toEqual([
       'turn/start', 'user/message', 'turn/end', 'session/end-seed',
     ])
-    expect(child?.header.parentSession).toBe(source.id)
+    expect(child?.header.parentSession).toBeUndefined()
     expect(child?.header.cwd).toBe('/proj')
     await ctx.fiber.dispose()
   })
@@ -370,16 +374,16 @@ describe('sessions.fork', () => {
       root: { header: owner.header, live: true, persisted: false },
     })
 
-    const response = await remote(ctx).fork(request({ sessionId: grandchild.id }))
+    const response = await (await remote(ctx)).fork(request({ sessionId: grandchild.id }))
 
     expect(response.ok ? undefined : response.error).toBeUndefined()
     if (!response.ok) return
     expect(attachSession).toHaveBeenCalledWith(response.value.sessionId)
     expect(ctx.sessions.get(response.value.sessionId)?.header).toMatchObject({
-      parentSession: grandchild.id,
       cwd: '/proj',
     })
     expect(ctx.sessions.get(response.value.sessionId)?.header.origin).toBeUndefined()
+    expect(ctx.sessions.get(response.value.sessionId)?.header.parentSession).toBeUndefined()
     await ctx.fiber.dispose()
   })
 
@@ -425,24 +429,24 @@ describe('sessions.fork', () => {
     }) as never)
     const resume = vi.spyOn(ctx.agents, 'resume')
 
-    const response = await remote(ctx).fork(request({ sessionId: sourceId }))
+    const response = await (await remote(ctx)).fork(request({ sessionId: sourceId }))
 
     expect(response.ok ? undefined : response.error).toBeUndefined()
     if (!response.ok) return
     expect(resume).not.toHaveBeenCalled()
     expect(ctx.agents.get(sourceId)).toBeUndefined()
     expect(ctx.sessions.get(response.value.sessionId)?.header).toMatchObject({
-      parentSession: sourceId,
       cwd: '/proj',
     })
     expect(ctx.sessions.get(response.value.sessionId)?.header.origin).toBeUndefined()
+    expect(ctx.sessions.get(response.value.sessionId)?.header.parentSession).toBeUndefined()
     await ctx.fiber.dispose()
   })
 
   it('uses the latest completed prefix only when atSeq is omitted', async () => {
     const ctx = await composed()
     const source = await liveAgent(ctx, 'session-tail', 2, 'open')
-    const proxy = remote(ctx)
+    const proxy = await remote(ctx)
     const omitted = await proxy.fork(request({ sessionId: source.id }))
     expect(omitted.ok).toBe(true)
     if (omitted.ok) {
@@ -465,7 +469,7 @@ describe('sessions.fork', () => {
   it('rejects an omitted boundary when no turn has completed', async () => {
     const ctx = await composed()
     const source = await liveAgent(ctx, 'session-never-completed', 0, 'open')
-    const response = await remote(ctx).fork(request({ sessionId: source.id }))
+    const response = await (await remote(ctx)).fork(request({ sessionId: source.id }))
     expect(response).toMatchObject({
       ok: false,
       error: { code: 'session/fork-unavailable', details: { sessionId: source.id } },
@@ -482,7 +486,7 @@ describe('sessions.fork', () => {
       const inherited = source.snapshotEvents()
       if (openNextTurn) source.append('turn/start', { turn: 2 })
 
-      const response = await remote(ctx).fork({ sessionId: source.id })
+      const response = await (await remote(ctx)).fork({ sessionId: source.id })
 
       if (!response.ok) throw response.error
       const child = ctx.sessions.get(response.value.sessionId)!
@@ -497,7 +501,7 @@ describe('sessions.fork', () => {
 
   it('rejects invalid fork anchors before reading or creating a Session', async () => {
     const ctx = await composed()
-    const proxy = remote(ctx)
+    const proxy = await remote(ctx)
 
     for (const atSeq of [-1, 0.5]) {
       await expect(proxy.fork(request({ sessionId: sid('missing'), atSeq })))
@@ -511,7 +515,7 @@ describe('sessions.fork', () => {
     const ctx = await composed()
     const source = await liveAgent(ctx, 'session-aborted', 1, 'aborted')
     const anchor = (source.snapshotEvents().at(-1)?.seq ?? 0) - 1
-    const response = await remote(ctx).fork(request({ sessionId: source.id, atSeq: anchor }))
+    const response = await (await remote(ctx)).fork(request({ sessionId: source.id, atSeq: anchor }))
     expect(response.ok ? undefined : response.error).toBeUndefined()
     if (!response.ok) return
     const child = ctx.sessions.get(response.value.sessionId)
@@ -528,7 +532,7 @@ describe('sessions.fork', () => {
     const ctx = await composed()
     const source = await liveAgent(ctx, 'session-open', 1, 'open')
     const boundary = source.snapshotEvents().at(-1)?.seq ?? 0
-    const response = await remote(ctx).fork(request({ sessionId: source.id, atSeq: boundary }))
+    const response = await (await remote(ctx)).fork(request({ sessionId: source.id, atSeq: boundary }))
     expect(response.ok ? undefined : response.error).toBeUndefined()
     if (!response.ok) return
     const child = ctx.sessions.get(response.value.sessionId)
@@ -549,7 +553,7 @@ describe('sessions.fork', () => {
     const boundary = source.snapshotEvents().at(-1)?.seq ?? 0
     source.append('session/title', { title: 'after boundary', messageSeqs: [], source: { kind: 'fallback' } })
 
-    const response = await remote(ctx).fork(request({ sessionId: source.id, atSeq: boundary }))
+    const response = await (await remote(ctx)).fork(request({ sessionId: source.id, atSeq: boundary }))
 
     expect(response.ok ? undefined : response.error).toBeUndefined()
     if (!response.ok) return
@@ -605,7 +609,7 @@ describe('sessions.fork', () => {
     }) as never)
     const resume = vi.spyOn(ctx.agents, 'resume')
 
-    const response = await remote(ctx).fork(request({ sessionId: sourceId, atSeq: 4 }))
+    const response = await (await remote(ctx)).fork(request({ sessionId: sourceId, atSeq: 4 }))
 
     expect(response.ok ? undefined : response.error).toBeUndefined()
     if (!response.ok) return
@@ -633,8 +637,12 @@ describe('sessions.fork', () => {
   })
 
   it('inherits model selection through the completed turn and excludes later changes', async () => {
-    const ctx = await composed()
-    const source = await liveAgent(ctx, 'session-routed', 0)
+    const ctx = new Context()
+    onTestFinished(() => ctx.fiber.dispose())
+    await mountAgentLoopTestDependencies(ctx)
+    const harness = await mountAgentLoopTestHarness(ctx)
+    ctx.provide('workspaceRegistry', { list: () => [], archivedSessionIds: [] } as never)
+    const { session: source } = await harness.create(sid('session-routed'))
     source.append('turn/start', { turn: 1 })
     source.append('request/header', {
       header: {
@@ -657,26 +665,15 @@ describe('sessions.fork', () => {
       reason: 'change',
     })
     source.append('turn/end', { turn: 2, reason: { kind: 'completed' } })
-    const response = await remote(ctx).fork(request({ sessionId: source.id, atSeq: boundary.seq }))
+    const response = await (await remote(ctx)).fork(request({ sessionId: source.id, atSeq: boundary.seq }))
     expect(response.ok ? undefined : response.error).toBeUndefined()
     if (!response.ok) return
     const child = ctx.agents.get(response.value.sessionId)
     if (child === undefined) throw new Error('fork did not publish the child agent')
     expect(child.session.snapshotEvents().slice(0, child.session.inheritedEventCount)).toEqual(inherited)
-    const assembly = await child.ctx.systemPrompt.assemble()
-    expect(assembly.variables).toMatchObject({
-      provider: 'inherited-provider',
-      model: 'inherited-model',
+    expect(child.model.current()).toEqual({
+      provider: 'inherited-provider', model: 'inherited-model', reasoningEffort: 'high',
     })
-    const fallback: LlmCallConfig = { provider: 'default-provider', model: 'default-model' }
-    await expect(agentEvents(child.ctx, child).waterfall(
-      'agent/request', { turn: 1, step: 0, signal: new AbortController().signal }, () => Promise.resolve(fallback),
-    )).resolves.toMatchObject({
-      provider: 'inherited-provider',
-      model: 'inherited-model',
-      reasoningEffort: 'high',
-    })
-    await ctx.fiber.dispose()
   })
 })
 
@@ -692,7 +689,7 @@ describe('sessions.rewrite', () => {
       cancel: vi.fn(),
       whenIdle: () => Promise.resolve(),
     })
-    const sessions = remote(ctx)
+    const sessions = (await remote(ctx))
     const userSeqs = source.snapshotEvents().filter(event => event.type === 'user/message').map(event => event.seq)
     const atSeq = userSeqs[0]
     if (atSeq === undefined) throw new Error('rewrite source has no user prompt')
@@ -732,7 +729,7 @@ describe('sessions.rewrite', () => {
       cancel: vi.fn(),
       whenIdle: () => Promise.resolve(),
     })
-    const sessions = remote(ctx)
+    const sessions = (await remote(ctx))
     const response = await sessions.rewrite(request({
       sessionId: source.id,
       atSeq: 99,
@@ -759,7 +756,7 @@ describe('sessions.rewrite', () => {
   it('rejects an invalid client time zone before touching the session', async () => {
     const ctx = await composed()
     const source = await liveAgent(ctx, 'session-rewrite-zone', 1)
-    const response = await remote(ctx).rewrite(request({
+    const response = await (await remote(ctx)).rewrite(request({
       sessionId: source.id,
       atSeq: 1,
       content: [{ type: 'text', text: 'rewritten' }],
@@ -775,7 +772,7 @@ describe('sessions.rewrite', () => {
   it('rejects a composition whose Agent cannot continue from the surface', async () => {
     const ctx = await composed()
     const source = await liveAgent(ctx, 'session-rewrite-no-continue', 1)
-    const response = await remote(ctx).rewrite(request({
+    const response = await (await remote(ctx)).rewrite(request({
       sessionId: source.id,
       atSeq: 1,
       content: [{ type: 'text', text: 'rewritten' }],
@@ -798,7 +795,7 @@ describe('sessions.rewrite', () => {
       cancel: vi.fn(),
       whenIdle: () => Promise.resolve(),
     })
-    const response = await remote(ctx).rewrite(request({
+    const response = await (await remote(ctx)).rewrite(request({
       sessionId: source.id,
       atSeq: 1,
       content: [{ type: 'text', text: 'rewritten' }],
@@ -826,7 +823,7 @@ describe('sessions.rewrite', () => {
       cancel: vi.fn(),
       whenIdle: () => Promise.resolve(),
     })
-    const response = await remote(ctx).rewrite(request({
+    const response = await (await remote(ctx)).rewrite(request({
       sessionId: source.id,
       atSeq: pluginSeq,
       content: [{ type: 'text', text: 'rewritten' }],
@@ -860,7 +857,7 @@ describe('sessions.rewrite', () => {
       cancel: vi.fn(),
       whenIdle: () => Promise.resolve(),
     })
-    const response = await remote(ctx).rewrite(request({
+    const response = await (await remote(ctx)).rewrite(request({
       sessionId: source.id,
       atSeq: userSeq,
       content: [{ type: 'text', text: 'new caption' }],
@@ -890,7 +887,7 @@ describe('sessions.rewrite', () => {
     })
     const userSeq = source.snapshotEvents().find(event => event.type === 'user/message')?.seq
     if (userSeq === undefined) throw new Error('rewrite source has no user prompt')
-    const response = await remote(ctx).rewrite(request({
+    const response = await (await remote(ctx)).rewrite(request({
       sessionId: source.id,
       atSeq: userSeq,
       content: [
@@ -917,7 +914,7 @@ describe('sessions.rewrite', () => {
     })
     const userSeq = source.snapshotEvents().find(event => event.type === 'user/message')?.seq
     if (userSeq === undefined) throw new Error('rewrite source has no user prompt')
-    const response = await remote(ctx).rewrite(request({
+    const response = await (await remote(ctx)).rewrite(request({
       sessionId: source.id,
       atSeq: userSeq,
       content: [{ type: 'text', text: 'rewritten' }],

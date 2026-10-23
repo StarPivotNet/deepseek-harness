@@ -419,7 +419,6 @@ export class AutomationService extends Service {
       throw new AutomationInputError('internal_error', 'automation requires ctx.agentDefaultModel')
     }
     const selection = defaultModel.currentSelection()
-    const selected = { current: selection, assembled: undefined }
     let agentPreset = rule.agentPreset
     if (presets !== undefined) {
       const resolved = await presets.resolve(agentPreset)
@@ -437,7 +436,7 @@ export class AutomationService extends Service {
         ...agentPreset === undefined ? {} : { agentPreset },
       },
       setup: async (agentCtx) => {
-        installModelSelection(agentCtx, selected)
+        installModelSelection(agentCtx)
         if (presets !== undefined && agentPreset !== undefined)
           await presets.mount(agentCtx, agentPreset)
       },

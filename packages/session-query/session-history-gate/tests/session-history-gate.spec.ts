@@ -106,11 +106,13 @@ function visibleNames(ctx: Context, agent: Agent): string[] {
 
 function call(ctx: Context, name: string, agent?: Agent): Promise<ToolExecutionResult> {
   return ctx.tools.execute({
+    calls: [{ type: 'tool-call', id: ToolCallId('c1'), name, arguments: '{}' }],
     signal: new AbortController().signal,
-    callId: ToolCallId('c1'),
-    name,
-    arguments: {},
     ...agent === undefined ? {} : { agent },
+  }).then((batch) => {
+    const result = batch.results[0]?.result
+    if (result === undefined) throw new Error('tool batch returned no result')
+    return result
   })
 }
 

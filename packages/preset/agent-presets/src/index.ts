@@ -211,7 +211,7 @@ export class AgentPresets extends Service {
       }, 'agentPresets.settings()')
     })
 
-    ctx.sessionProjections.register(agentPresetProjectionDefinition)
+    void ctx.sessionProjections.register(agentPresetProjectionDefinition)
 
     // Advisory, not fatal: a synchronous `agent/created` listener that throws
     // VETOES publication, and this service must not, because composing an agent
@@ -746,9 +746,8 @@ export class AgentPresets extends Service {
     // conversation may have started, since this call was queued. A turn is one
     // model-loop execution; standalone plugin events never open one, so a
     // session that has only run commands is still blank.
-    const boundary = this.selfCtx.sessionProjections.stateOf(agent.session, 'turnBoundary')
-    if (boundary !== undefined
-      && (boundary.openTurnStartSeq !== null || boundary.lastTurn > 0)) {
+    const boundary = this.selfCtx.agents.turnBoundaryOf(agent.session)
+    if (boundary.openTurnStartSeq !== null || boundary.lastTurn > 0) {
       throw new RemoteError(
         'agent-preset/locked',
         `session "${agent.id}" has already started; its agent preset is fixed`,

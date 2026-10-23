@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import { agentEvents, type Agent } from '@deepseek-ai/dsh-agent'
+import { unsupportedModel } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { boot, loadOverlayPatches } from '@deepseek-ai/dsh-app-boot'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -23,6 +24,7 @@ try {
     ctx: new Context(),
     id: agentId,
     options: {},
+    model: unsupportedModel(),
     session,
     inbox: {
       nextTurn: [],
@@ -47,7 +49,7 @@ try {
   }
   const decision = await agentEvents(ctx, agent).waterfall(
     'agent/pre-step',
-    { messages: [], turn: 1, step: 1, signal: new AbortController().signal },
+    { messages: [], turn: 1, step: 1, signal: new AbortController().signal, modelSelection: { provider: 'snapshot', model: 'snapshot' } },
     () => Promise.resolve({ kind: 'enter' as const, messages: [] }),
   )
   const catalog = decision.kind === 'enter'
@@ -56,10 +58,9 @@ try {
     : undefined
   const summary = (await ctx.skills.list()).find(skill => skill.name === 'dsh-session-control')
   const result = await ctx.tools.execute({
-    callId: ToolCallId('dsh-session-control-snapshot'),
-    name: 'skill',
-    arguments: { name: 'dsh-session-control' },
+    calls: [{ type: 'tool-call', id: ToolCallId('dsh-session-control-snapshot'), name: 'skill', arguments: JSON.stringify({ name: 'dsh-session-control' }) }],
     signal: new AbortController().signal,
+    agent,
   })
   const tools = ctx.tools.schemas().map(schema => schema.name).filter(name => name.startsWith('session_control_')).sort()
   process.stdout.write(`${JSON.stringify({ catalog: catalog ?? null, summary: summary ?? null, tools, result })}\n`)

@@ -121,7 +121,7 @@ async function setup(options: SetupOptions = {}) {
   const ctx = new Context()
   provideWorkingDirectoryFixture(ctx)
   await ctx.plugin(SystemPrompt)
-  await ctx.plugin(ToolRuntime, { mode: 'native' })
+  await ctx.plugin(ToolRuntime)
   await ctx.plugin(LocalFileSystem, { cwd: dir })
   await ctx.plugin(FsPolicy)
   if (options.attachments !== false) {
@@ -156,11 +156,13 @@ function agentOn(model: string | undefined, provider = 'visual', messages: reado
 let callCounter = 0
 function call(ctx: Context, name: string, args: unknown, agent?: object) {
   return ctx.tools.execute({
+    calls: [{ type: 'tool-call', id: ToolCallId(`vid-call-${++callCounter}`), name, arguments: JSON.stringify(args ?? {}) }],
     signal: testToolSignal,
-    callId: ToolCallId(`vid-call-${++callCounter}`),
-    name,
-    arguments: args,
     ...agent ? { agent: agent as never } : {},
+  }).then((batch) => {
+    const result = batch.results[0]?.result
+    if (result === undefined) throw new Error('tool batch returned no result')
+    return result
   })
 }
 
@@ -559,7 +561,7 @@ describe('registration surface', () => {
     const ctx = new Context()
     provideWorkingDirectoryFixture(ctx)
     await ctx.plugin(SystemPrompt)
-    await ctx.plugin(ToolRuntime, { mode: 'native' })
+    await ctx.plugin(ToolRuntime)
     await ctx.plugin(LocalFileSystem, { cwd: dir })
     await ctx.plugin(FsPolicy)
     const attachmentsFiber = await ctx.plugin(LocalAttachmentStore, { dshHome: home })
@@ -584,9 +586,7 @@ describe('registration surface', () => {
 
   it('declares read_video parallel-safe and presents a read-family card', async () => {
     const ctx = await setup()
-    expect(ctx.tools.executionMode({
-      signal: testToolSignal, callId: ToolCallId('vid-parallel'), name: 'read_video', arguments: { file_path: 'a.mp4' },
-    })).toEqual({ kind: 'parallel' })
+    expect(ctx.tools.get('read_video')?.isConcurrencySafe?.({ file_path: 'a.mp4' })).toBe(true)
     expect(ctx.tools.get('read_video')?.presentCall?.({ file_path: 'shot.mp4' })).toEqual({
       card: 'generic',
       title: 'Read video shot.mp4',
