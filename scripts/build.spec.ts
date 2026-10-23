@@ -65,8 +65,11 @@ describe('repository build steps', () => {
     for (const gate of gates.filter(gate => gate.id === 'host-src' || gate.id === 'host-check')) {
       expect(gate.args[0]).toBe('--max-old-space-size=8192')
     }
-    for (const gate of gates.filter(gate => gate.id === 'client-src' || gate.id === 'client-check')) {
+    for (const gate of gates.filter(gate => gate.id === 'client-src')) {
       expect(gate.args.some(arg => arg.startsWith('--max-old-space-size'))).toBe(false)
+    }
+    for (const gate of gates.filter(gate => gate.id === 'client-check')) {
+      expect(gate.args[0]).toBe('--max-old-space-size=8192')
     }
   })
 
