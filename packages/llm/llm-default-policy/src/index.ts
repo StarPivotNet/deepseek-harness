@@ -10,7 +10,8 @@ import z from '@deepseek-ai/schemastery'
 import { resolveRetryPolicy } from '@deepseek-ai/dsh-llm'
 import type { ResolvedRetryPolicy, RetryPolicyConfig } from '@deepseek-ai/dsh-llm'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
-import { DEFAULT_MAX_RETRIES, DEFAULT_STREAM_IDLE_TIMEOUT_MS, DEFAULT_UNLIMITED } from './settings.ts'
+import type {} from '@deepseek-ai/cordis-plugin-loader'
+import { DEFAULT_MAX_RETRIES, DEFAULT_STREAM_IDLE_TIMEOUT_MS, DEFAULT_UNLIMITED, LLM_DEFAULT_POLICY_ENTRY } from './settings.ts'
 import type { LlmDefaultPolicySettings } from './defaults.ts'
 
 export {
@@ -31,6 +32,24 @@ declare module '@deepseek-ai/cordis' {
     /** Product-wide default retry budget and stream-idle timeout. */
     llmDefaultPolicy: LlmDefaultPolicyConfig
   }
+  interface Events {
+    /**
+     * The product-wide defaults changed; provider adapters re-resolve routes
+     * that omit their own values.
+     * @mode emit
+     */
+    'llm-default-policy/changed'(): void
+  }
+}
+
+/**
+ * Read the live product-wide defaults, or the shipped ones when the service is
+ * not composed.
+ * @param ctx - any context that may see `llmDefaultPolicy`.
+ * @returns a detached defaults record.
+ */
+export function currentLlmDefaults(ctx: Context): LlmDefaultPolicySettings {
+  return ctx.get('llmDefaultPolicy')?.current() ?? LLM_DEFAULT_POLICY_ENTRY
 }
 
 /** Composition config: the live product-wide defaults held by the settings document. */
@@ -103,6 +122,9 @@ export class LlmDefaultPolicyConfig extends Service {
 
   constructor(ctx: Context, private readonly config: Config) {
     super(ctx, 'llmDefaultPolicy')
+    // The Loader only tells this entry's own fiber about its volatile changes;
+    // adapters elsewhere learn of them through this broadcast.
+    ctx.on('loader/volatile-update', () => { ctx.emit('llm-default-policy/changed') })
   }
 
   /**

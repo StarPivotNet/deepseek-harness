@@ -5,7 +5,7 @@ import { ACCOUNT_QUOTA_EXCEEDED_CODE, APP_IDENTITY, LlmError, QUOTA_EXCEEDED_COD
 import type {} from '@deepseek-ai/dsh-deepseek-account'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
-import { catalogModelInfo, registerDeepSeekProvider, resolveAdapterOptions } from '@deepseek-ai/dsh-llm-deepseek'
+import { catalogModelInfo, currentLlmDefaults, registerDeepSeekProvider, resolveAdapterOptions } from '@deepseek-ai/dsh-llm-deepseek'
 import type { DeepSeekRequestAuth, ResolvedDeepSeekOptions } from '@deepseek-ai/dsh-llm-deepseek'
 import { AccountModelCatalog } from './catalog.ts'
 import type { CatalogView } from './catalog.ts'
@@ -48,7 +48,7 @@ function refuse(model: string, refusal: CatalogRefusal | undefined): void {
 
 export function apply(ctx: Context, config: Config): void {
   const environment = launchEnvironmentOf(ctx)
-  const settings = () => resolveAccountOptions(plainAccountOptions(config), environment)
+  const settings = () => resolveAccountOptions(plainAccountOptions(config), environment, currentLlmDefaults(ctx))
   settings()
   const supported = resolveAdapterOptions({}).models
   const account = () => ctx.get('deepseekAccount')

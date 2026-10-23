@@ -3,7 +3,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { assertUsableApiKey, LlmError } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
-import { registerDeepSeekProvider, catalogModelInfo } from '@deepseek-ai/dsh-llm-deepseek'
+import { registerDeepSeekProvider, catalogModelInfo, currentLlmDefaults } from '@deepseek-ai/dsh-llm-deepseek'
 import { Config, plainOptions, resolveAdapterOptions } from './config.ts'
 import type { ResolvedDeepSeekOptions } from './config.ts'
 
@@ -15,7 +15,7 @@ export const inject = ['llm']
 const PROVIDER = 'deepseek-official'
 
 export function apply(ctx: Context, config: Config): void {
-  const options = () => resolveAdapterOptions(plainOptions(config), launchEnvironmentOf(ctx))
+  const options = () => resolveAdapterOptions(plainOptions(config), launchEnvironmentOf(ctx), currentLlmDefaults(ctx))
   options()
   const resolveApiKey = async (connection: ResolvedDeepSeekOptions): Promise<string> => {
     const ref = connection.apiKeyEnv

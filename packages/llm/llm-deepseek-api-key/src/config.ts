@@ -4,7 +4,7 @@ import z from '@deepseek-ai/schemastery'
 import { credentialRef, type CredentialRef } from '@deepseek-ai/dsh-credentials'
 import type { LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
 import { deepSeekConfigFields, type Config as ProtocolConfig, plainOptions as protocolOptions, resolveAdapterOptions as resolveProtocolOptions } from '@deepseek-ai/dsh-llm-deepseek'
-import type { Options as ProtocolOptions, DeepSeekConnectionOptions } from '@deepseek-ai/dsh-llm-deepseek'
+import type { Options as ProtocolOptions, DeepSeekConnectionOptions, LlmDefaultPolicySettings } from '@deepseek-ai/dsh-llm-deepseek'
 
 /** Messages configuration with a per-request API-key reference. */
 export interface Config extends ProtocolConfig {
@@ -32,8 +32,13 @@ export function plainOptions(config: Config): Options {
 /** Resolve API-key and protocol settings together.
  * @param config - raw deployment settings.
  * @param environment - application launch environment.
+ * @param defaults - product-wide retry and idle defaults for omitted fields.
  * @returns validated endpoint facts and the matching credential reference.
  */
-export function resolveAdapterOptions(config: Options, environment?: LaunchEnvironmentSnapshot): ResolvedDeepSeekOptions {
-  return { ...resolveProtocolOptions(config, environment), apiKeyEnv: credentialRef(config.apiKeyEnv ?? 'DEEPSEEK_API_KEY') }
+export function resolveAdapterOptions(
+  config: Options,
+  environment?: LaunchEnvironmentSnapshot,
+  defaults?: LlmDefaultPolicySettings,
+): ResolvedDeepSeekOptions {
+  return { ...resolveProtocolOptions(config, environment, defaults), apiKeyEnv: credentialRef(config.apiKeyEnv ?? 'DEEPSEEK_API_KEY') }
 }

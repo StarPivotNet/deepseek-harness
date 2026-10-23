@@ -5,7 +5,7 @@ import { isVolatile } from '@deepseek-ai/cosmokit'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import type { LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
 import { catalogModelFields, deepSeekConfigFields, resolveAdapterOptions } from '@deepseek-ai/dsh-llm-deepseek'
-import type { Config as ProtocolConfig, DeepSeekCatalogModel, Options as ProtocolOptions, ResolvedDeepSeekOptions } from '@deepseek-ai/dsh-llm-deepseek'
+import type { Config as ProtocolConfig, DeepSeekCatalogModel, LlmDefaultPolicySettings, Options as ProtocolOptions, ResolvedDeepSeekOptions } from '@deepseek-ai/dsh-llm-deepseek'
 
 /** Default deadline of one model-listing request and of a first-use wait. */
 export const DEFAULT_MODELS_TIMEOUT_MS = 5_000
@@ -108,9 +108,14 @@ function resolveOverride(id: string, override: Readonly<Record<string, unknown>>
  * Settings updates can reach it without schema validation, so every bound is judged here.
  * @param options - plain account options.
  * @param environment - this run's environment layers, or `undefined` outside the product CLI.
+ * @param defaults - product-wide retry and idle defaults for omitted fields.
  * @returns Messages settings, listing settings, and validated overrides.
  */
-export function resolveAccountOptions(options: AccountOptions, environment?: LaunchEnvironmentSnapshot): ResolvedAccountOptions {
+export function resolveAccountOptions(
+  options: AccountOptions,
+  environment?: LaunchEnvironmentSnapshot,
+  defaults?: LlmDefaultPolicySettings,
+): ResolvedAccountOptions {
   if (Object.hasOwn(options, 'models')) {
     throw new Error('llm-deepseek-account: models is no longer configurable; the account /models listing supplies the catalog. '
       + 'Remove models from this entry and adjust single models with modelOverrides.<model id>')
@@ -125,7 +130,7 @@ export function resolveAccountOptions(options: AccountOptions, environment?: Lau
   if (!Number.isSafeInteger(modelsMaxAgeMs) || modelsMaxAgeMs < 0) {
     throw new Error('llm-deepseek-account: modelsMaxAgeMs must be a non-negative safe integer')
   }
-  const protocol = resolveAdapterOptions(protocolOptions, environment)
+  const protocol = resolveAdapterOptions(protocolOptions, environment, defaults)
   return {
     protocol,
     catalog: { url: listingEndpoint(protocol.baseURL), timeoutMs: modelsTimeoutMs, maxAgeMs: modelsMaxAgeMs },

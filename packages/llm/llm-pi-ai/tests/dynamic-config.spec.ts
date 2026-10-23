@@ -10,6 +10,7 @@ import { LocalCredentialProvider } from '@deepseek-ai/dsh-credentials-local'
 import { liveConfig } from '../../../settings/settings/tests/live-config.ts'
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
 import AuthorizationService from '@deepseek-ai/dsh-authorization'
+import LlmDefaultPolicyConfig from '@deepseek-ai/dsh-llm-default-policy'
 import { assemble } from './assemble.ts'
 import { closeMockServers, mockServer, textEvents } from './mock-server.ts'
 
@@ -249,6 +250,20 @@ describe('request-level dynamic profiles', () => {
       jitterRatio: 0.2,
     })
     expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(['openai'])
+  })
+
+  it('follows the product-wide retry default for routes that omit their own', async () => {
+    const dir = await home()
+    const ctx = await boot(dir, { providers: { openai: {}, anthropic: { retryPolicy: { mode: 'normal', maxRetries: 2 } } } })
+    expect(ctx.llm.providerRetryPolicy('openai')).toMatchObject({ mode: 'normal', maxRetries: 5 })
+
+    const defaults = await liveConfig(ctx, LlmDefaultPolicyConfig)
+    await defaults.replace({ unlimited: true })
+    expect(ctx.llm.providerRetryPolicy('openai')).toMatchObject({ mode: 'always' })
+    expect(ctx.llm.providerRetryPolicy('anthropic')).toMatchObject({ mode: 'normal', maxRetries: 2 })
+
+    await defaults.replace({ maxRetries: 9 })
+    expect(ctx.llm.providerRetryPolicy('openai')).toMatchObject({ mode: 'normal', maxRetries: 9 })
   })
 
   it('refuses a settings write this adapter could not serve, leaving its routes alone', async () => {

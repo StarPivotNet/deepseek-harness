@@ -3,6 +3,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-settings'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-fs'
+import type {} from '@deepseek-ai/dsh-llm-default-policy'
 import { resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
 import { getOrCreateAnonymousUserId, type AnonymousUserId } from '@deepseek-ai/dsh-anonymous-user-id'
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
@@ -54,12 +55,16 @@ export function registerDeepSeekProvider<C extends DeepSeekConnectionOptions>(
   })
   const registration = ctx.llm.registerAdapter([provider], adapter)
   let registeredPolicy = dependencies.options().retryPolicy
-  ctx.on('loader/volatile-update', () => {
+  const refreshPolicy = (): void => {
     let policy: typeof registeredPolicy
     try { policy = dependencies.options().retryPolicy }
     catch (error) { ctx.logger.warn(error); return }
     if (deepEqualJson(policy, registeredPolicy)) return
     registration.replace([provider])
     registeredPolicy = policy
-  })
+  }
+  ctx.on('loader/volatile-update', refreshPolicy)
+  // An omitted retryPolicy follows the product-wide Settings default.
+  ctx.on('llm-default-policy/changed', refreshPolicy)
+  ctx.inject(['llmDefaultPolicy'], () => { refreshPolicy() })
 }

@@ -1,6 +1,8 @@
 /** DeepSeek Messages transport, request configuration, and model capabilities. */
 export { catalogModelFields, deepSeekConfigFields, Config, plainOptions, resolveAdapterOptions, PUBLIC_BASE_URL } from './config.ts'
 export type { Options, ResolvedDeepSeekOptions } from './config.ts'
+export { currentLlmDefaults } from '@deepseek-ai/dsh-llm-default-policy'
+export type { LlmDefaultPolicySettings } from '@deepseek-ai/dsh-llm-default-policy'
 export {
   DEFAULT_CONTEXT_WINDOW,
   DEFAULT_FILE_EXPIRY_SECONDS,

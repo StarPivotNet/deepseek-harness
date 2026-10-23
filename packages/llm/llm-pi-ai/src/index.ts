@@ -64,6 +64,8 @@ import { assertUsableApiKey, LlmError, resolveImageAttachmentAccess } from '@dee
 import type { AdapterRegistrationHandle, DirectoryRegistrationHandle, LlmConfigurableProvider } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-fs'
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
+import { currentLlmDefaults } from '@deepseek-ai/dsh-llm-default-policy'
+import type { LlmDefaultPolicySettings } from '@deepseek-ai/dsh-llm-default-policy'
 import { PiAiAdapter } from './adapter.ts'
 import { authContextFrom, credentialStoreFrom } from './auth.ts'
 import { catalogProvider, catalogProviderIds } from './catalog.ts'
@@ -155,6 +157,7 @@ export function apply(ctx: Context, config: Config): void {
   ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
   const settingsNs = ctx.fiber.entry?.options.id ?? NS
   let lastRaw: ReturnType<Config['providers']['get']> | undefined
+  let lastDefaults: LlmDefaultPolicySettings | undefined
   let memoized: ReadonlyMap<string, ResolvedPiAiProviderProfile> | undefined
   /**
    * The resolved profiles for the current configuration, memoized by the raw
@@ -167,9 +170,16 @@ export function apply(ctx: Context, config: Config): void {
    */
   const profiles = (): ReadonlyMap<string, ResolvedPiAiProviderProfile> => {
     const raw = config.providers.get()
-    if (raw === lastRaw && memoized !== undefined) return memoized
-    const next = resolveProfiles(structuredClone(raw) as import('./config.ts').Options['providers'], 'deferred')
+    // Routes that omit retry or idle values follow the live Settings defaults.
+    const defaults = currentLlmDefaults(ctx)
+    if (raw === lastRaw && deepEqualJson(defaults, lastDefaults) && memoized !== undefined) return memoized
+    const next = resolveProfiles(
+      structuredClone(raw) as import('./config.ts').Options['providers'],
+      defaults,
+      'deferred',
+    )
     lastRaw = raw
+    lastDefaults = defaults
     memoized = next
     return next
   }
@@ -312,11 +322,16 @@ export function apply(ctx: Context, config: Config): void {
   }
   ensureRegistrationFacts()
 
-  ctx.on('loader/volatile-update', () => {
+  const refresh = (): void => {
     try { ensureRegistrationFacts(); ensureDirectory() }
     catch (error) {
       ctx.logger.error('llm-pi-ai: configuration conflicts with an existing provider route')
       ctx.logger.error(error)
     }
-  })
+  }
+  ctx.on('loader/volatile-update', refresh)
+  // A changed product-wide default re-registers routes whose captured retry
+  // policy came from it; the service mounting late counts as a change too.
+  ctx.on('llm-default-policy/changed', refresh)
+  ctx.inject(['llmDefaultPolicy'], () => { refresh() })
 }
