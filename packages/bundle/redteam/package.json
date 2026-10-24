@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-redteam",
   "description": "Built-in red-team workspace, preset, skills, tools, and engagement store",
-  "version": "0.2.1-rc.2.2",
+  "version": "0.2.1-rc.4",
   "publishConfig": {
     "access": "public"
   },
