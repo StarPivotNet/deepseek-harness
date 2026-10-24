@@ -225,6 +225,12 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh-creation-recommendations': ['references/*.md', 'skills/*.md'],
   // Official-plugin recommendations ship the skill text their provider loads.
   '@deepseek-ai/dsh-plugin-recommendations': ['skills/*.md'],
+  // Purge keeps its audited JavaScript runtime, resources, and attribution outside generated output.
+  '@deepseek-ai/dsh-purge': [
+    'client.js', 'runtime', 'scripts', 'LICENSE', 'NOTICE.md', 'DISCLAIMER.md',
+  ],
+  // The red-team runtime shares the composition helper with its built entries.
+  '@deepseek-ai/dsh-redteam': ['runtime', 'presets', 'skills', 'scripts', 'LICENSE', 'NOTICE.md', 'DISCLAIMER.md'],
   // The Web Host mounts the default-off settings owner independently of each
   // Agent-scoped delegation-tool instance.
   '@deepseek-ai/dsh-tool-subagent': ['lib/model-selection-settings.js'],

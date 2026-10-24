@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/bundle/purge/README.md
+/:
+  en: 7c4ca967228d27fc
+  zh: 00de939287b7610c
+/deepseek-ai-dsh-purge:
+  en: 00a3f03d0e31b0d4
+  zh: 5dacfe3320375915
+/deepseek-ai-dsh-purge/summary:
+  en: 886bd9d7efc0a3d0
+  zh: 2d92bcb20e488ee1
+/deepseek-ai-dsh-purge/table-of-contents:
+  en: c543cb20b802549a
+  zh: 53cba30ebf9dad38
+/deepseek-ai-dsh-purge/use-this-package:
+  en: 8ecd9eb2e378cc64
+  zh: 8eaa1e53ca6d1c3c
+/deepseek-ai-dsh-purge/understand-the-implementation:
+  en: 5c8cb097d1fcc4ac
+  zh: 3205104f157a3a06
+/deepseek-ai-dsh-purge/attribution:
+  en: e060d93d122a8a18
+  zh: f1e711ef96b77883
+/deepseek-ai-dsh-purge/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-purge/model-experience/request-context-and-condition:
+  en: cd8530c72534ee6b
+  zh: 16dbf6046e7e51fd
+/deepseek-ai-dsh-purge/model-experience/request-context-and-condition/what-the-model-sees:
+  en: b4e652222249c175
+  zh: c7a5c3491df011aa
+/deepseek-ai-dsh-purge/model-experience/request-context-and-condition/token-effect:
+  en: 0bcceba2262afab6
+  zh: 8fefd1fe58969920
+/deepseek-ai-dsh-purge/model-experience/request-context-and-condition/kv-cache-effect:
+  en: 06a42e4750013f2b
+  zh: d51ab34ba247e405
+/deepseek-ai-dsh-purge/known-limitations-and-deferred-work:
+  en: 4f46a259e210d80a
+  zh: 53732b9d2c0467c7

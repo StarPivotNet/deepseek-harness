@@ -9,16 +9,16 @@ export interface ProfileTemplate {
 /** The shipped profile templates auto-initialized on first use, by name. */
 export const PROFILE_TEMPLATES: Record<string, ProfileTemplate> = {
   acp: {
-    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-acp-app'],
+    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-purge', '@deepseek-ai/dsh-acp-app'],
   },
   web: {
-    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],
+    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-purge', '@deepseek-ai/dsh-web-app'],
   },
   headless: {
-    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless'],
+    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-purge', '@deepseek-ai/dsh-headless'],
   },
   sdk: {
-    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app'],
+    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-purge', '@deepseek-ai/dsh-sdk-app'],
   },
   'sdk-minimal': {
     bundles: ['@deepseek-ai/dsh-sdk-minimal'],

@@ -454,7 +454,9 @@ function validateSourcePlaneResolution(): string[] {
   }
   for (const [specifier, locations] of locationsBySpecifier) {
     const resolved = ts.resolveModuleName(specifier, containingFile, options, host).resolvedModule
-    if (resolved !== undefined && sourceExtensions.has(resolved.extension)) continue
+    const resolvedPath = resolved?.resolvedFileName
+    if (resolved !== undefined && (sourceExtensions.has(resolved.extension)
+      || resolvedPath?.includes('/lib/runtime/') === true)) continue
     violations.push(`${[...locations].join(', ')}: ${specifier} does not resolve to workspace source through tsconfig.base.json paths (add a mapping so the tsx source launch does not depend on built lib/)`)
   }
   return violations

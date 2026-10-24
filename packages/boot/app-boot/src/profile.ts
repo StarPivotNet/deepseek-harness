@@ -597,13 +597,38 @@ function withBundles(manifest: ProfileManifest, bundles: readonly string[]): Pro
  * preserving all other manifest fields. Other bundle lists remain untouched.
  */
 function normalizeShippedProfile(name: string, dir: string, manifest: ProfileManifest): ProfileManifest {
-  const installationOwned = INSTALLATION_OWNED_PROFILE_TUPLES[name]
+  const installationOwned = RETIRED_INSTALLATION_OWNED_PROFILE_TUPLES[name] ?? INSTALLATION_OWNED_PROFILE_TUPLES[name]
   const template = PROFILE_TEMPLATES[name]
   const bundles = manifest.dsh?.profile?.bundles
   if (template === undefined || bundles === undefined) return manifest
   const isRetiredTuple = installationOwned !== undefined && sameBundles(bundles, installationOwned)
   if (!isRetiredTuple) return manifest
   const normalized = withBundles(manifest, template.bundles)
+  writeProfileManifest(dir, normalized)
+  return normalized
+}
+
+/** The previous installed bundle tuple, retained only to recognize it during upgrade. */
+const RETIRED_INSTALLATION_OWNED_PROFILE_TUPLES: Record<string, readonly string[]> = {
+  headless: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-headless'],
+}
+
+/** Add a new organization-owned layer to existing profiles while preserving explicit opt-out markers. */
+function adoptOrganizationBundles(name: string, dir: string, manifest: ProfileManifest): ProfileManifest {
+  const template = name === 'desktop' ? PROFILE_TEMPLATES.web : PROFILE_TEMPLATES[name]
+  const bundles = manifest.dsh?.profile?.bundles
+  if (template === undefined || bundles === undefined) return manifest
+  const base = bundles.indexOf('@deepseek-ai/dsh-base')
+  if (base < 0) return manifest
+  const added = template.bundles.filter(bundle => bundle !== '@deepseek-ai/dsh-base'
+    && !bundles.includes(bundle) && !bundles.includes(`!${bundle}`))
+  if (added.length === 0) return manifest
+  const next = [...bundles]
+  const addedSet = new Set(added)
+  const anchor = template.bundles.find(bundle => !addedSet.has(bundle) && bundle !== '@deepseek-ai/dsh-base')
+  const anchorIndex = anchor === undefined ? -1 : next.indexOf(anchor)
+  next.splice(anchorIndex < 0 ? base + 1 : anchorIndex, 0, ...added)
+  const normalized = withBundles(manifest, next)
   writeProfileManifest(dir, normalized)
   return normalized
 }
@@ -683,7 +708,7 @@ export function loadProfileDirectory(
   installAnchor: string,
   options: { userLayer?: boolean } = {},
 ): Profile {
-  const manifest = dropRetiredBundles(dir, readProfileManifest(binName, dir))
+  const manifest = dropRetiredBundles(dir, adoptOrganizationBundles(basename(dir), dir, readProfileManifest(binName, dir)))
   const bundles = manifest.dsh?.profile?.bundles ?? []
   const layers: ProfileLayer[] = []
   const skippedBundles: SkippedBundle[] = []
@@ -741,7 +766,7 @@ export function loadProfile(
     initProfile(dir, template.bundles)
   }
   removeLinkProjections(dir)
-  normalizeShippedProfile(name, dir, readProfileManifest(binName, dir))
+  adoptOrganizationBundles(name, dir, normalizeShippedProfile(name, dir, readProfileManifest(binName, dir)))
   return loadProfileDirectory(binName, dir, installAnchor, options)
 }
 

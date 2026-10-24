@@ -26,7 +26,7 @@ Layers apply to an empty entry list: the profile's ordered bundles, its `cordis.
 
 YAML controls HMR: base enables config-only `dsh-hmr`; headless, SDK and ACP disable it; `sdk-minimal` omits it. Profile patches override these defaults. HMR coordinates watching and reloads; the launcher provides profile data and readiness.
 
-Base includes [Plugin Manager](../packages/boot/plugin-manager/README.md) for Web and agents.
+Base includes [Plugin Manager](../packages/boot/plugin-manager/README.md) for Web and agents. The organization distribution adds the default-on [Purge bundle](../packages/bundle/purge/README.md) to base-backed application profiles; `sdk-minimal` excludes it.
 
 To see the tree your machine boots:
 

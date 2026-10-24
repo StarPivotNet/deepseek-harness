@@ -72,6 +72,7 @@
     "@deepseek-ai/dsh-plugin-manager": "workspace:*",
     "@deepseek-ai/dsh-pwsh-local": "workspace:*",
     "@deepseek-ai/dsh-pwsh-sandbox": "workspace:*",
+    "@deepseek-ai/dsh-purge": "workspace:*",
     "@deepseek-ai/dsh-schedule": "workspace:*",
     "@deepseek-ai/dsh-sdk-app": "workspace:*",
     "@deepseek-ai/dsh-sdk-minimal": "workspace:*",

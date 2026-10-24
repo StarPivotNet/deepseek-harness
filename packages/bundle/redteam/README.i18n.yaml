@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/bundle/redteam/README.md
+/:
+  en: 5c39f560f897dd31
+  zh: fc1b863636543018
+/deepseek-ai-dsh-redteam:
+  en: 99d8c45b0c145cd4
+  zh: 61c656411f87f6a9
+/deepseek-ai-dsh-redteam/summary:
+  en: 1ba34f48a8fb0963
+  zh: 64cef089d439b2e7
+/deepseek-ai-dsh-redteam/table-of-contents:
+  en: 2fee9973f19f9401
+  zh: 7d47a2696513eb48
+/deepseek-ai-dsh-redteam/use-this-package:
+  en: 15a01cb758d957d9
+  zh: 990601300252dd91
+/deepseek-ai-dsh-redteam/understand-the-implementation:
+  en: 4257e472de1c2e66
+  zh: 2bf93da5e855aa68
+/deepseek-ai-dsh-redteam/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-redteam/model-experience/request-context-and-condition:
+  en: cd8530c72534ee6b
+  zh: 16dbf6046e7e51fd
+/deepseek-ai-dsh-redteam/model-experience/request-context-and-condition/what-the-model-sees:
+  en: 895e8d2d25c5ef95
+  zh: 316b2193c4fcac64
+/deepseek-ai-dsh-redteam/model-experience/request-context-and-condition/token-effect:
+  en: 2bdf8dd5e517b6c0
+  zh: 59456c5456482a34
+/deepseek-ai-dsh-redteam/model-experience/request-context-and-condition/kv-cache-effect:
+  en: 9f6c1c5c66952494
+  zh: 8a42430082856726
+/deepseek-ai-dsh-redteam/known-limitations-and-deferred-work:
+  en: 2a3164e2c016625a
+  zh: 137fd2f003b12c52

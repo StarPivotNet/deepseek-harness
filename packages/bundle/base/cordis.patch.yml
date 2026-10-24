@@ -24,6 +24,11 @@
     - id: timer
       name: '@deepseek-ai/cordis-plugin-timer'
 
+    # Resolve the organization bundle in custom base-backed profiles too.
+    - id: dsh-purge-composition
+      name: '@deepseek-ai/dsh-purge'
+      disabled: true
+
     # Profile configuration reloads by default; module roots are opt-in.
     - id: hmr
       name: '@deepseek-ai/dsh-hmr'

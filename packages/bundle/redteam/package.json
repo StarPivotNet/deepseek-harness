@@ -1,0 +1,64 @@
+{
+  "name": "@deepseek-ai/dsh-redteam",
+  "description": "Built-in red-team workspace, preset, skills, tools, and engagement store",
+  "version": "0.2.1-rc.2.2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/bundle/redteam"
+  },
+  "homepage": "https://github.com/StarPivotNet/deepseek-harness",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./store": {
+      "types": "./lib/types/store.d.ts",
+      "default": "./lib/runtime/store.js"
+    },
+    "./tools": {
+      "types": "./lib/types/tools.d.ts",
+      "default": "./lib/runtime/tools.js"
+    },
+    "./ui": {
+      "types": "./lib/types/ui.d.ts",
+      "default": "./lib/runtime/ui.js"
+    },
+    "./src/*": "./src/*",
+    "./runtime/*": "./runtime/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "runtime",
+    "presets",
+    "skills",
+    "scripts",
+    "LICENSE",
+    "NOTICE.md",
+    "DISCLAIMER.md",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.19",
+    "dsh": "0.2.1-rc.2.2"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:~"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-tools": "workspace:*"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-tools": "workspace:*"
+  }
+}

@@ -341,6 +341,7 @@ describe('loadProfile', () => {
     const home = tmp()
     expect(() => loadProfile('t', 'custom', anchor, home))
       .toThrow('profile "custom" does not exist')
+    expect(PROFILE_TEMPLATES.web?.bundles).toContain('@deepseek-ai/dsh-purge')
     loadProfile('t', 'web', anchor, home)
     expect(readProfileManifest('t', resolveProfileDir('web', home)).dsh?.profile?.bundles)
       .toEqual([...PROFILE_TEMPLATES.web?.bundles ?? []])
@@ -362,7 +363,7 @@ describe('loadProfile', () => {
     writeProfileManifest(stock, retiredManifest)
     loadProfile('t', 'headless', anchor, home)
     expect(readProfileManifest('t', stock).dsh?.profile).toEqual({
-      bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless'],
+      bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-purge', '@deepseek-ai/dsh-headless'],
     })
 
     const customHome = tmp()
@@ -372,7 +373,34 @@ describe('loadProfile', () => {
     ])
     loadProfile('t', 'headless', anchor, customHome)
     expect(readProfileManifest('t', custom).dsh?.profile?.bundles).toEqual([
-      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-headless', 'custom-bundle',
+      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-purge', '@deepseek-ai/dsh-headless', 'custom-bundle',
+    ])
+  })
+
+  it('adopts organization bundles in existing Web and Desktop profiles without re-enabling an opt-out', () => {
+    const anchor = stageInstallation({
+      '@deepseek-ai/dsh-base': { patch: '[]\n' },
+      '@deepseek-ai/dsh-purge': { patch: '- insert: [{ id: dsh-purge, name: purge }]\n' },
+      '@deepseek-ai/dsh-web-app': { patch: '[]\n' },
+      'custom-bundle': { patch: '[]\n' },
+    })
+    const root = tmp()
+    const web = join(root, 'web')
+    initProfile(web, ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'custom-bundle'])
+    expect(loadProfileDirectory('t', web, anchor).layers.map(layer => layer.packageName)).toEqual([
+      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-purge', '@deepseek-ai/dsh-web-app', 'custom-bundle',
+    ])
+
+    const desktop = join(root, 'desktop')
+    initProfile(desktop, ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])
+    expect(loadProfileDirectory('t', desktop, anchor).layers.map(layer => layer.packageName)).toEqual([
+      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-purge', '@deepseek-ai/dsh-web-app',
+    ])
+
+    const optedOut = join(root, 'opted-out')
+    initProfile(optedOut, ['@deepseek-ai/dsh-base', '!@deepseek-ai/dsh-purge', '@deepseek-ai/dsh-web-app'])
+    expect(loadProfileDirectory('t', optedOut, anchor).layers.map(layer => layer.packageName)).toEqual([
+      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app',
     ])
   })
 

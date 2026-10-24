@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.2.2/organization-purge/guide.md
+/:
+  en: f8a65ee7d951d035
+  zh: 541ac1081dc63d88
+/built-in-purge-changes-profile-defaults-and-update-ownership:
+  en: 6d1aa398c953d244
+  zh: 6b62f8b53b16f270
+/built-in-purge-changes-profile-defaults-and-update-ownership/change:
+  en: 55d16ac4f7600c6d
+  zh: 0df465ab24f4fabc
+/built-in-purge-changes-profile-defaults-and-update-ownership/migration:
+  en: b3a15f2ba61ca3c6
+  zh: 8b6d33b4235f2235

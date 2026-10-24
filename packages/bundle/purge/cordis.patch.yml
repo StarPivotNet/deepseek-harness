@@ -1,0 +1,38 @@
+# Organization-owned Purge layer. Existing profile patches may still override rows.
+- id: system-prompt
+  config:
+    includeHarnessIdentity: false
+    personaPrefix: ''
+    personaSuffix: ''
+
+- insert:
+    - id: dsh-purge
+      name: '@deepseek-ai/dsh-purge'
+      inject: [systemPrompt, tools]
+      config:
+        enabled: true
+        autoApplyOnStart: true
+        stripMnemon: true
+        injectOnce: false
+        autoRevertOnMissing: false
+        verbose: false
+        postPrompt: ''
+        postPromptOrder: 5100
+        autoRetry: true
+        retryMax: 3
+        autoContinue: false
+        continueMax: 3
+        continueText: '继续'
+        capabilityProtocol: true
+        hooksDenyBypass: true
+
+    - id: dsh-purge-redteam
+      name: '@deepseek-ai/dsh-redteam'
+
+    - id: dsh-purge-redteam-store
+      name: '@deepseek-ai/dsh-redteam/store'
+      config:
+        root: !!js dshHomePath('redteam')
+
+    - id: dsh-purge-redteam-ui
+      name: '@deepseek-ai/dsh-redteam/ui'

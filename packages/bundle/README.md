@@ -28,6 +28,8 @@ This group maps the installable patch layers used by `dsh --profile`. Each packa
 | [`headless`](headless/README.md) | One-shot command-line task application over base | `headless-runner` |
 | [`sdk-app`](sdk-app/README.md) | SDK JSON-RPC stdio application over base | mounts the SDK server |
 | [`sdk-minimal`](sdk-minimal/README.md) | Standalone minimal SDK application without base or Web | — (complete patch tree) |
+| [`purge`](purge/README.md) | Organization-managed prompt controls and host compatibility patches | — (profile layer) |
+| [`redteam`](redteam/README.md) | Built-in red-team workspace, preset, tools, and engagement store | `ctx.redteam` |
 
 In-box bundles resolve from the dsh installation; out-of-tree bundles install into a profile through `dsh plugin --profile <name> add <package>`.
 
