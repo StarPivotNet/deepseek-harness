@@ -376,7 +376,7 @@ export class AutomationService extends Service {
       })
       agent.followup(createUserMessage({
         content: [{ type: 'text', text: rule.task }],
-        source: { kind: 'plugin', plugin: 'automation' },
+        source: { kind: 'automation', ruleId: id },
       }))
       this.applyFiredSessionTitle(agent.session, rule.name)
       const workspace = this.ctx.workspaceRegistry.get(rule.workspaceId)

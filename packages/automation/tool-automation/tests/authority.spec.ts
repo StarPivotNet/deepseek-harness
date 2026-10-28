@@ -44,7 +44,7 @@ describe('automation tool authority', () => {
     const { agent } = agentStub({
       events: [
         { type: 'turn/start', data: { turn: 1 } },
-        { type: 'user/message', data: { source: { kind: 'plugin', plugin: 'automation' } } },
+        { type: 'user/message', data: { source: { kind: 'automation', ruleId: 'rule' } } },
       ],
     })
     const ctx = new Context()

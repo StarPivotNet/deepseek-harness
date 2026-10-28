@@ -162,7 +162,7 @@ describe('SessionTitleService', () => {
     session.append('turn/start', { turn: 1 })
     session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'FAC Sub2API daily deploy from AGENTS.md' }],
-      source: { kind: 'plugin', plugin: 'automation' },
+      source: { kind: 'automation', ruleId: 'rule' },
     }), { surfaceOp: 'append' })
     await settleTitles()
     expect(ctx.sessionTitle.get(session)?.title).toBe('FAC Sub2API daily deploy from')

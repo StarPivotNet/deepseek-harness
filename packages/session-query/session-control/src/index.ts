@@ -37,6 +37,13 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    /** A message another trusted caller delivered through {@link SessionControl.send}. */
+    'session-control': { readonly kind: 'session-control' }
+  }
+}
+
 /** Trusted directory, stop, and delivery operations over the logical session corpus. */
 export class SessionControl extends Service {
   static inject = ['sessionQuery', 'agents', 'sessions']
@@ -178,7 +185,7 @@ export class SessionControl extends Service {
     const agent = await this.requireLiveAgent(request.sessionId, signal)
     const message = createUserMessage({
       content: [{ type: 'text', text: request.message }],
-      source: { kind: 'plugin', plugin: 'session-control' },
+      source: { kind: 'session-control' },
     })
     try {
       if (mode === 'steer') agent.steer(message)

@@ -45,17 +45,15 @@ import { ActivationPool, ChildLock, activationAgent, captureLocalResult, observe
 import type { Activation, ActivationResource, LocalActivation } from './activation.ts'
 
 /** Inputs shared by model steering and human prompt delivery. */
-type ChildDeliveryOptions =
-  | {
-    readonly delivery: 'steer'
-    /**
-     * A provided host source is preserved on the user message; omission attributes
-     * an adjacent-Agent message to the parent.
-     */
-    readonly source?: MessageSource
-    readonly signal: AbortSignal
-  }
-  | { readonly delivery: 'queue'; readonly source: MessageSource; readonly signal: AbortSignal }
+interface ChildDeliveryOptions {
+  readonly delivery: 'steer' | 'queue'
+  /**
+   * A provided host source is preserved on the user message; omission attributes
+   * an adjacent-Agent message to the parent.
+   */
+  readonly source?: MessageSource
+  readonly signal: AbortSignal
+}
 
 /** Package-private hooks supplied by the owning service. */
 interface SubagentHost {
@@ -572,7 +570,6 @@ export class SubagentManager {
       return this.deliverToChild(sender, targetId, content, {
         signal: options.signal,
         delivery: 'queue',
-        source: { kind: 'plugin', plugin: 'subagent-delivery' },
       })
     }
     return this.deliverToChild(sender, targetId, content, {

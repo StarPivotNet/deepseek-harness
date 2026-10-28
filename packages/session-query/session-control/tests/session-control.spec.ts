@@ -274,7 +274,7 @@ describe('SessionControl', () => {
     expect(queued.messageId).toEqual(expect.any(String))
     expect(agent.followup).toHaveBeenCalledWith(expect.objectContaining({
       content: [{ type: 'text', text: 'hello' }],
-      source: { kind: 'plugin', plugin: 'session-control' },
+      source: { kind: 'session-control' },
     }))
     expect(agent.steer).toHaveBeenCalledWith(expect.objectContaining({
       content: [{ type: 'text', text: 'now' }],

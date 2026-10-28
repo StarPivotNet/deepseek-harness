@@ -16,7 +16,7 @@ All five calls are exclusive. UI clients receive generic cards.
 
 ## Authority
 
-Mutations require the exact live root Agent, an open turn, and a `{ kind: 'user' }` message in that turn. `Agent.followup()` and plugin fires that omit a source inherit `user`, so Automation itself must pass `{ kind: 'plugin', plugin: 'automation' }`. Subagents do not receive these tools.
+Mutations require the exact live root Agent, an open turn, and a `{ kind: 'user' }` message in that turn. `Agent.followup()` and plugin fires that omit a source inherit `user`, so Automation itself must pass `{ kind: 'automation', ruleId }`. Subagents do not receive these tools.
 
 ## Model Experience
 

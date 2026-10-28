@@ -812,7 +812,7 @@ describe('sessions.rewrite', () => {
     const source = await liveAgent(ctx, 'session-rewrite-plugin', 1)
     source.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'plugin context' }],
-      source: { kind: 'plugin', plugin: 'foreign' },
+      source: { kind: 'automation', ruleId: 'foreign' },
     }), { surfaceOp: 'append' })
     const pluginSeq = source.snapshotEvents().at(-1)?.seq
     if (pluginSeq === undefined) throw new Error('plugin message missing')

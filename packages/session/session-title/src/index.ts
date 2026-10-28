@@ -133,9 +133,12 @@ export interface SessionTitleProvider {
   generate(request: SessionTitleProviderRequest): Promise<SessionTitleProviderResult>
 }
 
-/** Human prompts and Host Automation tasks are title input; other plugin messages are not. */
-function isSessionTitleInput(source: { kind: string; plugin?: string }): boolean {
-  return source.kind === 'user' || (source.kind === 'plugin' && source.plugin === 'automation')
+/**
+ * Human prompts and Host Automation tasks are title input; other producer messages are not.
+ * `plugin:automation` is the V3→V4 migration of the retired `{ kind: 'plugin', plugin: 'automation' }` wrapper.
+ */
+function isSessionTitleInput(source: { kind: string }): boolean {
+  return source.kind === 'user' || source.kind === 'automation' || source.kind === 'plugin:automation'
 }
 
 /** Extract one eligible text-bearing title input message from a session event. */

@@ -16,7 +16,7 @@
 
 ## 权威
 
-mutate 需要精确的 live root Agent、打开的 turn，以及该 turn 里的 `{ kind: 'user' }` 消息。省略 source 的 `Agent.followup()` 和插件开火会继承 `user`，因此 Automation 自己必须传 `{ kind: 'plugin', plugin: 'automation' }`。子 agent 不接收这些 tool。
+mutate 需要精确的 live root Agent、打开的 turn，以及该 turn 里的 `{ kind: 'user' }` 消息。省略 source 的 `Agent.followup()` 和插件开火会继承 `user`，因此 Automation 自己必须传 `{ kind: 'automation', ruleId }`。子 agent 不接收这些 tool。
 
 ## 模型体验
 

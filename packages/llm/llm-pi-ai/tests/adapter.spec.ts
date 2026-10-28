@@ -1225,7 +1225,7 @@ describe('video input', () => {
       model: 'acme-text',
       messages: [createUserMessage({
         content: [{ type: 'video', attachment: VIDEO_REF }],
-        source: { kind: 'plugin', plugin: 'test' } as never,
+        source: { kind: 'automation', ruleId: 'test' } as never,
       })],
     })).rejects.toThrow('pi-ai model "acme-text" does not support video input')
   })
@@ -1250,7 +1250,7 @@ describe('video input', () => {
       model: 'glm-5.3-flash',
       messages: [createUserMessage({
         content: [{ type: 'video', attachment: VIDEO_REF }],
-        source: { kind: 'plugin', plugin: 'test' },
+        source: { kind: 'automation', ruleId: 'test' },
       })],
     })
     expect(result.finish).toMatchObject({ kind: 'error', failure: { code: 'UNSUPPORTED_CONTENT' } })
@@ -1271,7 +1271,7 @@ describe('video input', () => {
       model: 'acme-vision',
       messages: [createUserMessage({
         content: [{ type: 'video', attachment: VIDEO_REF }],
-        source: { kind: 'plugin', plugin: 'test' },
+        source: { kind: 'automation', ruleId: 'test' },
       })],
     })).rejects.toThrow(/video request payload 4 bytes exceeds.*maxRequestVideoBytes 3/s)
   })
@@ -1288,7 +1288,7 @@ describe('video input', () => {
       model: 'glm-5.3-flash',
       messages: [createUserMessage({
         content: [{ type: 'text', text: 'describe' }, { type: 'video', attachment: VIDEO_REF }],
-        source: { kind: 'plugin', plugin: 'test' },
+        source: { kind: 'automation', ruleId: 'test' },
       })],
     })
     expect(server.requests[0]).toMatchObject({
@@ -1308,7 +1308,7 @@ describe('video input', () => {
       model: 'glm-5.3-flash',
       messages: [createUserMessage({
         content: [{ type: 'text', text: 'plain' }],
-        source: { kind: 'plugin', plugin: 'test' },
+        source: { kind: 'automation', ruleId: 'test' },
       })],
     })
     expect(server.requests[1]).toMatchObject({
@@ -1335,7 +1335,7 @@ describe('video input', () => {
             { type: 'video', attachment: VIDEO_REF },
           ],
         } as never],
-        source: { kind: 'plugin', plugin: 'test' } as never,
+        source: { kind: 'automation', ruleId: 'test' } as never,
       })],
     })
 
@@ -1370,7 +1370,7 @@ describe('video input', () => {
       model: 'glm-5.3-flash',
       messages: [createUserMessage({
         content: [{ type: 'video', attachment: VIDEO_REF }],
-        source: { kind: 'plugin', plugin: 'test' },
+        source: { kind: 'automation', ruleId: 'test' },
       })],
     })
     expect(result.message.content).toEqual([{ type: 'text', text: 'x\n y' }])
