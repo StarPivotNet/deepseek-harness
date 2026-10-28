@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-sidebar-account-settings-trigger.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-29-sidebar-account-settings-trigger.md
-2026-08-29-sidebar-account-settings-trigger.md: e1ddc9d970634d5b71b19fc015dab110c8c272a4
-2026-08-29-sidebar-account-settings-trigger.zh.md: 6f820f74d45adad26e3d3744a34d8f8875cacf9e
+/agent-note-sidebar-account-settings-trigger:
+  en: 6a1fc294bdf01a0d
+  zh: a918cf853c7880e3
+/agent-note-sidebar-account-settings-trigger/problem:
+  en: dd822a85b54534d8
+  zh: df2695599e34ab2b
+/agent-note-sidebar-account-settings-trigger/decision:
+  en: d5ddad212bd7df14
+  zh: 2d7af2e1c08f0d2f
+/agent-note-sidebar-account-settings-trigger/alternatives-considered:
+  en: a0f2b0f378704f5f
+  zh: bcb6a33f6c832a76
+/agent-note-sidebar-account-settings-trigger/consequences:
+  en: 6d1149f292ba881e
+  zh: 4322cd77fa860af8
+/agent-note-sidebar-account-settings-trigger/testing:
+  en: 4f421c939d3c486b
+  zh: 4ccc05b6dede38d4

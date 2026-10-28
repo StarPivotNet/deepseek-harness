@@ -1,6 +1,64 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/session-query/session-history-gate/README.md
-README.md: 9dc804a9adbf56096ca2c5c71693cf5a159c2818
-README.zh.md: b5f4c5feacd80a777f8693a42a289d2ec74e2c97
+/:
+  en: dea6fb1de96ff21f
+  zh: 5917c5bb4ccaa869
+/deepseek-ai-dsh-session-history-gate:
+  en: b8816a34dd9633fe
+  zh: 10a27040dda651c4
+/deepseek-ai-dsh-session-history-gate/summary:
+  en: 5c6a73a6910e4d16
+  zh: 3c30901b4f1b2404
+/deepseek-ai-dsh-session-history-gate/table-of-contents:
+  en: 4e53164159b5ce41
+  zh: 89582dc0294d0776
+/deepseek-ai-dsh-session-history-gate/use-this-package:
+  en: a38834ec276a0e5b
+  zh: e98f2df32c540cde
+/deepseek-ai-dsh-session-history-gate/use-this-package/when-to-choose-it:
+  en: b84fe879fad05a74
+  zh: 998ed6a0b1df0aae
+/deepseek-ai-dsh-session-history-gate/use-this-package/configuration:
+  en: b2602bb65326c096
+  zh: a446c2d82cc5cc56
+/deepseek-ai-dsh-session-history-gate/use-this-package/closed-and-open-behavior:
+  en: b82572ee705be463
+  zh: 87c20bb2586ea658
+/deepseek-ai-dsh-session-history-gate/dev-note:
+  en: eed4018e911dab41
+  zh: 1dc11b52f591c217
+/deepseek-ai-dsh-session-history-gate/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-session-history-gate/model-experience/system-prompt:
+  en: cf78b9dd5596495f
+  zh: bd44560f8c2435e8
+/deepseek-ai-dsh-session-history-gate/model-experience/system-prompt/what-the-model-sees:
+  en: b8b5c4e22ad70336
+  zh: 35aa311c6d723690
+/deepseek-ai-dsh-session-history-gate/model-experience/system-prompt/what-the-model-sees/session-history-gate-notice:
+  en: 76e656c2096b5b14
+  zh: 4518c00e4dafb7e1
+/deepseek-ai-dsh-session-history-gate/model-experience/system-prompt/token-effect:
+  en: f378a82ae1e360ce
+  zh: d13ed1aea0c2db3c
+/deepseek-ai-dsh-session-history-gate/model-experience/system-prompt/kv-cache-effect:
+  en: 8ca31410f63b8f52
+  zh: 79e84e9eadb2c2ac
+/deepseek-ai-dsh-session-history-gate/model-experience/gated-tool-visibility:
+  en: e2605fd48d5b8f5d
+  zh: f74a11ff7cb193ae
+/deepseek-ai-dsh-session-history-gate/model-experience/gated-tool-visibility/what-the-model-sees:
+  en: 2ab799a5dddc7920
+  zh: f664a106eacadb96
+/deepseek-ai-dsh-session-history-gate/model-experience/gated-tool-visibility/token-effect:
+  en: c262d7d52ab1e11a
+  zh: 18579f6285311671
+/deepseek-ai-dsh-session-history-gate/model-experience/gated-tool-visibility/kv-cache-effect:
+  en: 3682916d92988a7c
+  zh: 1e2cbae89421a97a
+/deepseek-ai-dsh-session-history-gate/known-limitations-and-deferred-work:
+  en: 73dc14042be26ce5
+  zh: b340d76bd9ca2391

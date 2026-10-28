@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-same-session-user-prompt-rewrite.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-20-same-session-user-prompt-rewrite.md
-2026-08-20-same-session-user-prompt-rewrite.md: d261488e8b0cffc2f792ef1287e89828e2b2eb6f
-2026-08-20-same-session-user-prompt-rewrite.zh.md: 59cb73b62951c0631bc00966f56fc83a5cf7ab49
+/agent-note-same-session-user-prompt-rewrite:
+  en: ee730904759fb664
+  zh: b30f947069567b01
+/agent-note-same-session-user-prompt-rewrite/problem:
+  en: 7f9dabf337bb034c
+  zh: 553f9c4f20c9d694
+/agent-note-same-session-user-prompt-rewrite/decision:
+  en: 9e4ffb751434142c
+  zh: 762578803656d2c9
+/agent-note-same-session-user-prompt-rewrite/alternatives-considered:
+  en: c2f036b2293f3350
+  zh: a053e1c7d2f706b0
+/agent-note-same-session-user-prompt-rewrite/consequences:
+  en: 813ec80d5def331b
+  zh: 8a564ca913723e19
+/agent-note-same-session-user-prompt-rewrite/testing:
+  en: 84de489f6e0af95c
+  zh: 51329d85bd816383
+/agent-note-same-session-user-prompt-rewrite/related:
+  en: dce40abae70ce995
+  zh: e68f1423420ca271

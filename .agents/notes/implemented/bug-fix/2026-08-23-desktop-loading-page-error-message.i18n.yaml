@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-23-desktop-loading-page-error-message.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-23-desktop-loading-page-error-message.md
-2026-08-23-desktop-loading-page-error-message.md: 13b61e18a21906b2bd8d89a845205c8845b7d74f
-2026-08-23-desktop-loading-page-error-message.zh.md: b252c55aaab6569003778b78b265d1f58a5dc3ca
+/agent-note-desktop-loading-page-carries-host-launch-errors:
+  en: e5726c426500b3d9
+  zh: 065fddf897bb99ac
+/agent-note-desktop-loading-page-carries-host-launch-errors/problem:
+  en: 4271910e1b2b76a6
+  zh: f1e235a14cceea56
+/agent-note-desktop-loading-page-carries-host-launch-errors/decision:
+  en: 633c449aa03d7a38
+  zh: 1bcea09c5b3cef3e
+/agent-note-desktop-loading-page-carries-host-launch-errors/alternatives-considered:
+  en: 70b93187e304624d
+  zh: 744ec671ecbdfe28
+/agent-note-desktop-loading-page-carries-host-launch-errors/consequences:
+  en: 4b68e26ae8fa0037
+  zh: 3395ca1b108ef89d
+/agent-note-desktop-loading-page-carries-host-launch-errors/testing:
+  en: dee488b4c27d9565
+  zh: 979793db610abfa7

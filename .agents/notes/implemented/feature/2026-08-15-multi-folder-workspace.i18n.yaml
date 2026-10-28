@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-multi-folder-workspace.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-multi-folder-workspace.md
-2026-08-15-multi-folder-workspace.md: b1b59d3fa1a019b7b5365e0dd86887107800a825
-2026-08-15-multi-folder-workspace.zh.md: 15f11e52d0bdfabc253ad9e0b3f5b56410d5087e
+/agent-note-multi-folder-workspace:
+  en: e747e1fc8ed850e6
+  zh: f0e78f598c05686d
+/agent-note-multi-folder-workspace/problem:
+  en: 43b93a0f61eff3d6
+  zh: ce8fb5823fe20738
+/agent-note-multi-folder-workspace/decision:
+  en: 832f36f008ad873b
+  zh: 67dc0b0799f6f689
+/agent-note-multi-folder-workspace/alternatives-considered:
+  en: d6b96ec682b20742
+  zh: 1d86115a6d0adf79
+/agent-note-multi-folder-workspace/consequences:
+  en: 047731d47bd12bed
+  zh: e98b3364adaf999a
+/agent-note-multi-folder-workspace/required-verification:
+  en: f6be7d53bc536b5b
+  zh: 72647f13c541aeab

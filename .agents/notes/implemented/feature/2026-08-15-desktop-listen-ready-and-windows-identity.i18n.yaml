@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-desktop-listen-ready-and-windows-identity.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-desktop-listen-ready-and-windows-identity.md
-2026-08-15-desktop-listen-ready-and-windows-identity.md: 44318b31c12e13a04de31ea479b07229083052db
-2026-08-15-desktop-listen-ready-and-windows-identity.zh.md: 0178e4ee76a9437b1c4abefbb8ada7179427cf0a
+/agent-note-desktop-listen-ready-load-and-windows-identity:
+  en: cea2aa16656250e5
+  zh: f88c02dcbd14f6d8
+/agent-note-desktop-listen-ready-load-and-windows-identity/problem:
+  en: 4070802d809b6389
+  zh: f483b70a02cbbc39
+/agent-note-desktop-listen-ready-load-and-windows-identity/decision:
+  en: 5e52e430a7d37cf2
+  zh: 20e4701b2689a86d
+/agent-note-desktop-listen-ready-load-and-windows-identity/alternatives-considered:
+  en: 827c6cebbe42de8b
+  zh: 27da375f205f6f3f
+/agent-note-desktop-listen-ready-load-and-windows-identity/consequences:
+  en: 1e8b1239fb3ee93b
+  zh: b43457b2ec50cf94
+/agent-note-desktop-listen-ready-load-and-windows-identity/testing:
+  en: 84a21789072c83a2
+  zh: e890d4bff5fc2590

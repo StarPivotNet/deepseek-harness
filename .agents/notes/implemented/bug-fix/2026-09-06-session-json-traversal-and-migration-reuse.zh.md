@@ -14,7 +14,7 @@ Status: implemented
 
 [JSONL 持久化](../../../../packages/session/session-persistence-jsonl/README.zh.md)在单个后端实例内串行执行完整历史迁移，并在一个 worker 线程中执行 catalog 迁移与校验。迁移的三次 catalog 计算复用该线程，并在 `finally` 中终止线程后才释放准入。取消与后端卸载都会等待线程退出。等待的读取保留独立取消信号，并在完成后重新选择最高 generation，包括执行者取消或失败的情况。稳定的物理源快照、指纹检查与发布仍由宿主执行。
 
-这优化了[已发布格式迁移](../architecture/2026-08-31-released-session-format-migrations.zh.md)的执行成本，并补充[大型 Session 恢复流水线](../architecture/2026-08-05-large-session-jsonl-restore-pipeline.zh.md)。这两项决策继续保持有效：不可变 generation 发布与针对所有权的恢复校验仍各自拥有独立的决策依据。
+这优化了[已发布格式迁移](../architecture/2026-08-31-released-session-format-migrations.zh.md)的执行成本，并补充[大型 Session 恢复流水线](../../archived/architecture/2026-08-05-large-session-jsonl-restore-pipeline.md)。这两项决策继续保持有效：不可变 generation 发布与针对所有权的恢复校验仍各自拥有独立的决策依据。
 
 ## 考虑过的替代方案
 

@@ -2,7 +2,7 @@
 
 [English](automation.md) | 中文
 
-Automation 拥有持久规则，到期时返回的是 **新 Session**，不是已有对话的后续 turn。Session 事件日志不是规则表：规则住在 `automation` storage domain。[包 README](../../packages/automation/automation/README.md) 负责组合、开火行为和互斥策略。
+Automation 拥有持久规则，到期时返回的是 **新 Session**，不是已有对话的后续 turn。Session 事件日志不是规则表：规则住在 `automation` storage domain。[包 README](../../packages/automation/automation/README.zh.md) 负责组合、开火行为和互斥策略。
 
 ## 持久记录
 
@@ -115,7 +115,7 @@ interface AutomationRunRecord {
 
 ## Cordis API
 
-Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — this section is byte-identical in both language sides of the page. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — this section is byte-identical in both language sides of the page. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
 
 <a id="ctxautomation--automationservice"></a>
 

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-27-defer-user-patch-hmr-during-turns.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-27-defer-user-patch-hmr-during-turns.md
-2026-08-27-defer-user-patch-hmr-during-turns.md: e2f19bbcd4d67592516a98569dfb00f0b03cdd7e
-2026-08-27-defer-user-patch-hmr-during-turns.zh.md: ce794948f838c269065e51becc8b6296bcdc99ac
+/agent-note-defer-user-patch-hmr-until-live-agents-are-idle:
+  en: 3311c9acb71d0a7f
+  zh: dd3f1363de76b7e1
+/agent-note-defer-user-patch-hmr-until-live-agents-are-idle/problem:
+  en: ed0ee6896c38e967
+  zh: b59bb4022aa1607a
+/agent-note-defer-user-patch-hmr-until-live-agents-are-idle/decision:
+  en: 1551832823dd6dfe
+  zh: 3107849478c0a190
+/agent-note-defer-user-patch-hmr-until-live-agents-are-idle/alternatives-considered:
+  en: 99342c5eb47d8196
+  zh: 7c16d26243ca8e4c
+/agent-note-defer-user-patch-hmr-until-live-agents-are-idle/consequences:
+  en: 4cadbda080eddd32
+  zh: 93e3948a0cb979ef

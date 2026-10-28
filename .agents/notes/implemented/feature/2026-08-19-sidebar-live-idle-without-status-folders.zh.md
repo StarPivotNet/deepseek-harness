@@ -10,7 +10,7 @@ Status: implemented
 
 ## Decision
 
-视图选项会持久化 `activityLayout`。**按状态分区**（`folders`，默认）恢复 [侧边栏会话活动分区](2026-08-15-sidebar-session-activity-sections.md) 的可折叠已完成／运行中／异常／历史记录标题。**不分区**（`inline`）时只有 Workspace 和置顶可折叠。`partitionLiveIdle` 再把待处理交互、自身运行和有运行中后代的行浮到空闲行之上。已完成、异常和其余空闲行留在空闲簇里，状态只画在行内圆点上。进行中行永不进入五行溢出。空闲溢出仍使用 [Workspace 侧边栏顺序与折叠](2026-08-11-workspace-sidebar-order-and-folding.md) 的临时 **展开其余**。Session 拖拽只发生在起始的进行中／空闲簇或状态分区内。
+视图选项会持久化 `activityLayout`。**按状态分区**（`folders`，默认）恢复 [侧边栏会话活动分区](2026-08-15-sidebar-session-activity-sections.zh.md) 的可折叠已完成／运行中／异常／历史记录标题。**不分区**（`inline`）时只有 Workspace 和置顶可折叠。`partitionLiveIdle` 再把待处理交互、自身运行和有运行中后代的行浮到空闲行之上。已完成、异常和其余空闲行留在空闲簇里，状态只画在行内圆点上。进行中行永不进入五行溢出。空闲溢出仍使用 [Workspace 侧边栏顺序与折叠](2026-08-11-workspace-sidebar-order-and-folding.md) 的临时 **展开其余**。Session 拖拽只发生在起始的进行中／空闲簇或状态分区内。
 
 ## Alternatives considered
 

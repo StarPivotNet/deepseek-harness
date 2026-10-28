@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-30-opening-a-pull-request-cookbook.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-30-opening-a-pull-request-cookbook.md
-2026-08-30-opening-a-pull-request-cookbook.md: 7300de4aee7bf39048e764cb46fef607080afb4e
-2026-08-30-opening-a-pull-request-cookbook.zh.md: 54ce4332e80c8a84a9a2c99bd5f867ef8f858526
+/agent-note-opening-a-pull-request-cookbook:
+  en: 822be3e1766739e3
+  zh: e054c449f6db0c15
+/agent-note-opening-a-pull-request-cookbook/problem:
+  en: 4e1582b36f2b3096
+  zh: aeee9fcb8c60c730
+/agent-note-opening-a-pull-request-cookbook/decision:
+  en: de5f19fe1f43988b
+  zh: 7c491be81a1d3117
+/agent-note-opening-a-pull-request-cookbook/alternatives-considered:
+  en: 77a28a90434d005d
+  zh: 6da35ee3abfd4649
+/agent-note-opening-a-pull-request-cookbook/consequences:
+  en: 8275a12522acdc12
+  zh: df96ce94b3596b0f

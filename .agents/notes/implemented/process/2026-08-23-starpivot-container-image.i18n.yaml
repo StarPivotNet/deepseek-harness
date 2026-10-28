@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-23-starpivot-container-image.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-23-starpivot-container-image.md
-2026-08-23-starpivot-container-image.md: 3a71d8236431451475dc4ba12f1445640cbf0daf
-2026-08-23-starpivot-container-image.zh.md: 3b357327465937a652e7b729b75ec34da5d11e22
+/agent-note-starpivot-container-image:
+  en: e7379a9a7d033091
+  zh: 44c8d57144024f53
+/agent-note-starpivot-container-image/problem:
+  en: 4d13add6ae4f1dc5
+  zh: 014205abafbe7c73
+/agent-note-starpivot-container-image/decision:
+  en: 39b76c46e70d591e
+  zh: 7b6400fd865e9684
+/agent-note-starpivot-container-image/alternatives-considered:
+  en: a7e8fdcf4ef72c1b
+  zh: c99f39aea429f32e
+/agent-note-starpivot-container-image/consequences:
+  en: a93b225db26397e2
+  zh: fe3b79e9ffdf9c52
+/agent-note-starpivot-container-image/testing:
+  en: b455ba6d04422f87
+  zh: 177bdcc4a0ce98a3

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-client-plugin-manual-reload.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-client-plugin-manual-reload.md
-2026-08-15-client-plugin-manual-reload.md: cd026981d7db84bb30a058f57833ff484e4cc7b9
-2026-08-15-client-plugin-manual-reload.zh.md: 3cf35a03c53b58515468a8402541e7d21ad80c8e
+/agent-note-client-plugin-reload-is-manual-by-default:
+  en: 01c642897f8ea610
+  zh: b28c3efa69d2abc1
+/agent-note-client-plugin-reload-is-manual-by-default/problem:
+  en: ac0fe0d8bae27709
+  zh: 54924f9d5c043b80
+/agent-note-client-plugin-reload-is-manual-by-default/decision:
+  en: c1e257a68573b2a5
+  zh: f89f1a860b96092d
+/agent-note-client-plugin-reload-is-manual-by-default/alternatives-considered:
+  en: cb9ca239baa9c9b9
+  zh: 53207372e8b569cc
+/agent-note-client-plugin-reload-is-manual-by-default/consequences:
+  en: 9658a09d7eb0ab5f
+  zh: c9d0ee6f3148537b
+/agent-note-client-plugin-reload-is-manual-by-default/testing:
+  en: 5ece6093a058eeee
+  zh: 346b871ff013d374

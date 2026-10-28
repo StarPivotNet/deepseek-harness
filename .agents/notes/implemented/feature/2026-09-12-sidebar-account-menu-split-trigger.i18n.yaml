@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-sidebar-account-menu-split-trigger.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-12-sidebar-account-menu-split-trigger.md
-2026-09-12-sidebar-account-menu-split-trigger.md: d6c37756e495593548097c5a7f4c973b38828a81
-2026-09-12-sidebar-account-menu-split-trigger.zh.md: 265b955f8ee2ef6f60b398cb577d26e60e608d87
+/agent-note-sidebar-account-menu-split-trigger:
+  en: 7067a6fc2e10cff3
+  zh: cf419fb3d83007bf
+/agent-note-sidebar-account-menu-split-trigger/problem:
+  en: 845f24268399fffd
+  zh: 105722a6981af916
+/agent-note-sidebar-account-menu-split-trigger/decision:
+  en: 7c1b239299b360ca
+  zh: 849612a443756a84
+/agent-note-sidebar-account-menu-split-trigger/alternatives-considered:
+  en: 1b353ddad6e37fb5
+  zh: 0737bb3b5c94f02a
+/agent-note-sidebar-account-menu-split-trigger/consequences:
+  en: 52b8eb0109b8b73d
+  zh: 0da681ce2d08e3d7
+/agent-note-sidebar-account-menu-split-trigger/testing:
+  en: 1e9f26373eda3058
+  zh: 49f1e296481b5e4c

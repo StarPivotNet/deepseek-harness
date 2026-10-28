@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-subagent-inherits-parent-reasoning-effort.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-19-subagent-inherits-parent-reasoning-effort.md
-2026-08-19-subagent-inherits-parent-reasoning-effort.md: c3e29811bb79bf6c1e883f016af88a67d1f43c82
-2026-08-19-subagent-inherits-parent-reasoning-effort.zh.md: 78ca915d73bcefa5c36fd4a45ce9c13c7e11ba71
+/agent-note-in-process-subagents-inherit-the-parent-s-same-route-reasoning-effort:
+  en: d5b073158ebf711d
+  zh: 39065e839e7ad009
+/agent-note-in-process-subagents-inherit-the-parent-s-same-route-reasoning-effort/problem:
+  en: 99353fbb4ed23bac
+  zh: 0ef434b6b5f1b390
+/agent-note-in-process-subagents-inherit-the-parent-s-same-route-reasoning-effort/decision:
+  en: 192e54ac433f3fc0
+  zh: 4909004aece61fe4
+/agent-note-in-process-subagents-inherit-the-parent-s-same-route-reasoning-effort/alternatives-considered:
+  en: fff33ae377dc6e99
+  zh: e66d1970d5e462f7
+/agent-note-in-process-subagents-inherit-the-parent-s-same-route-reasoning-effort/testing:
+  en: 5943b48bbeb95047
+  zh: d99d8ee75e223fcc
+/agent-note-in-process-subagents-inherit-the-parent-s-same-route-reasoning-effort/consequences:
+  en: 0c08455b02a94f62
+  zh: e08ef7070191c1dc

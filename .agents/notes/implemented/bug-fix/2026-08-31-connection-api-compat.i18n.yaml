@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-31-connection-api-compat.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-31-connection-api-compat.md
-2026-08-31-connection-api-compat.md: ff468b776132f54c4f794e086cc8b6e7b75aff9d
-2026-08-31-connection-api-compat.zh.md: dfca7c5813e13d477e8c182e48643dd72cc34cfb
+/agent-note-restore-connection-api-for-client-plugins:
+  en: 37b237aac921e75f
+  zh: 6e90132da56ba011
+/agent-note-restore-connection-api-for-client-plugins/problem:
+  en: 8d301d8f441e6477
+  zh: 86faf07a15aed71a
+/agent-note-restore-connection-api-for-client-plugins/decision:
+  en: d7b8959c8d56d9d1
+  zh: 80607739a6218f4d
+/agent-note-restore-connection-api-for-client-plugins/alternatives-considered:
+  en: f532d27cd9eb34e1
+  zh: 92429268786dfc68
+/agent-note-restore-connection-api-for-client-plugins/consequences:
+  en: c8b084c875367302
+  zh: ea516cd721921286
+/agent-note-restore-connection-api-for-client-plugins/testing:
+  en: 79d91fdc70032bc1
+  zh: 320adf3a7f3ebba9

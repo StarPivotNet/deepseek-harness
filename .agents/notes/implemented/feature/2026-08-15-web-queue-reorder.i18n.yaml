@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-web-queue-reorder.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-web-queue-reorder.md
-2026-08-15-web-queue-reorder.md: 81e39dccbd235f77068881a965a49252ec728c7f
-2026-08-15-web-queue-reorder.zh.md: 161237c59a8245dce430f2ee83a5af7e82f875be
+/agent-note-reorder-queued-web-messages-by-drag:
+  en: 46821769e086528d
+  zh: ba1fa52ff74eb8f8
+/agent-note-reorder-queued-web-messages-by-drag/problem:
+  en: 213d29ed9cbee996
+  zh: 0701011c993fdf2f
+/agent-note-reorder-queued-web-messages-by-drag/decision:
+  en: 852948122528da9b
+  zh: 61d7024930142c36
+/agent-note-reorder-queued-web-messages-by-drag/alternatives-considered:
+  en: 939f1937847ce923
+  zh: 76b2a40119f8abed
+/agent-note-reorder-queued-web-messages-by-drag/consequences:
+  en: df4ed584d158fa8f
+  zh: ca197848b8aafe1a
+/agent-note-reorder-queued-web-messages-by-drag/testing:
+  en: e13218d26190be76
+  zh: 0e6d21a24b471cd2
+/agent-note-reorder-queued-web-messages-by-drag/related:
+  en: ea2c00876582a474
+  zh: 33b740132bba69a6

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-07-one-shot-subagent-team-membership.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-07-one-shot-subagent-team-membership.md
-2026-09-07-one-shot-subagent-team-membership.md: 950f81113804edb7a9cf2be0bc3ba64122a6075b
-2026-09-07-one-shot-subagent-team-membership.zh.md: fcd67981efbd460e0c238bfded82b449ce834acf
+/agent-note-one-shot-subagents-are-not-implicit-team-leads:
+  en: 4248b3113b687457
+  zh: 98932634671f505d
+/agent-note-one-shot-subagents-are-not-implicit-team-leads/problem:
+  en: e0749c69a9c29850
+  zh: 6f710c4c44089977
+/agent-note-one-shot-subagents-are-not-implicit-team-leads/decision:
+  en: 6428251809dfb503
+  zh: 46871c1731a47a86
+/agent-note-one-shot-subagents-are-not-implicit-team-leads/alternatives-considered:
+  en: 90ed5c6a9a91b213
+  zh: 8450f4752c5bc9ed
+/agent-note-one-shot-subagents-are-not-implicit-team-leads/consequences:
+  en: 003f66fb22e2051b
+  zh: 25635d9fdd347199
+/agent-note-one-shot-subagents-are-not-implicit-team-leads/testing:
+  en: 96b268c863438e86
+  zh: b74ecaab0ceb761b

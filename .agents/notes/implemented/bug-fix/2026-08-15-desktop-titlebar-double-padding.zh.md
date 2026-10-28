@@ -10,7 +10,7 @@ Electron 壳注入 36px 固定标题栏后，又在 `html` 和 `body` 上都用 
 
 ## 决策
 
-`titlebarStyles` 只给 `body` 加 padding。Web GUI 的高度链随后把 `#root` 算进 body 内容盒，只留一条预留带，固定栏盖住这段 padding。平台变体、overlay 宽度和红绿灯内边距仍由 [macOS 外观笔记](../feature/2026-08-15-desktop-macos-chrome.md) 记录。
+`titlebarStyles` 只给 `body` 加 padding。Web GUI 的高度链随后把 `#root` 算进 body 内容盒，只留一条预留带，固定栏盖住这段 padding。平台变体、overlay 宽度和红绿灯内边距仍由 [macOS 外观笔记](../feature/2026-08-15-desktop-macos-chrome.zh.md) 记录。
 
 ## 备选方案
 

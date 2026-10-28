@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-settings-host-start-meta.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-29-settings-host-start-meta.md
-2026-08-29-settings-host-start-meta.md: b62698ced640afd0d77f9d54fd46370acf22f2c0
-2026-08-29-settings-host-start-meta.zh.md: 7e32a9989ce38f2e8ba8f492c7ebb5d4c4af37fd
+/agent-note-settings-host-start-time-and-start-count:
+  en: 821ef378262860c1
+  zh: 525b97f3a99ca8ad
+/agent-note-settings-host-start-time-and-start-count/problem:
+  en: 0ebb306c6b0366be
+  zh: 9e43bfdeff7fc226
+/agent-note-settings-host-start-time-and-start-count/decision:
+  en: 6e3b35fc906d5e0c
+  zh: a2f45ad8cf13e8c0
+/agent-note-settings-host-start-time-and-start-count/alternatives-considered:
+  en: cf6c1b4014c4c4fb
+  zh: 79be2b6e1dfcff44
+/agent-note-settings-host-start-time-and-start-count/consequences:
+  en: a0e3eb4dd05eec8e
+  zh: 676e4441afd9aafb
+/agent-note-settings-host-start-time-and-start-count/testing:
+  en: b6bddfcfbddd62db
+  zh: cd10b7b201e79049

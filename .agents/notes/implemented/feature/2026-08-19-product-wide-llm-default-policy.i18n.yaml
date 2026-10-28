@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-product-wide-llm-default-policy.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-product-wide-llm-default-policy.md
-2026-08-19-product-wide-llm-default-policy.md: 73b1d2555c93a0fbe4877df4155dda7ab4f6794b
-2026-08-19-product-wide-llm-default-policy.zh.md: 63b47a29cc2f61f922c37b14007c797738cd28c7
+/agent-note-product-wide-default-retry-budget-and-stream-idle-timeout:
+  en: 7d53475979f72587
+  zh: ace4b90d2115846c
+/agent-note-product-wide-default-retry-budget-and-stream-idle-timeout/problem:
+  en: 3cdad945c6bd605e
+  zh: 8e1cb1f5841bf10f
+/agent-note-product-wide-default-retry-budget-and-stream-idle-timeout/decision:
+  en: b50f0bf920aa7450
+  zh: 82cec870b9fc380f
+/agent-note-product-wide-default-retry-budget-and-stream-idle-timeout/alternatives-considered:
+  en: 3c87ac3c22d9e110
+  zh: 46d060a6224b90f5
+/agent-note-product-wide-default-retry-budget-and-stream-idle-timeout/consequences:
+  en: eea50e1af93caf6d
+  zh: b5791e6c510eb724

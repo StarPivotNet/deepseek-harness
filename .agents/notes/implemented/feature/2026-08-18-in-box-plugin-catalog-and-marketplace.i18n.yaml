@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-in-box-plugin-catalog-and-marketplace.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-18-in-box-plugin-catalog-and-marketplace.md
-2026-08-18-in-box-plugin-catalog-and-marketplace.md: add11c67e660bd9b520aeef536603fbf2946ef76
-2026-08-18-in-box-plugin-catalog-and-marketplace.zh.md: abae1ca32fa10b6c94720790d59a66f3686e3690
+/agent-note-in-box-plugin-catalog-and-marketplace:
+  en: 80aa054353d0baa8
+  zh: c967e9731fd5ce1c
+/agent-note-in-box-plugin-catalog-and-marketplace/problem:
+  en: f29f0f3f6d256d6d
+  zh: 507df239173e512e
+/agent-note-in-box-plugin-catalog-and-marketplace/decision:
+  en: 013c598458c92822
+  zh: 7b0352c6d78fb254
+/agent-note-in-box-plugin-catalog-and-marketplace/alternatives-considered:
+  en: 7c179fb9db30d55b
+  zh: cedf264b8d554e34
+/agent-note-in-box-plugin-catalog-and-marketplace/consequences:
+  en: cd0637548085135d
+  zh: bf2197545e15d931

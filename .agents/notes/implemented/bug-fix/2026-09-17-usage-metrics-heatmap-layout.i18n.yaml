@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-17-usage-metrics-heatmap-layout.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-17-usage-metrics-heatmap-layout.md
-2026-09-17-usage-metrics-heatmap-layout.md: d1d6d1688dfe0ce555a23f217af8ca1f38f5c043
-2026-09-17-usage-metrics-heatmap-layout.zh.md: 82ebca18228000935bba48e24628190a2239cce4
+/agent-note-usage-metrics-stay-one-line-and-heatmap-cells-stay-visible:
+  en: 618d7180f0db2d1d
+  zh: 559932ba934fa40f
+/agent-note-usage-metrics-stay-one-line-and-heatmap-cells-stay-visible/problem:
+  en: c85c92974ca0d55f
+  zh: 32d8fef0058436ee
+/agent-note-usage-metrics-stay-one-line-and-heatmap-cells-stay-visible/decision:
+  en: 451efea3fc62f3a6
+  zh: 5afc928c2e7457b3
+/agent-note-usage-metrics-stay-one-line-and-heatmap-cells-stay-visible/alternatives-considered:
+  en: 17b35adb8f573ea2
+  zh: 2a90ab4d05cccb1d
+/agent-note-usage-metrics-stay-one-line-and-heatmap-cells-stay-visible/consequences:
+  en: fde65a2229096bd1
+  zh: e7615c54a7b4d0d6
+/agent-note-usage-metrics-stay-one-line-and-heatmap-cells-stay-visible/testing:
+  en: 9461699a31e72ff2
+  zh: 43c4e525783711e7

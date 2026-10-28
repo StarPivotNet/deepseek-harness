@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-bundled-session-control-skill.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-bundled-session-control-skill.md
-2026-08-19-bundled-session-control-skill.md: 68c1bb9dcd9e1f54c65dcdbaca53578d1a8d18ff
-2026-08-19-bundled-session-control-skill.zh.md: eafccfa99f5e1b19257c8f59245091e5d8b013cc
+/agent-note-bundled-session-control-skill-and-tools:
+  en: e27e64f380cb6204
+  zh: 587a1c138a233a8e
+/agent-note-bundled-session-control-skill-and-tools/problem:
+  en: 1d3ad64fa4ce2b28
+  zh: 020c3517d48db2ab
+/agent-note-bundled-session-control-skill-and-tools/decision:
+  en: 7cd0ff671486d0ef
+  zh: 0f84f5dc40f07207
+/agent-note-bundled-session-control-skill-and-tools/alternatives-considered:
+  en: 0a679cb3d6c24da5
+  zh: ec292d1160bc16a7
+/agent-note-bundled-session-control-skill-and-tools/consequences:
+  en: 88e3bdba500f5aed
+  zh: 03874d070f1b7c75

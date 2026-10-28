@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-16-provider-prepared-child-cwd.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-16-provider-prepared-child-cwd.md
-2026-08-16-provider-prepared-child-cwd.md: 81ceca643be485dc02dbcbe2c74123a4e9721bdc
-2026-08-16-provider-prepared-child-cwd.zh.md: 0f59daa885c7da17343418a26ca063ba12802d04
+/agent-note-providers-may-prepare-a-durable-child-working-directory:
+  en: 9894fb9190bcf240
+  zh: 20ab27d04e414d54
+/agent-note-providers-may-prepare-a-durable-child-working-directory/problem:
+  en: a0d19daafc9ed38a
+  zh: 3da101e2a4b9e6d2
+/agent-note-providers-may-prepare-a-durable-child-working-directory/decision:
+  en: 8645e9bf74fc32c1
+  zh: 7aff7fa927efca43
+/agent-note-providers-may-prepare-a-durable-child-working-directory/alternatives-considered:
+  en: c9febfffd77c9866
+  zh: 26a631a4f7b92ec5
+/agent-note-providers-may-prepare-a-durable-child-working-directory/consequences:
+  en: 361db024f7bd67b0
+  zh: 3738bec3fe761937
+/agent-note-providers-may-prepare-a-durable-child-working-directory/testing:
+  en: 4202d8b7b73a2cb3
+  zh: ae8d274e8e6a1c33

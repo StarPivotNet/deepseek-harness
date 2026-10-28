@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-desktop-authenticated-readiness-handshake.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-29-desktop-authenticated-readiness-handshake.md
-2026-08-29-desktop-authenticated-readiness-handshake.md: 61c466d8e24ec9d3cb34b54aab72034633014ab8
-2026-08-29-desktop-authenticated-readiness-handshake.zh.md: 143883fa0bb61481ab554cbb3fd4ebe9f56b6b94
+/agent-note-desktop-authenticated-readiness-handshake:
+  en: 27874b7a018b694d
+  zh: bc2ea93a8bc921ca
+/agent-note-desktop-authenticated-readiness-handshake/problem:
+  en: 8d96c07f8e8ccdd1
+  zh: 147060f904a64e78
+/agent-note-desktop-authenticated-readiness-handshake/decision:
+  en: 9c5e73def60cc6db
+  zh: 48a4c8579d32a236
+/agent-note-desktop-authenticated-readiness-handshake/consequences:
+  en: b7bc9a2a1238afb8
+  zh: 27934579e4a71f18
+/agent-note-desktop-authenticated-readiness-handshake/alternatives-considered:
+  en: 9be149f7704a8626
+  zh: d6bd79aa0140f8aa

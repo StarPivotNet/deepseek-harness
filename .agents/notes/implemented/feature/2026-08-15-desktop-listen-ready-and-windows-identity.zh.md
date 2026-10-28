@@ -28,7 +28,7 @@ Windows 用 Electron `titleBarOverlay` 提供系统标题栏按钮。注入条�
 
 **只设置 `BrowserWindow.icon`。** 不予采纳，因为 Windows 任务栏身份跟随进程映像和 AppUserModelID。开始菜单快捷方式写明鲸鱼 ICO 与同一 ID，固定后任务栏才会保留该身份。
 
-**打包一个改写了 PE 图标的自定义 Electron helper。** 对 checkout 启动不予采纳。改写 PE 图标仍不是 Windows 身份的声明方式；[desktop GitHub Release](../process/2026-08-17-desktop-github-release.md) 改为发布 electron-builder 安装包。
+**打包一个改写了 PE 图标的自定义 Electron helper。** 对 checkout 启动不予采纳。改写 PE 图标仍不是 Windows 身份的声明方式；[desktop GitHub Release](../process/2026-08-17-desktop-github-release.zh.md) 改为发布 electron-builder 安装包。
 
 ## 后果
 

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-17-web-settings-skills.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-17-web-settings-skills.md
-2026-08-17-web-settings-skills.md: 566836b2733ac3bc014c50795330bb324af34a4a
-2026-08-17-web-settings-skills.zh.md: 0a9bb6a1b4a6a0212a67f994998fa806984b4010
+/agent-note-web-settings-skills-section:
+  en: bd05b8c66a57268b
+  zh: 74b2576fe70f8705
+/agent-note-web-settings-skills-section/problem:
+  en: 3a4ee786bbdb8f88
+  zh: 25d769b44cc262dd
+/agent-note-web-settings-skills-section/decision:
+  en: ac5a49f33e8e1597
+  zh: 66eb71e7059579cf
+/agent-note-web-settings-skills-section/alternatives-considered:
+  en: ebcfed530c3c0118
+  zh: 195c1d277b634fbe
+/agent-note-web-settings-skills-section/verification:
+  en: b9bc53473d5321cd
+  zh: 310a8b5f9a68e3c3
+/agent-note-web-settings-skills-section/consequences:
+  en: f10a9294f9a64ca2
+  zh: 3c7e7fc9acd78c00

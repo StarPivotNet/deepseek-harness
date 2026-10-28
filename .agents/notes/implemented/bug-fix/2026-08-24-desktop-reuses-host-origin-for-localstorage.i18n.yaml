@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-24-desktop-reuses-host-origin-for-localstorage.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-24-desktop-reuses-host-origin-for-localstorage.md
-2026-08-24-desktop-reuses-host-origin-for-localstorage.md: 05851d7634392006ced17952aa76ad11b7c03717
-2026-08-24-desktop-reuses-host-origin-for-localstorage.zh.md: c8343dfe7176ad2d2d4278616e48eaea97528910
+/agent-note-desktop-reuses-the-last-host-origin-for-browser-local-gui-state:
+  en: 181ab63e0176a78f
+  zh: af930b836bdb716a
+/agent-note-desktop-reuses-the-last-host-origin-for-browser-local-gui-state/problem:
+  en: ce803f503353a793
+  zh: 06806c613b0585bd
+/agent-note-desktop-reuses-the-last-host-origin-for-browser-local-gui-state/decision:
+  en: d3fc0014f36e533e
+  zh: 30311609e3979695
+/agent-note-desktop-reuses-the-last-host-origin-for-browser-local-gui-state/alternatives-considered:
+  en: 6325042666adf7fb
+  zh: 80a948206af625f4
+/agent-note-desktop-reuses-the-last-host-origin-for-browser-local-gui-state/consequences:
+  en: 9d38590e176ba693
+  zh: 0e9fbb88ccff3546
+/agent-note-desktop-reuses-the-last-host-origin-for-browser-local-gui-state/testing:
+  en: 7ba2b33aa91cf747
+  zh: 20977e6cfff47150

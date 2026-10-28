@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-sidebar-session-activity-sections.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-sidebar-session-activity-sections.md
-2026-08-15-sidebar-session-activity-sections.md: 669141c44bddca1d96e17d49610c378afa82d2ac
-2026-08-15-sidebar-session-activity-sections.zh.md: a291e2681cd679a63dff0bb40e07766602ac1cb1
+/agent-note-sidebar-session-activity-sections:
+  en: 93482224a1ff57d4
+  zh: 3d21cb16291a2aed
+/agent-note-sidebar-session-activity-sections/problem:
+  en: 8c653512b8f93f55
+  zh: 771389c59a09dfff
+/agent-note-sidebar-session-activity-sections/decision:
+  en: f77edf67d68cfc10
+  zh: c0c239dab8cc1c11
+/agent-note-sidebar-session-activity-sections/alternatives-considered:
+  en: 82d161fb158ce003
+  zh: 95d75a3be6b9c1e6
+/agent-note-sidebar-session-activity-sections/consequences:
+  en: b17c3a429d543b70
+  zh: 551cf9c08891d043
+/agent-note-sidebar-session-activity-sections/testing:
+  en: 8ee96b79de00b096
+  zh: 2a7809c77794f140

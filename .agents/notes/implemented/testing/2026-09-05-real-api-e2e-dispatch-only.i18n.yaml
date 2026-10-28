@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-05-real-api-e2e-dispatch-only.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-09-05-real-api-e2e-dispatch-only.md
-2026-09-05-real-api-e2e-dispatch-only.md: 434cf962e60696cd3830f366e639c80617417694
-2026-09-05-real-api-e2e-dispatch-only.zh.md: d194ba6956deb4d5700af60d3be9ffab7a5b098f
+/agent-note-real-api-e2e-ci-is-dispatch-only:
+  en: b90f641c268483b9
+  zh: a433436c5c4b5076
+/agent-note-real-api-e2e-ci-is-dispatch-only/problem:
+  en: ddbc29b79d73c687
+  zh: 9e4a5b671bf99eaa
+/agent-note-real-api-e2e-ci-is-dispatch-only/decision:
+  en: 1941b6cb376898ad
+  zh: 58e820be35d13271
+/agent-note-real-api-e2e-ci-is-dispatch-only/alternatives-considered:
+  en: 7ad169cdbeb1c3ae
+  zh: 388541a7aca8734b
+/agent-note-real-api-e2e-ci-is-dispatch-only/consequences:
+  en: 1ec00980b9a1c2f5
+  zh: 842688c41c6ec558

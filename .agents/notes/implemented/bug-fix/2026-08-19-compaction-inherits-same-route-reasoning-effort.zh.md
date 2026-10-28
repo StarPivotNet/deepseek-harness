@@ -18,7 +18,7 @@ Status: implemented
 
 会话标题辅助调用继续走各自的用途路径。DeepSeek 适配器已经为 `purpose: 'session-title'` 禁用思考；其他适配器自行负责该用途。
 
-这与[进程内子 agent 继承](2026-08-19-subagent-inherits-parent-reasoning-effort.md)是同一条同路由规则，应用到压缩摘要器而不是子 agent。
+这与[进程内子 agent 继承](2026-08-19-subagent-inherits-parent-reasoning-effort.zh.md)是同一条同路由规则，应用到压缩摘要器而不是子 agent。
 
 ## 考虑过的替代方案
 

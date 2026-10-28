@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-trusted-session-control-directory.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-trusted-session-control-directory.md
-2026-08-19-trusted-session-control-directory.md: c12abf0b9b43069221cb5e901ea8ef833fc34b06
-2026-08-19-trusted-session-control-directory.zh.md: 359a0954fb7fb060b788439f515bb00d8babf638
+/agent-note-trusted-session-control-directory:
+  en: 8e1c8e37ee2cbe31
+  zh: 2d98d728358e7179
+/agent-note-trusted-session-control-directory/problem:
+  en: c4dce9f54a7e5038
+  zh: 8291f42e62a078d1
+/agent-note-trusted-session-control-directory/decision:
+  en: fec02af96df29252
+  zh: 77c1a3a56b797940
+/agent-note-trusted-session-control-directory/alternatives-considered:
+  en: 5dcc2c0cdc8b2fe1
+  zh: 5ebecafa97211186
+/agent-note-trusted-session-control-directory/consequences:
+  en: 736cba26c347041b
+  zh: f02225355bff61c0

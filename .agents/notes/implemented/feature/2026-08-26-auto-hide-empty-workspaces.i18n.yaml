@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-26-auto-hide-empty-workspaces.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-26-auto-hide-empty-workspaces.md
-2026-08-26-auto-hide-empty-workspaces.md: 8e2a858c20d23ba3b63e8c8e9b8f58cdd5d2e236
-2026-08-26-auto-hide-empty-workspaces.zh.md: 6986effe94492fff3ce1f24a598b1d379504989f
+/agent-note-auto-hide-empty-workspaces:
+  en: 5b6410fbf98ffd86
+  zh: 8889da86a7bd168b
+/agent-note-auto-hide-empty-workspaces/problem:
+  en: a2264e610c705b3c
+  zh: 0cfb98738737dcaf
+/agent-note-auto-hide-empty-workspaces/decision:
+  en: 70b39ba81cfcf877
+  zh: 2cfb72d46e35d13f
+/agent-note-auto-hide-empty-workspaces/alternatives-considered:
+  en: 43c976b15fda1b5c
+  zh: 4d426fa835afe241
+/agent-note-auto-hide-empty-workspaces/consequences:
+  en: 1f305c6b979b28d2
+  zh: a5064f0f61089dde
+/agent-note-auto-hide-empty-workspaces/testing:
+  en: b9d87da70f16dc51
+  zh: eae49b841716a304

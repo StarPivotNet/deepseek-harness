@@ -8,7 +8,7 @@ Status: proposed
 
 Web 对话在创建时通过不可变的 `SessionHeader.cwd` 绑定工作区。用户还不知道请求属于哪个项目时，必须先选工作区才能发送。agent 推断出目录后，同一条对话不能改侧边栏分组或执行根：`attachSession` 拒绝 cwd 不匹配，JSONL 身份是出生 cwd，AGENTS.md / skill / LSP 仍读 header。Cursor 的 Agents Window 用 No Repo 分组和同一条聊天上的 `move_agent_to_root` 解决对应起步。
 
-[Workspace UI 产品流](../../implemented/feature/2026-07-25-workspace-ui-product-flow.zh.md) 把跨工作区移动会话和 Ungrouped 收编留在该流程之外。Git worktree overlay 已经把执行根和成员关系拆开，但只用于同仓库分支隔离，并且从不更新侧边栏账本。
+[Workspace UI 产品流](../../archived/feature/2026-07-25-workspace-ui-product-flow.md) 把跨工作区移动会话和 Ungrouped 收编留在该流程之外。Git worktree overlay 已经把执行根和成员关系拆开，但只用于同仓库分支隔离，并且从不更新侧边栏账本。
 
 ## Proposal
 

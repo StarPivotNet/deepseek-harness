@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for opening-a-pull-request.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/cookbook/opening-a-pull-request.md
-opening-a-pull-request.md: 74b2d027336b3e1ccaf0482fe65598f2b438f79e
-opening-a-pull-request.zh.md: 360b55724069d7bb5f423e4c4387f02ef9acbaa8
+/cookbook-opening-a-pull-request:
+  en: 946af4850ebf13cc
+  zh: 980ca8127b33e0ee
+/cookbook-opening-a-pull-request/before-you-open-one:
+  en: a828feaa2639cfe0
+  zh: 9d65fdb87ce52fda
+/cookbook-opening-a-pull-request/body-and-issue-citation:
+  en: 9afdde8a2c5a1c4b
+  zh: 634e5111cde36b80
+/cookbook-opening-a-pull-request/labels:
+  en: 540c08bab120cf4b
+  zh: 5a4f53c23e9dd95e
+/cookbook-opening-a-pull-request/what-must-land-in-the-same-change:
+  en: f4af33cf1bced66f
+  zh: 4c5ac02ff02ef12f
+/cookbook-opening-a-pull-request/local-checks-before-review:
+  en: 362920bf52c07551
+  zh: 2827a196f0cc6b2d
+/cookbook-opening-a-pull-request/history-and-landing:
+  en: 4827fec15209bacb
+  zh: 464c5028a745e75c
+/cookbook-opening-a-pull-request/review:
+  en: 3b5f5edfcb1778be
+  zh: 8d07e49bc3441acd
+/cookbook-opening-a-pull-request/verify:
+  en: 4cd970f82ae73bfe
+  zh: 3058612d49728f08

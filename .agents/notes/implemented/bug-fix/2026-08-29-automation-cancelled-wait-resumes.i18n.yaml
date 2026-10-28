@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-automation-cancelled-wait-resumes.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-29-automation-cancelled-wait-resumes.md
-2026-08-29-automation-cancelled-wait-resumes.md: 1450b24b21af04e7b7a1376a49a8e3d7dfb8866d
-2026-08-29-automation-cancelled-wait-resumes.zh.md: cb84f80dae64e0e76cb5b98bb211b38570a5c653
+/agent-note-automation-cancelled-wait-resumes:
+  en: c6b7fa8d209ef660
+  zh: e22bb17dddb24300
+/agent-note-automation-cancelled-wait-resumes/problem:
+  en: 706dbc024306e35d
+  zh: 68ebeee9d90fb891
+/agent-note-automation-cancelled-wait-resumes/decision:
+  en: 6c1c750ed16a753b
+  zh: d0c94e347e1cdc71
+/agent-note-automation-cancelled-wait-resumes/alternatives-considered:
+  en: 94819a59291f4ce6
+  zh: f24fcbc2bf9d46df
+/agent-note-automation-cancelled-wait-resumes/consequences:
+  en: 9243b1163a890b1c
+  zh: 8c2036808af81370
+/agent-note-automation-cancelled-wait-resumes/testing:
+  en: 93751415da676dfd
+  zh: 54fc7da7fb1aa25a

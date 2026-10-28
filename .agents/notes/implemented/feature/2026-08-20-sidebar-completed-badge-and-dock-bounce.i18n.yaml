@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-sidebar-completed-badge-and-dock-bounce.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-20-sidebar-completed-badge-and-dock-bounce.md
-2026-08-20-sidebar-completed-badge-and-dock-bounce.md: d93f1fd8df3e5014547c39fe64e73b3e1fee3815
-2026-08-20-sidebar-completed-badge-and-dock-bounce.zh.md: 7f8e378aaefb7a2819096eb9da79adf3ed8dddaf
+/agent-note-macos-dock-completed-badge-and-bounce:
+  en: b48b5c6d3060b73e
+  zh: d0d9dafa881d6ad0
+/agent-note-macos-dock-completed-badge-and-bounce/problem:
+  en: 4aba914b98b22790
+  zh: 065b7b77e2d6e33b
+/agent-note-macos-dock-completed-badge-and-bounce/decision:
+  en: 8ec978a9ca052fd5
+  zh: 0caa568915a3e16e
+/agent-note-macos-dock-completed-badge-and-bounce/alternatives-considered:
+  en: d0bbbc81a85cf07e
+  zh: 744942b56d78f223
+/agent-note-macos-dock-completed-badge-and-bounce/consequences:
+  en: 25573f670df1316e
+  zh: 90006f5000dabc8c
+/agent-note-macos-dock-completed-badge-and-bounce/testing:
+  en: b331a6a044c3f419
+  zh: 74eb72f2ed63570a

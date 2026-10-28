@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-web-always-visible-message-clock.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-20-web-always-visible-message-clock.md
-2026-08-20-web-always-visible-message-clock.md: 30198802ba9280bae238ced9ab3aa988a240331d
-2026-08-20-web-always-visible-message-clock.zh.md: 59e8e2def7c3c48f8f82dbac11175e7e891aadb3
+/agent-note-web-chat-shows-an-always-visible-trailing-message-clock:
+  en: dcad2334f5c7e81f
+  zh: 7beb4aed6d71b1d9
+/agent-note-web-chat-shows-an-always-visible-trailing-message-clock/problem:
+  en: 4a9f9fdafdae0f2c
+  zh: ba3fc4c95cca20c4
+/agent-note-web-chat-shows-an-always-visible-trailing-message-clock/decision:
+  en: b5f14f7a39e06f5e
+  zh: 0a6f00157ecca01d
+/agent-note-web-chat-shows-an-always-visible-trailing-message-clock/alternatives-considered:
+  en: ece8e1f0824deb65
+  zh: a88ab1b33a34544c
+/agent-note-web-chat-shows-an-always-visible-trailing-message-clock/consequences:
+  en: 6f4874c51fedc7ab
+  zh: 656bdf3753f737d2

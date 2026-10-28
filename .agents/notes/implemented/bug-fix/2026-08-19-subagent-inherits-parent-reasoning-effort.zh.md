@@ -36,4 +36,4 @@ Web 父会话通过 `installModelSelection` 携带所选推理强度，并把它
 
 ## 后果
 
-同一路由上的进程内子 agent 现在会发送父级选定的推理强度，因此 Web 父级在 `gpt-5.6-sol` / `xhigh` 上不再产生序列化为 `effort: "none"` 的子请求。更换子路由时仍不设置推理强度，以便应用新模型的适配器默认值。已经覆盖 `agentOptions.reasoningEffort` 的调用方保留该覆盖。进程外提供方仍自行持有其独立运行时配置。压缩摘要器的同路由规则由[压缩继承](2026-08-19-compaction-inherits-same-route-reasoning-effort.md)负责。
+同一路由上的进程内子 agent 现在会发送父级选定的推理强度，因此 Web 父级在 `gpt-5.6-sol` / `xhigh` 上不再产生序列化为 `effort: "none"` 的子请求。更换子路由时仍不设置推理强度，以便应用新模型的适配器默认值。已经覆盖 `agentOptions.reasoningEffort` 的调用方保留该覆盖。进程外提供方仍自行持有其独立运行时配置。压缩摘要器的同路由规则由[压缩继承](2026-08-19-compaction-inherits-same-route-reasoning-effort.zh.md)负责。

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-cold-rehome-membership-projection.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-21-cold-rehome-membership-projection.md
-2026-08-21-cold-rehome-membership-projection.md: 1f0172ac01a065c04019b7698f5e06fa5ecc97ce
-2026-08-21-cold-rehome-membership-projection.zh.md: 21e33c15fc7d449af7135c41b3cf4dba083bf0fe
+/agent-note-cold-rehome-membership-projection:
+  en: 852799a8666653a5
+  zh: ce0d36574db72ab7
+/agent-note-cold-rehome-membership-projection/problem:
+  en: 322416bbb71e48b6
+  zh: fb04a2d3c7756aba
+/agent-note-cold-rehome-membership-projection/decision:
+  en: 224788255e9045cc
+  zh: 0bf3fa17ba342582
+/agent-note-cold-rehome-membership-projection/alternatives-considered:
+  en: 312b6699810b26db
+  zh: 200ab67341f6e4b1
+/agent-note-cold-rehome-membership-projection/consequences:
+  en: f8c75aeb0adb0370
+  zh: e5edcc94454b9b4a
+/agent-note-cold-rehome-membership-projection/testing:
+  en: 085e97334503b2b5
+  zh: 46c6323fa76cef66

@@ -12,7 +12,7 @@ Status: implemented
 
 `dsh-automation` 不再有 `maxConcurrentRuns`。到期或立即运行开火会打开 Session，除非同一规则上一次 `started` Session 仍有 live 且 `running` 的 Agent，并且 `onOverlap` 为 `skip`。同一到期批次里的独立规则全部启动。周期 skip 仍会推进，避免一条忙碌规则在同一时刻死循环。历史上的 `errorCode: max_concurrent_runs` 行仍可读，但服务不再写入该码，Web 面板也不再本地化它。
 
-[Host 拥有的 Automation 开火](../feature/2026-08-15-host-owned-automation-runs.md) 仍拥有选择器、origin 和逐条 overlap。
+[Host 拥有的 Automation 开火](../feature/2026-08-15-host-owned-automation-runs.zh.md) 仍拥有选择器、origin 和逐条 overlap。
 
 ## 考虑过的替代方案
 

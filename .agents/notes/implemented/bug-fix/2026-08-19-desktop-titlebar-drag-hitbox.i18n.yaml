@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-desktop-titlebar-drag-hitbox.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-19-desktop-titlebar-drag-hitbox.md
-2026-08-19-desktop-titlebar-drag-hitbox.md: 402d5c8f82fa24855eb9206cf3a076a8c6ba7d0d
-2026-08-19-desktop-titlebar-drag-hitbox.zh.md: d07f4eab30009ccfac137ff5090b3b4fd88d21b6
+/agent-note-desktop-title-bar-drag-needs-a-real-hit-box:
+  en: 552f31d41c0747fb
+  zh: 18f358ede7ddf4a0
+/agent-note-desktop-title-bar-drag-needs-a-real-hit-box/problem:
+  en: c3ee2082c8a782d7
+  zh: cbe0c824779d5b60
+/agent-note-desktop-title-bar-drag-needs-a-real-hit-box/decision:
+  en: 61c5fdb5c2a3a254
+  zh: 1ad9c6a8b464a80c
+/agent-note-desktop-title-bar-drag-needs-a-real-hit-box/alternatives-considered:
+  en: ace74d7840af0045
+  zh: 78fab76660063d99
+/agent-note-desktop-title-bar-drag-needs-a-real-hit-box/consequences:
+  en: 8c904b5f8cd3e2f3
+  zh: 9c74b53ab222957c
+/agent-note-desktop-title-bar-drag-needs-a-real-hit-box/testing:
+  en: 19e1805bba4a8172
+  zh: 7306f8e8bcae46d9

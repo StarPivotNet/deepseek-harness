@@ -6,7 +6,7 @@ English | [中文](2026-08-27-web-running-model-identity.zh.md)
 
 ## Problem
 
-The Web conversation could not answer "which model is serving this turn". The composer's model seat ([session model selector](2026-07-24-web-session-model-selector.md)) names the NEXT assembled step's route and is easy to miss at rest; the session header named only the agent preset. A user comparing models mid-conversation, or rereading a session after a switch, had no on-page evidence of which model produced which reply — the fact lived only in `request/header` events and the trajectory view.
+The Web conversation could not answer "which model is serving this turn". The composer's model seat ([session model selector](../../archived/feature/2026-07-24-web-session-model-selector.md)) names the NEXT assembled step's route and is easy to miss at rest; the session header named only the agent preset. A user comparing models mid-conversation, or rereading a session after a switch, had no on-page evidence of which model produced which reply — the fact lived only in `request/header` events and the trajectory view.
 
 ## Decision
 

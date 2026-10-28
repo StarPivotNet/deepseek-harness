@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-30-sidebar-session-overflow-step.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-30-sidebar-session-overflow-step.md
-2026-08-30-sidebar-session-overflow-step.md: ce1a46c6e8186d65528eb2c289661121ed0c8245
-2026-08-30-sidebar-session-overflow-step.zh.md: 5f05a16f84f8e70fc4f4495813694a25eb3b787e
+/agent-note-sidebar-session-overflow-step:
+  en: 728c8cc3bce756f0
+  zh: d42fc22868d209ca
+/agent-note-sidebar-session-overflow-step/problem:
+  en: e7e8bbbf38eedb98
+  zh: a216138f3c29b62c
+/agent-note-sidebar-session-overflow-step/decision:
+  en: 5d68f86cb95f03eb
+  zh: c867b7ab00fbdcfe
+/agent-note-sidebar-session-overflow-step/alternatives-considered:
+  en: 3fc9cd1b32894b23
+  zh: 5e8c275d9eeb3182
+/agent-note-sidebar-session-overflow-step/consequences:
+  en: 324cc11c16dc5fb8
+  zh: 08dfd4a0a2444174
+/agent-note-sidebar-session-overflow-step/testing:
+  en: 5642aefe4451a002
+  zh: fd940c138dcf31e6

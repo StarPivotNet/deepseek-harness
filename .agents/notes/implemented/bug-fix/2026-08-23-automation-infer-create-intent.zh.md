@@ -6,9 +6,9 @@ Status: implemented
 
 ## 问题
 
-用户会用日常说法让 live root Agent 创建 Host Automation 规则：创建自动化、每天跑一次、或稍后执行。五个 tool 已经存在，但模型常常在当前会话里立刻开工，而不是调用 `automation_create`。tool 描述提到了稍后或重复日程；组装后的系统提示没有 [goal tools](../../../../packages/goal/tool-goal/README.md) 那种 Host Automation 策略，因此「创建一个自动化」会和普通编码工作抢路由。
+用户会用日常说法让 live root Agent 创建 Host Automation 规则：创建自动化、每天跑一次、或稍后执行。五个 tool 已经存在，但模型常常在当前会话里立刻开工，而不是调用 `automation_create`。tool 描述提到了稍后或重复日程；组装后的系统提示没有 [goal tools](../../../../packages/goal/tool-goal/README.zh.md) 那种 Host Automation 策略，因此「创建一个自动化」会和普通编码工作抢路由。
 
-[Host 拥有的 Automation 开火](../feature/2026-08-15-host-owned-automation-runs.md) 的决策仍然成立：harness 不解析自然语言日历。缺的是点名产品意图的模型指引。
+[Host 拥有的 Automation 开火](../feature/2026-08-15-host-owned-automation-runs.zh.md) 的决策仍然成立：harness 不解析自然语言日历。缺的是点名产品意图的模型指引。
 
 ## 决策
 

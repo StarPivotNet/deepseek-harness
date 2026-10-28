@@ -5,8 +5,8 @@
  */
 
 import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { SessionId } from '@deepseek-ai/dsh-session'
-import type { WorkspaceId } from '@deepseek-ai/dsh-workspace'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 
 /** Stable Automation rule identity. Never reused after delete. */
 export type AutomationRuleId = Branded<'AutomationRuleId'>

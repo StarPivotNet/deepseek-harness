@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-sidebar-row-context-menus.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-18-sidebar-row-context-menus.md
-2026-08-18-sidebar-row-context-menus.md: 300593413a669cc1c17559b3f0a17ad29def8e64
-2026-08-18-sidebar-row-context-menus.zh.md: 6e98aa4f909b5da8ffc7c637b0cdbcaa0e0ab203
+/agent-note-sidebar-row-context-menus:
+  en: 4735470fc70212de
+  zh: 3df02b441ab3b6d5
+/agent-note-sidebar-row-context-menus/problem:
+  en: 96bc9abae8f3c281
+  zh: 5253f99ec51e0363
+/agent-note-sidebar-row-context-menus/decision:
+  en: c1cb103dfc7803a1
+  zh: e11e3fde28731af8
+/agent-note-sidebar-row-context-menus/alternatives-considered:
+  en: 088a5b4a3cd44b4b
+  zh: e6a9b75f404988bb
+/agent-note-sidebar-row-context-menus/consequences:
+  en: c39f9a01bdbcc78d
+  zh: 4333ddf98d73c0d4
+/agent-note-sidebar-row-context-menus/testing:
+  en: eb5f67184bb54448
+  zh: ce14da491643f65e

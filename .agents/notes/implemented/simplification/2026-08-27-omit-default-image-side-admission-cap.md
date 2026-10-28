@@ -12,7 +12,7 @@ Source admission refused any image whose width or height exceeded a default per-
 
 The local attachment backend omits `maxImageDimension` unless a deployment sets it. Source admission still fully decodes under the configured byte and decoded-pixel limits, then normalizes the stored long edge. `IMAGE_DIMENSION_TOO_LARGE` remains a configured-cap failure: `read_image` and Web copy name the configured side length when present, and otherwise fall back to a generic send-failed or downscale line. The `imageLimits` projection and wire schema treat the field as optional so clients do not invent a default.
 
-This decision lives beside [Unified normalized attachments, request versions, and provider files](../feature/2026-08-20-unified-image-request-pipeline.md), which still owns the two-version image path. That note's source-admission facts now match this omission.
+This decision lives beside [Unified normalized attachments, request versions, and provider files](../../archived/feature/2026-08-20-unified-image-request-pipeline.md), which still owns the two-version image path. That note's source-admission facts now match this omission.
 
 ## Alternatives considered
 

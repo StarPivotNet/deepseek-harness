@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-24-openai-sse-json-string-repair.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-24-openai-sse-json-string-repair.md
-2026-08-24-openai-sse-json-string-repair.md: d3b170fd4644da977167f11b11d16497f6230253
-2026-08-24-openai-sse-json-string-repair.zh.md: 5c4b374b24f2d61dd6a196273f68b9f9f06fb7e0
+/agent-note-repair-illegal-json-string-literals-on-openai-compatible-sse:
+  en: eb91798ea263ba9a
+  zh: 5e015bbdba495b3a
+/agent-note-repair-illegal-json-string-literals-on-openai-compatible-sse/problem:
+  en: 836e40d65d553f86
+  zh: 3cf74973d50504b9
+/agent-note-repair-illegal-json-string-literals-on-openai-compatible-sse/decision:
+  en: b409d1c527cfc7f6
+  zh: 18346ccc9a810008
+/agent-note-repair-illegal-json-string-literals-on-openai-compatible-sse/alternatives-considered:
+  en: cce2566e8d59cb61
+  zh: 60ff8766ed15b168
+/agent-note-repair-illegal-json-string-literals-on-openai-compatible-sse/consequences:
+  en: a11bfe93378f6bde
+  zh: dbf58663032cc0f5

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-30-sidebar-collapse-settle-with-column-slide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-30-sidebar-collapse-settle-with-column-slide.md
-2026-08-30-sidebar-collapse-settle-with-column-slide.md: 461f0faaf3a7818c7ff769f7788b96e4be78d0e3
-2026-08-30-sidebar-collapse-settle-with-column-slide.zh.md: d794469010eab79ac248c65634c0bc64e420251d
+/agent-note-sidebar-collapse-settles-with-the-column-slide:
+  en: 5710684f99b0b5df
+  zh: 1f3dc49099c38d9c
+/agent-note-sidebar-collapse-settles-with-the-column-slide/problem:
+  en: be64e2c92ef28464
+  zh: ac4db2562b3d0f4b
+/agent-note-sidebar-collapse-settles-with-the-column-slide/decision:
+  en: 28711e93d10fe1bc
+  zh: edde01995036c81f
+/agent-note-sidebar-collapse-settles-with-the-column-slide/alternatives-considered:
+  en: b17d76b11990f1f7
+  zh: 13d6c3626a9a83a5
+/agent-note-sidebar-collapse-settles-with-the-column-slide/consequences:
+  en: 92f907501023f076
+  zh: a18ed787d88bc284

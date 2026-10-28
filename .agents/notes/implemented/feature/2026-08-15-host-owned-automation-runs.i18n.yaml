@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-host-owned-automation-runs.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-host-owned-automation-runs.md
-2026-08-15-host-owned-automation-runs.md: ef3b4e44eeb1d14c5daf649670b4aac43eae49d1
-2026-08-15-host-owned-automation-runs.zh.md: 09a235ffc96c0d5b621ab9d1372bd5797e80a6ca
+/agent-note-host-owned-automation-runs:
+  en: 3fe64f75656005fa
+  zh: 509de2b6a44de104
+/agent-note-host-owned-automation-runs/problem:
+  en: fc65072875cca1c2
+  zh: 0a127175c289e25c
+/agent-note-host-owned-automation-runs/decision:
+  en: 4a5fb0ceba731f3d
+  zh: ba03cd57ea261d9b
+/agent-note-host-owned-automation-runs/alternatives-considered:
+  en: 77e1ad47edb57685
+  zh: 90b2e87f68594f84
+/agent-note-host-owned-automation-runs/verification:
+  en: 30fed5af3141bcc2
+  zh: e923e686bb65fbdb
+/agent-note-host-owned-automation-runs/consequences:
+  en: 2e817afd5c4d870d
+  zh: 1de0f630e2977a06

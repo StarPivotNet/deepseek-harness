@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-fac-provider-route.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-fac-provider-route.md
-2026-08-15-fac-provider-route.md: d68483212e64a792f0a8fd285a29c1116971c48c
-2026-08-15-fac-provider-route.zh.md: a97ae21337b2289e3ccd4c47e3e4be9a14f943b9
+/agent-note-shipped-fac-provider-route:
+  en: 56fadf5e5f6125cc
+  zh: 932218b711a19412
+/agent-note-shipped-fac-provider-route/problem:
+  en: b7e1e95915804c4f
+  zh: 68b25ed4cdbaacb6
+/agent-note-shipped-fac-provider-route/decision:
+  en: 773541cb11737bfe
+  zh: bb9f22b659f80213
+/agent-note-shipped-fac-provider-route/alternatives-considered:
+  en: 12ff51b8b8b5a6d8
+  zh: 9d43be1fb6e3d18a
+/agent-note-shipped-fac-provider-route/consequences:
+  en: 99d5880b282c8250
+  zh: d485df9b6c09d458
+/agent-note-shipped-fac-provider-route/testing:
+  en: f4d03c713b6f24bf
+  zh: e33cb7ea8c93ebb0

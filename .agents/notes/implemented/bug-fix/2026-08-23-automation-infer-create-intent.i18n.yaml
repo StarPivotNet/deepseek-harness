@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-23-automation-infer-create-intent.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-23-automation-infer-create-intent.md
-2026-08-23-automation-infer-create-intent.md: 1fed5fc88c2f4dd13e6cbc1fa2b45aa3625e8e2a
-2026-08-23-automation-infer-create-intent.zh.md: ef06f1359b72802de35968840a41eac7de57f32e
+/agent-note-infer-host-automation-create-intent:
+  en: 03fb54c3865631df
+  zh: 929647b9cae15d30
+/agent-note-infer-host-automation-create-intent/problem:
+  en: 1b262a3ccadd92be
+  zh: 58b0354f6ec97f67
+/agent-note-infer-host-automation-create-intent/decision:
+  en: c8159a29c3a59aaa
+  zh: df53c25a9f56d074
+/agent-note-infer-host-automation-create-intent/alternatives-considered:
+  en: a0b3bb67bd2dd6ee
+  zh: 482f1018275318ec
+/agent-note-infer-host-automation-create-intent/consequences:
+  en: c2a22f0ff576da10
+  zh: 0af0bd3c4747fbfe
+/agent-note-infer-host-automation-create-intent/testing:
+  en: 05491a77603c11ae
+  zh: 0d08a228c28be62b

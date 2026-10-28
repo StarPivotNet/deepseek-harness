@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-[`ctx.automation`](../automation/README.md) 的面向模型 Consumer：`automation_list`、`automation_create`、`automation_update`、`automation_delete` 和 `automation_set_enabled`。
+[`ctx.automation`](../automation/README.zh.md) 的面向模型 Consumer：`automation_list`、`automation_create`、`automation_update`、`automation_delete` 和 `automation_set_enabled`。
 
 ## 工具
 

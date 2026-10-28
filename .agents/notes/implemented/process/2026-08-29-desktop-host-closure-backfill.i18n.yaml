@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-desktop-host-closure-backfill.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-29-desktop-host-closure-backfill.md
-2026-08-29-desktop-host-closure-backfill.md: 9dda16a29e578d6ee432fbde1792780be9e95a2b
-2026-08-29-desktop-host-closure-backfill.zh.md: 8be4564007185d2ca6c101ea8e5f0cd2ac1a13db
+/agent-note-desktop-host-workspace-closure-backfill:
+  en: 168380d5e50b7f6b
+  zh: 34de16d31952434a
+/agent-note-desktop-host-workspace-closure-backfill/problem:
+  en: 4562f89b687bb595
+  zh: f540ea1b1eaf63bc
+/agent-note-desktop-host-workspace-closure-backfill/decision:
+  en: 2e1b171cde6b15c3
+  zh: dab5880b5656fb3a
+/agent-note-desktop-host-workspace-closure-backfill/consequences:
+  en: 118356043720ba4d
+  zh: 3eea8fbb3798e8a8
+/agent-note-desktop-host-workspace-closure-backfill/alternatives-considered:
+  en: f43187c5c5c59e56
+  zh: 541571112f2415aa

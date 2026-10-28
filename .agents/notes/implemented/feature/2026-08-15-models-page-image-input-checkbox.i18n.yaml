@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-models-page-image-input-checkbox.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-models-page-image-input-checkbox.md
-2026-08-15-models-page-image-input-checkbox.md: b9cdaab50776a9593176099e67d1ffd2123dc8d1
-2026-08-15-models-page-image-input-checkbox.zh.md: 11b1e641b3b2fb7735d303e3dd4bf155dcbc90dc
+/agent-note-models-page-image-input-checkbox:
+  en: c0d6ea64e23b7809
+  zh: 221db4777504903e
+/agent-note-models-page-image-input-checkbox/problem:
+  en: 8745842913f001a7
+  zh: 8707ac8222b54e95
+/agent-note-models-page-image-input-checkbox/decision:
+  en: 1385b48f646f27c0
+  zh: 966069b07be32c3b
+/agent-note-models-page-image-input-checkbox/alternatives-considered:
+  en: ceed208521b24a2a
+  zh: f1cd592c61e43230
+/agent-note-models-page-image-input-checkbox/consequences:
+  en: 82ab6de42e27ce04
+  zh: c699e46586084e6e
+/agent-note-models-page-image-input-checkbox/testing:
+  en: 63254b2348b97856
+  zh: 3c735a056c4501c9

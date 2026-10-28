@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-04-model-select-drill-survives-unmount-blur.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-04-model-select-drill-survives-unmount-blur.md
-2026-09-04-model-select-drill-survives-unmount-blur.md: 0a14cbfb3565b3086615fbc1b1940f7153fe8259
-2026-09-04-model-select-drill-survives-unmount-blur.zh.md: 72c54e7b7c23bbc8b042425aa1092def00d0b835
+/agent-note-modelselect-drill-keeps-the-menu-open-after-the-focused-cell-unmounts:
+  en: a9cc1b459354f639
+  zh: efa50772aee151da
+/agent-note-modelselect-drill-keeps-the-menu-open-after-the-focused-cell-unmounts/problem:
+  en: e9c45e96305daaea
+  zh: 56cb8fd18740bc16
+/agent-note-modelselect-drill-keeps-the-menu-open-after-the-focused-cell-unmounts/decision:
+  en: 7573c115067e466c
+  zh: feee5085f162d18e
+/agent-note-modelselect-drill-keeps-the-menu-open-after-the-focused-cell-unmounts/alternatives-considered:
+  en: dfa9fa5f6f95e3a0
+  zh: 7878ee8b4850d233
+/agent-note-modelselect-drill-keeps-the-menu-open-after-the-focused-cell-unmounts/consequences:
+  en: 67a32e2fbfea9ee3
+  zh: e53bc4d69befcf5d
+/agent-note-modelselect-drill-keeps-the-menu-open-after-the-focused-cell-unmounts/testing:
+  en: 4223f889324e761f
+  zh: 6c8a307fd3372f1c

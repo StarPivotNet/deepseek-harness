@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-per-model-protocol-and-api-key.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-per-model-protocol-and-api-key.md
-2026-08-15-per-model-protocol-and-api-key.md: 3422a6de7df3ee9e5a88e3e720d7ce56f795ad0d
-2026-08-15-per-model-protocol-and-api-key.zh.md: cf50384398bb20f8c1633409c4d9c98941e22102
+/agent-note-per-model-protocol-and-api-key:
+  en: 56400d6836ac0b39
+  zh: bc3233300d11721f
+/agent-note-per-model-protocol-and-api-key/problem:
+  en: ae2c942728ef5594
+  zh: b487887bebfdca94
+/agent-note-per-model-protocol-and-api-key/decision:
+  en: 1a89238e1abbb589
+  zh: 8bc6516e967f270f
+/agent-note-per-model-protocol-and-api-key/alternatives-considered:
+  en: f24f80a6f85cbe3e
+  zh: e2b95e09d378fdf5
+/agent-note-per-model-protocol-and-api-key/consequences:
+  en: b2809faacc051129
+  zh: 409565a6908eba50
+/agent-note-per-model-protocol-and-api-key/testing:
+  en: add42d540ddeefb7
+  zh: 63ea14e1c2bf297a

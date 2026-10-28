@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-subagent-delivery-settings.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-subagent-delivery-settings.md
-2026-08-19-subagent-delivery-settings.md: a94decdd24e9cf6f266276048ea7117f49302a6f
-2026-08-19-subagent-delivery-settings.zh.md: f3eb30e5efc5307eb0369787871279142408a17c
+/agent-note-busy-state-delivery-settings-for-settlement-report-and-jobs:
+  en: fad032c637aae79e
+  zh: c6ce27db0078292b
+/agent-note-busy-state-delivery-settings-for-settlement-report-and-jobs/problem:
+  en: ae8b7153183fc51f
+  zh: 7896982413c2e625
+/agent-note-busy-state-delivery-settings-for-settlement-report-and-jobs/decision:
+  en: 2a22480d832a0f07
+  zh: a9ceabff6e6ef362
+/agent-note-busy-state-delivery-settings-for-settlement-report-and-jobs/alternatives-considered:
+  en: 797093c2ffa6921a
+  zh: a038e8605a69f667
+/agent-note-busy-state-delivery-settings-for-settlement-report-and-jobs/consequences:
+  en: 36d01f38c711e147
+  zh: 1f516df6d21d7258

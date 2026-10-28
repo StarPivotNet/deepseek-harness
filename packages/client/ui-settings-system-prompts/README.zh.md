@@ -4,7 +4,7 @@
 
 **系统提示词**设置分区。该页列出 Host 已注册的插件段，允许用户编辑或恢复每一段，并拥有额外的用户提示词库和按模型组装：创建、编辑、删除可复用提示词，再为目录中的每个模型选择要用哪些额外提示词、按什么顺序，以及是否替换已组装提示词。
 
-写入走 `user-system-prompts` 命名空间上的 `settings.replace`。已注册段通过 `systemPrompt.list` 加载。Host 插件 [`dsh-user-system-prompts`](../../core/user-system-prompts/README.md) 在下一次组装步骤应用已存储的替换和选择。
+写入走 `user-system-prompts` 命名空间上的 `settings.replace`。已注册段通过 `systemPrompt.list` 加载。Host 插件 [`dsh-user-system-prompts`](../../core/user-system-prompts/README.zh.md) 在下一次组装步骤应用已存储的替换和选择。
 
 导航行位于 Agent 预设之后（`order: 25`）。未暴露该命名空间的部署渲染不可用说明，而不是编辑器。
 

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-04-desktop-web-host-no-open.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-04-desktop-web-host-no-open.md
-2026-09-04-desktop-web-host-no-open.md: b9330ded74d06581cf214851b2c5082c315f824c
-2026-09-04-desktop-web-host-no-open.zh.md: 5ce5d41dbb38e04ec9e1905ed8a931919508fc07
+/agent-note-desktop-host-must-not-open-the-system-browser:
+  en: 23b0b3bbbc7af908
+  zh: 80abe1119c39fe3d
+/agent-note-desktop-host-must-not-open-the-system-browser/problem:
+  en: 12024ddc62397476
+  zh: a9a58f3572071ee7
+/agent-note-desktop-host-must-not-open-the-system-browser/decision:
+  en: 409d6f1c1368c7d0
+  zh: e0f831ef21cdb20d
+/agent-note-desktop-host-must-not-open-the-system-browser/alternatives-considered:
+  en: 8f7f745cedfe2b9c
+  zh: c9fe701aaa4bb924
+/agent-note-desktop-host-must-not-open-the-system-browser/consequences:
+  en: 2bbc00fe0bf32310
+  zh: 55a72b773a6f0e72
+/agent-note-desktop-host-must-not-open-the-system-browser/testing:
+  en: b9ac46d50b6ec6a6
+  zh: cd359bee4bf652d1

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-web-automation-sidebar.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-web-automation-sidebar.md
-2026-08-15-web-automation-sidebar.md: 1c0f8f20a6f7a65a01e73a0378c32b9a4a6e34f5
-2026-08-15-web-automation-sidebar.zh.md: 3b8b433b29c1b6ba21d3e6da1a96d26b6212f2b7
+/agent-note-web-automation-sidebar:
+  en: 520ccef9653902ed
+  zh: ccea71352d7307dd
+/agent-note-web-automation-sidebar/problem:
+  en: 98a11dc6717c8f68
+  zh: f3c592cfab60830d
+/agent-note-web-automation-sidebar/decision:
+  en: cdb131bad653b96f
+  zh: e5f21197cdc47905
+/agent-note-web-automation-sidebar/alternatives-considered:
+  en: 36ef4325246fc789
+  zh: 59c8539bcdc2da6f
+/agent-note-web-automation-sidebar/verification:
+  en: 3314db15d9749717
+  zh: 633da69f958ad688
+/agent-note-web-automation-sidebar/consequences:
+  en: b7e0e837bb6debd8
+  zh: 139e40bfb99b515d

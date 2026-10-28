@@ -14,7 +14,7 @@ workspace 插件在 Host 设置命名空间 `ui-workspace` 下拥有字段 `sess
 
 侧栏浏览器把每个打开的 Workspace 或扁平历史／空闲簇的起点设为该有限上限。每次点 **展开其余** 会按同一步长推进当前挂载的绝对上限，并封顶到普通行总数：例如共 12 条、步长 5，会先再展开 5 条，再展开 2 条。空白新会话仍不计入普通配额。选择 **全部展开** 后，空闲／历史行默认不折叠，并隐藏溢出控件。收起整个 Workspace 只清除该账户的临时绝对上限，再次打开回到设置中的基础上限。
 
-这取代了 [Workspace 侧边栏顺序与折叠](2026-08-11-workspace-sidebar-order-and-folding.zh.md) 里“一次展开剩余全部”的布尔手势，但保留其五行默认、空白行配额与收起重置规则。
+这取代了 [Workspace 侧边栏顺序与折叠](../../archived/feature/2026-08-11-workspace-sidebar-order-and-folding.md) 里“一次展开剩余全部”的布尔手势，但保留其五行默认、空白行配额与收起重置规则。
 
 ## Alternatives considered
 

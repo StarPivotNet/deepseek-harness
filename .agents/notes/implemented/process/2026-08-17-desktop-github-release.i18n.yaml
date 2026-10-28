@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-17-desktop-github-release.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-17-desktop-github-release.md
-2026-08-17-desktop-github-release.md: 828be07c57308a73323fdf760eacc740c3fe85c0
-2026-08-17-desktop-github-release.zh.md: 75da72a77d261dcc1b66939b1a3cd93cc4998d0d
+/agent-note-desktop-github-release-sequence:
+  en: 2f59dcbd3d5771c3
+  zh: 1c94122bd7d6fa24
+/agent-note-desktop-github-release-sequence/problem:
+  en: b97a5cd865a9cece
+  zh: e2cc55d479e0f8c1
+/agent-note-desktop-github-release-sequence/decision:
+  en: 6c00a2ad0ff34b63
+  zh: 86481a9d73f6044e
+/agent-note-desktop-github-release-sequence/alternatives-considered:
+  en: ff794f300aec564b
+  zh: 3b1e4fc6f8c604c2
+/agent-note-desktop-github-release-sequence/consequences:
+  en: 9b3c8104c85089a5
+  zh: a109c402c0392278
+/agent-note-desktop-github-release-sequence/testing:
+  en: 233294e5fce5ff47
+  zh: f677b024a5899c56

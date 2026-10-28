@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-desktop-waits-for-boot-manifest.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-20-desktop-waits-for-boot-manifest.md
-2026-08-20-desktop-waits-for-boot-manifest.md: 843025e8a2ed87171f931487623dff52dbec970c
-2026-08-20-desktop-waits-for-boot-manifest.zh.md: 836bc457b4a1842cf069f19d4698178d9fdd6b38
+/agent-note-desktop-waits-for-the-boot-manifest-before-loadurl:
+  en: db3496c13bfeabe3
+  zh: b9e5efe2a2d07e37
+/agent-note-desktop-waits-for-the-boot-manifest-before-loadurl/problem:
+  en: 7a3ab07400fee85a
+  zh: c771e78f748cdff8
+/agent-note-desktop-waits-for-the-boot-manifest-before-loadurl/decision:
+  en: f7c96f59ca87a1ce
+  zh: 736bde129f4c9372
+/agent-note-desktop-waits-for-the-boot-manifest-before-loadurl/alternatives-considered:
+  en: e4ac236ff6e6d396
+  zh: 50255cf1c073ccbf
+/agent-note-desktop-waits-for-the-boot-manifest-before-loadurl/consequences:
+  en: e70d191e778552bc
+  zh: d9498e539cef4c80
+/agent-note-desktop-waits-for-the-boot-manifest-before-loadurl/testing:
+  en: 05b96215f2c79e70
+  zh: bbb05dbf80bc97f9

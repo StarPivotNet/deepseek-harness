@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-sidebar-chat-bucket.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-21-sidebar-chat-bucket.md
-2026-08-21-sidebar-chat-bucket.md: a27ef46971ab7023a6e801550ff8b9d36955c0a0
-2026-08-21-sidebar-chat-bucket.zh.md: 43db773a153b7cf8889503e04fe763ed449bb636
+/agent-note-sidebar-chat-bucket:
+  en: 8844b73de8b2c959
+  zh: 155e4f0ce2f339c1
+/agent-note-sidebar-chat-bucket/problem:
+  en: 7d7dd2e8d5f4d249
+  zh: 6e976df917be8a23
+/agent-note-sidebar-chat-bucket/decision:
+  en: fcf2fd91fe1ebdaf
+  zh: 1a44e44f066871a3
+/agent-note-sidebar-chat-bucket/alternatives-considered:
+  en: 49d321f71a705d90
+  zh: 6d3a8f60e12a9baa
+/agent-note-sidebar-chat-bucket/consequences:
+  en: ba5b4e9b672ae857
+  zh: b0eec4557bf673ef
+/agent-note-sidebar-chat-bucket/testing:
+  en: e8f2d8c897e33067
+  zh: efe4535adf5be348

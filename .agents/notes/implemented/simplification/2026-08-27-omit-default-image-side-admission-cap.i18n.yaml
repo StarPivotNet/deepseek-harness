@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-27-omit-default-image-side-admission-cap.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-27-omit-default-image-side-admission-cap.md
-2026-08-27-omit-default-image-side-admission-cap.md: ddc5f45b4d7993a0a9828b21212affcac5ebc428
-2026-08-27-omit-default-image-side-admission-cap.zh.md: 786973f85322a5b3b64b895870ff98086097e795
+/agent-note-omit-the-default-image-side-length-admission-cap:
+  en: 19e1fce0b97a3b79
+  zh: d53fe6e16de83f5d
+/agent-note-omit-the-default-image-side-length-admission-cap/problem:
+  en: 10a695a55b13627b
+  zh: 965b8212e2bf3ec0
+/agent-note-omit-the-default-image-side-length-admission-cap/decision:
+  en: ba107d205214532b
+  zh: de5ba59c72dd50d0
+/agent-note-omit-the-default-image-side-length-admission-cap/alternatives-considered:
+  en: 5bd3b90d2f2ff6d8
+  zh: d439e875ed9af0e2
+/agent-note-omit-the-default-image-side-length-admission-cap/consequences:
+  en: 5eb407b506e61cf5
+  zh: 0a3412093a37365f

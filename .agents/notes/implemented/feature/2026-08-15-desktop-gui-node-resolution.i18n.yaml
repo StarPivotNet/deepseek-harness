@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-desktop-gui-node-resolution.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-desktop-gui-node-resolution.md
-2026-08-15-desktop-gui-node-resolution.md: 59b64241b91a709f9df1f0f7830f05ba54873c6d
-2026-08-15-desktop-gui-node-resolution.zh.md: fc8569b7b39ff7347025a7bd4eb9a564ebee0b59
+/agent-note-desktop-node-resolution-for-finder-launches:
+  en: 27038de1fe209788
+  zh: 0728723678c47527
+/agent-note-desktop-node-resolution-for-finder-launches/problem:
+  en: faa27cd1a77eed02
+  zh: 6c2cf9d84f055393
+/agent-note-desktop-node-resolution-for-finder-launches/decision:
+  en: 28558af4be4adcd0
+  zh: 49ad14b6d7bc0b0d
+/agent-note-desktop-node-resolution-for-finder-launches/alternatives-considered:
+  en: cf5beeaf9826450e
+  zh: 3dc44c73eda49896
+/agent-note-desktop-node-resolution-for-finder-launches/consequences:
+  en: 6052d07174c8a9e0
+  zh: 493889b30c6aa330
+/agent-note-desktop-node-resolution-for-finder-launches/testing:
+  en: 3965d2b426190e24
+  zh: 2bc0b6cf415189ba

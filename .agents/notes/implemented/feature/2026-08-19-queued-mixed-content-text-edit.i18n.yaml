@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-queued-mixed-content-text-edit.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-queued-mixed-content-text-edit.md
-2026-08-19-queued-mixed-content-text-edit.md: c730c89c0e401d605db46d3041bf7c62d1395471
-2026-08-19-queued-mixed-content-text-edit.zh.md: 957ef13d334423ecc216fbdfb01ca9125d25e074
+/agent-note-edit-text-of-mixed-content-queued-messages:
+  en: 16355dbe2e97ff8d
+  zh: 2b8267533539a177
+/agent-note-edit-text-of-mixed-content-queued-messages/problem:
+  en: a30bc4a983099018
+  zh: 543da6867fea6d2d
+/agent-note-edit-text-of-mixed-content-queued-messages/decision:
+  en: d4bcacd0a36d904a
+  zh: 095f67756fac4515
+/agent-note-edit-text-of-mixed-content-queued-messages/alternatives-considered:
+  en: 6af2a30640af4902
+  zh: 29efee69305a1a3e
+/agent-note-edit-text-of-mixed-content-queued-messages/consequences:
+  en: bdec51eda6b8b2fd
+  zh: 6b4e24081bee67cc
+/agent-note-edit-text-of-mixed-content-queued-messages/testing:
+  en: 0bcaefbe94ce04aa
+  zh: d611fc51dd42f205
+/agent-note-edit-text-of-mixed-content-queued-messages/related:
+  en: c96310f9c850d1aa
+  zh: a176a54ddab84eac

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-remove-first-run-api-key-dialog.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-15-remove-first-run-api-key-dialog.md
-2026-08-15-remove-first-run-api-key-dialog.md: be811d66935701dd47f6baa92891b033a2b8a0e6
-2026-08-15-remove-first-run-api-key-dialog.zh.md: 21fea8f15bb178f2053988c3a6d1e52afafe4cc6
+/agent-note-remove-the-first-run-api-key-dialog:
+  en: 214e8408b1dfaf3d
+  zh: 3372b673ca02b654
+/agent-note-remove-the-first-run-api-key-dialog/problem:
+  en: 556ccf47ce3d1e49
+  zh: 5a3dd43dc6455745
+/agent-note-remove-the-first-run-api-key-dialog/decision:
+  en: 6f3f91c91a2f48ec
+  zh: 02b0419b5e699613
+/agent-note-remove-the-first-run-api-key-dialog/alternatives-considered:
+  en: 8db68d572a66c1c9
+  zh: d45026a532fa86c3
+/agent-note-remove-the-first-run-api-key-dialog/consequences:
+  en: a6a15b7f7ee7bb60
+  zh: 909d05e443f08028
+/agent-note-remove-the-first-run-api-key-dialog/testing:
+  en: 1dacff7a43f5f616
+  zh: a8f5dc2d19260512

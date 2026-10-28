@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-desktop-titlebar-double-padding.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-15-desktop-titlebar-double-padding.md
-2026-08-15-desktop-titlebar-double-padding.md: c1f61d20e9e00b4e242b223735f6acbcb70f8fb5
-2026-08-15-desktop-titlebar-double-padding.zh.md: fd523e357cd9f87de98ed518cd1998168ad8c481
+/agent-note-desktop-title-bar-pads-only-body:
+  en: 5339fd08e1a47da3
+  zh: 4378e9afa7bc9d43
+/agent-note-desktop-title-bar-pads-only-body/problem:
+  en: 2a85d05c007dbfa2
+  zh: ef2e3c0ac9b6c7a9
+/agent-note-desktop-title-bar-pads-only-body/decision:
+  en: f11b48744bb89542
+  zh: a83d614aa82c8dce
+/agent-note-desktop-title-bar-pads-only-body/alternatives-considered:
+  en: 402ab7b44c01756b
+  zh: 4f0d5570ff5a291d
+/agent-note-desktop-title-bar-pads-only-body/consequences:
+  en: 1d787e0f85f635ed
+  zh: 173e55eec75bbac9
+/agent-note-desktop-title-bar-pads-only-body/testing:
+  en: fa4cc9c618f25707
+  zh: 0b5359e5acef1f73

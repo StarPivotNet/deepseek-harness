@@ -14,7 +14,7 @@ Large historical Session reads spend substantial CPU time repeatedly snapshottin
 
 [JSONL persistence](../../../../packages/session/session-persistence-jsonl/README.md) serializes complete historical migrations across one backend instance and runs catalog migration and validation in one worker thread. The migration reuses that thread across its three catalog computations and terminates it in `finally` before releasing admission. Cancellation and backend disposal await thread exit. Waiting readers keep independent cancellation and reselect the highest generation after completion, including owner cancellation or failure. Stable physical source snapshots, fingerprint checks, and publication remain on the host.
 
-This refines the execution cost of [released-format migrations](../architecture/2026-08-31-released-session-format-migrations.md) and complements the [large-session restore pipeline](../architecture/2026-08-05-large-session-jsonl-restore-pipeline.md). Both decisions remain active: immutable generation publication and ownership-specific restore validation retain their independent rationale.
+This refines the execution cost of [released-format migrations](../architecture/2026-08-31-released-session-format-migrations.md) and complements the [large-session restore pipeline](../../archived/architecture/2026-08-05-large-session-jsonl-restore-pipeline.md). Both decisions remain active: immutable generation publication and ownership-specific restore validation retain their independent rationale.
 
 ## Alternatives considered
 

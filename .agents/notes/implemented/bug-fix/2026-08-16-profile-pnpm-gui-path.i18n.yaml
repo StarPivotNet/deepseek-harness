@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-16-profile-pnpm-gui-path.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-16-profile-pnpm-gui-path.md
-2026-08-16-profile-pnpm-gui-path.md: 27a6dcac9d56ea98d29b09aa1f51fa814a112c74
-2026-08-16-profile-pnpm-gui-path.zh.md: 2dbf0dbfc1720331bcf41914d5435305589fa891
+/agent-note-profile-pnpm-resolution-beyond-a-gui-path:
+  en: 78d45dec144db21d
+  zh: 3768f3bdf4cf5438
+/agent-note-profile-pnpm-resolution-beyond-a-gui-path/problem:
+  en: fe2667aad6eda988
+  zh: 11875c8c06e9fae3
+/agent-note-profile-pnpm-resolution-beyond-a-gui-path/decision:
+  en: f16642f9ea951cb1
+  zh: e290230ffc2fd299
+/agent-note-profile-pnpm-resolution-beyond-a-gui-path/alternatives-considered:
+  en: ce405d8235836f89
+  zh: 7f27bda5f032f741
+/agent-note-profile-pnpm-resolution-beyond-a-gui-path/consequences:
+  en: ea1dba8708b379ba
+  zh: 89d44527cb61dd92
+/agent-note-profile-pnpm-resolution-beyond-a-gui-path/testing:
+  en: 8dd2ecd7e309f4ea
+  zh: 2717399c44e74451

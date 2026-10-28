@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-27-web-running-model-identity.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-27-web-running-model-identity.md
-2026-08-27-web-running-model-identity.md: 869727124c5fc547dde30fba856064d5418b83d8
-2026-08-27-web-running-model-identity.zh.md: e915f1f4f856fc3d32454a3d66c2b8176acc8f54
+/agent-note-running-model-identity-in-the-web-gui:
+  en: 372488bdf9acc667
+  zh: 028ceba1e8bf14dc
+/agent-note-running-model-identity-in-the-web-gui/problem:
+  en: c8d599bad6a9ef1e
+  zh: ff98bc54755e6618
+/agent-note-running-model-identity-in-the-web-gui/decision:
+  en: e1b65eb8b24ba569
+  zh: 4902abe612803374
+/agent-note-running-model-identity-in-the-web-gui/alternatives-considered:
+  en: aff3b3221895aa24
+  zh: 97357576395085d8
+/agent-note-running-model-identity-in-the-web-gui/consequences:
+  en: 7a8b8e860939fed1
+  zh: eb12c4d768cdf631
+/agent-note-running-model-identity-in-the-web-gui/testing:
+  en: 91676540fdf5613c
+  zh: 57b8bd5c275dfd1d

@@ -8,7 +8,7 @@ Status: implemented
 
 作曲器繁忙 Enter 已经通过 Host settings 持久化。可继续结算、子级 `report` 和 Job 完成仍在代码里选择父级 inbox 投递位置。想让这些通知等本轮结束、或想让 report 进入最近一步的操作者没有用户设置。三条通道也不一致：结算会插话繁忙父级，report 永远排到下一轮，Job 则注入下一步且不唤醒。
 
-[由管理器投递的结算](2026-08-06-manager-owned-subagent-settlement-delivery.zh.md) 否决过会让通知缺席的*部署*开关。该否决仍然成立。缺的是：通知仍会发送，但投递位置可配。
+[由管理器投递的结算](../../archived/feature/2026-08-06-manager-owned-subagent-settlement-delivery.md) 否决过会让通知缺席的*部署*开关。该否决仍然成立。缺的是：通知仍会发送，但投递位置可配。
 
 ## Decision
 

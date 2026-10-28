@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-sidebar-live-idle-without-status-folders.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-sidebar-live-idle-without-status-folders.md
-2026-08-19-sidebar-live-idle-without-status-folders.md: f8b0e7bedb0b5b6aa8d10bb1c213285429da59fa
-2026-08-19-sidebar-live-idle-without-status-folders.zh.md: a3c6253f505baaa360be7243bb678c467c46fe37
+/agent-note-sidebar-live-work-without-status-folders:
+  en: 7d83d0ce5db5b947
+  zh: 73244f52ac820a5e
+/agent-note-sidebar-live-work-without-status-folders/problem:
+  en: f278a63f9a43c9e3
+  zh: 0961df6c8e43140e
+/agent-note-sidebar-live-work-without-status-folders/decision:
+  en: 23d6052e734b1ae7
+  zh: 2cd856e4c9a24146
+/agent-note-sidebar-live-work-without-status-folders/alternatives-considered:
+  en: 95b4a38d352678a5
+  zh: 937e215a822930d6
+/agent-note-sidebar-live-work-without-status-folders/consequences:
+  en: 9023f1b4b005eae2
+  zh: 3680e4ac17bebc0a
+/agent-note-sidebar-live-work-without-status-folders/testing:
+  en: 62254d44da615af4
+  zh: 32cee8a9c4523a4d

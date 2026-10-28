@@ -12,7 +12,7 @@ The in-box marketplace browser half contributed its Discover page to `settings.p
 
 The Discover tab uses `ctx.slots.inject('settings.plugins.tab', …)` the same way the inventory tab does. Injection waits for the Plugins section to declare the slot, re-registers across declaration replacement, and leaves with the marketplace fiber. The contribution still omits a `children` table: Discover does not render `settings.plugin.item`, and a second declaration of that nested slot would collide with the configurable tab.
 
-Slot-level wait is the general rule in [slot declaration injection](../architecture/2026-08-05-slot-declaration-injection.md). The marketplace still joins Plugins as tabs under [in-box plugin catalog and marketplace](../feature/2026-08-18-in-box-plugin-catalog-and-marketplace.md).
+Slot-level wait is the general rule in [slot declaration injection](../../archived/architecture/2026-08-05-slot-declaration-injection.md). The marketplace still joins Plugins as tabs under [in-box plugin catalog and marketplace](../feature/2026-08-18-in-box-plugin-catalog-and-marketplace.md).
 
 ## Alternatives considered
 

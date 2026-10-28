@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-16-desktop-titlebar-omits-product-name.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-16-desktop-titlebar-omits-product-name.md
-2026-08-16-desktop-titlebar-omits-product-name.md: 67e4be511b6b9b647cc917f0b2731975a0975ec3
-2026-08-16-desktop-titlebar-omits-product-name.zh.md: e18680b1208406f14731302f3364c71f01aaa451
+/agent-note-desktop-title-bar-omits-the-product-name:
+  en: 3d0cf03c2c7ccd67
+  zh: 00b615e38d3d98c7
+/agent-note-desktop-title-bar-omits-the-product-name/problem:
+  en: e660a043686db3f5
+  zh: 03a33921dcf8d12d
+/agent-note-desktop-title-bar-omits-the-product-name/decision:
+  en: 2f76beb604f9d253
+  zh: b85744ccde81f623
+/agent-note-desktop-title-bar-omits-the-product-name/alternatives-considered:
+  en: 197c2ff51f23f26b
+  zh: 6f2a4c2e60cdbd4c
+/agent-note-desktop-title-bar-omits-the-product-name/consequences:
+  en: a1806e5fe9933e84
+  zh: ccf0846dbde233ce
+/agent-note-desktop-title-bar-omits-the-product-name/testing:
+  en: cb2879951f046e0a
+  zh: a42a1ddd5b5c00b0

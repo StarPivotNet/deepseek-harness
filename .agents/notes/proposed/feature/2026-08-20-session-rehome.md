@@ -8,7 +8,7 @@ English | [中文](2026-08-20-session-rehome.zh.md)
 
 Web conversations bind to a workspace at create time through the immutable `SessionHeader.cwd`. A user who does not yet know which project the request belongs to must pick a workspace before the first send. After the agent infers the directory, the same conversation cannot change sidebar group or execution root: `attachSession` rejects a cwd mismatch, JSONL identity is the birth cwd, and AGENTS.md / skill / LSP still read the header. Cursor's Agents Window solves the corresponding start with a No Repo group and `move_agent_to_root` on the same chat.
 
-The [Workspace UI product-flow](../../implemented/feature/2026-07-25-workspace-ui-product-flow.md) left moving sessions across workspaces and Ungrouped adoption out of that flow. Git worktree overlay already splits execution root from membership, but only for same-repo branch isolation, and it never updates the sidebar account.
+The [Workspace UI product-flow](../../archived/feature/2026-07-25-workspace-ui-product-flow.md) left moving sessions across workspaces and Ungrouped adoption out of that flow. Git worktree overlay already splits execution root from membership, but only for same-repo branch isolation, and it never updates the sidebar account.
 
 ## Proposal
 

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-06-session-json-traversal-and-migration-reuse.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-06-session-json-traversal-and-migration-reuse.md
-2026-09-06-session-json-traversal-and-migration-reuse.md: e1442868ca6aa81edf4076ac4fe5470839194b35
-2026-09-06-session-json-traversal-and-migration-reuse.zh.md: 7c8d369ca01e7d9a93e82c0aff75ec4dfe15cc6c
+/agent-note-reuse-validated-session-artifacts-and-serialize-historical-migration:
+  en: 546d72b3206c5639
+  zh: c22cae55fb4c4a88
+/agent-note-reuse-validated-session-artifacts-and-serialize-historical-migration/problem:
+  en: 02b6c1fd1b6efde4
+  zh: 74b448d61e0534d6
+/agent-note-reuse-validated-session-artifacts-and-serialize-historical-migration/decision:
+  en: cbca366e1027ed7c
+  zh: 59b6fee67fa1c63e
+/agent-note-reuse-validated-session-artifacts-and-serialize-historical-migration/alternatives-considered:
+  en: 61f28e23532c85b5
+  zh: bc781d8503734b3d
+/agent-note-reuse-validated-session-artifacts-and-serialize-historical-migration/consequences:
+  en: e6af03fa8435cca2
+  zh: da327870909f28f1

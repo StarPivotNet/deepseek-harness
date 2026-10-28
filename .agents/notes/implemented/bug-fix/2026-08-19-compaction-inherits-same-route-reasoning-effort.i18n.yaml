@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-compaction-inherits-same-route-reasoning-effort.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-19-compaction-inherits-same-route-reasoning-effort.md
-2026-08-19-compaction-inherits-same-route-reasoning-effort.md: 38dc94dfe6392a2f3f10aa884b8f2f4155906774
-2026-08-19-compaction-inherits-same-route-reasoning-effort.zh.md: a5729b6ff315f8ba785ccc9778487b52ad8aca78
+/agent-note-compaction-inherits-the-conversation-s-same-route-reasoning-effort:
+  en: b87cc69500cac723
+  zh: c3004e3579f04378
+/agent-note-compaction-inherits-the-conversation-s-same-route-reasoning-effort/problem:
+  en: 8757bdb387eab039
+  zh: 7e7840d26bcd7a9b
+/agent-note-compaction-inherits-the-conversation-s-same-route-reasoning-effort/decision:
+  en: 82528ea95895f99b
+  zh: 4808b35cdb8c33de
+/agent-note-compaction-inherits-the-conversation-s-same-route-reasoning-effort/alternatives-considered:
+  en: 06e48b40da84b05a
+  zh: f1fe8500dcc6e812
+/agent-note-compaction-inherits-the-conversation-s-same-route-reasoning-effort/testing:
+  en: 726aaed436cf7b9a
+  zh: eecc3350852e404f
+/agent-note-compaction-inherits-the-conversation-s-same-route-reasoning-effort/consequences:
+  en: 82cd7246d0d5b0ac
+  zh: aa8041ca9abb6b6b

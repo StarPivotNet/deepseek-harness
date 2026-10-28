@@ -10,7 +10,7 @@ Status: implemented
 
 ## Decision
 
-分类仍是现有行状态位的纯函数：**已完成**（`completed` 提醒且没有正在进行的工作）、**运行中**（待处理交互或自身／后代活动）、**异常**（崩溃／重载中断且尚未再次运行）和**历史记录**（其余空闲 Session）。焦点离开已完成 Session 后，`SessionManager` 清除提醒。**按状态分区**（默认视图选项）把这些桶画成可折叠标题。可选的不分区布局由[侧边栏进行中会话不再套状态文件夹](2026-08-19-sidebar-live-idle-without-status-folders.md)负责。macOS dock 鲸鱼显示同一份已完成计数；该角标与跳动见 [macOS dock 已完成角标与跳动](2026-08-20-sidebar-completed-badge-and-dock-bounce.md)。
+分类仍是现有行状态位的纯函数：**已完成**（`completed` 提醒且没有正在进行的工作）、**运行中**（待处理交互或自身／后代活动）、**异常**（崩溃／重载中断且尚未再次运行）和**历史记录**（其余空闲 Session）。焦点离开已完成 Session 后，`SessionManager` 清除提醒。**按状态分区**（默认视图选项）把这些桶画成可折叠标题。可选的不分区布局由[侧边栏进行中会话不再套状态文件夹](2026-08-19-sidebar-live-idle-without-status-folders.zh.md)负责。macOS dock 鲸鱼显示同一份已完成计数；该角标与跳动见 [macOS dock 已完成角标与跳动](2026-08-20-sidebar-completed-badge-and-dock-bounce.zh.md)。
 
 ## Alternatives considered
 
@@ -26,4 +26,4 @@ Status: implemented
 
 ## Testing
 
-树测试覆盖四向分类和空分区占位。默认标题、布局切换和空闲溢出见[侧边栏进行中会话不再套状态文件夹](2026-08-19-sidebar-live-idle-without-status-folders.md)。
+树测试覆盖四向分类和空分区占位。默认标题、布局切换和空闲溢出见[侧边栏进行中会话不再套状态文件夹](2026-08-19-sidebar-live-idle-without-status-folders.zh.md)。

@@ -53,6 +53,18 @@ async function bench(access: ClientAccessState, options: { ungroupedSession?: Se
   runtime.ctx.provide('shortcuts', { register: () => () => {}, catalog: createSnapshotStore([]) })
   runtime.ctx.provide('uiConversation', {})
   runtime.ctx.provide('layout', { selectPanel: vi.fn(), beginNavigation: () => new AbortController().signal })
+  // Header actions never open a Workspace path or bind the Workspace settings scope here; the
+  // services only have to settle the Client plugin's injection list.
+  runtime.ctx.provide('remote.session', {
+    openWorkspacePath: vi.fn(async () => ({ ok: true as const, value: undefined })),
+  } as never)
+  runtime.ctx.provide('settingsScope', {
+    bind: () => ({
+      subscribe: () => () => {},
+      getSnapshot: () => ({ value: undefined }),
+      set: async () => {},
+    }),
+  } as never)
   runtime.releaseWorkspaceSource()
   runtime.remote.provideNamespaces({ directoryPicker: {} })
   const locale = new LocaleRuntime(runtime.ctx)

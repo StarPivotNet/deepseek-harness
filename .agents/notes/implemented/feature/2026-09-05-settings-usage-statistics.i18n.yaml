@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-05-settings-usage-statistics.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-05-settings-usage-statistics.md
-2026-09-05-settings-usage-statistics.md: 6044be90220c381af8d3255132dc1d94b022bcf1
-2026-09-05-settings-usage-statistics.zh.md: 393da1bc9de8bd68c32645e1bf4f096eed84681f
+/agent-note-settings-usage-statistics-page:
+  en: e5214dad0628294a
+  zh: 2fbb6c78467611dc
+/agent-note-settings-usage-statistics-page/problem:
+  en: 3d2b7a9ad74cb3bc
+  zh: e198ca31d7223c1d
+/agent-note-settings-usage-statistics-page/decision:
+  en: bdf3e348486508ec
+  zh: 8edb3e2fc975430b
+/agent-note-settings-usage-statistics-page/alternatives-considered:
+  en: f9d99f980da3a86b
+  zh: 6fc4d2f576d43554
+/agent-note-settings-usage-statistics-page/consequences:
+  en: 8c1e3630b8854fb9
+  zh: ee93173bef590aaf
+/agent-note-settings-usage-statistics-page/required-verification:
+  en: 0dfbb53e03dbaf97
+  zh: c7d857cc89b28ec7

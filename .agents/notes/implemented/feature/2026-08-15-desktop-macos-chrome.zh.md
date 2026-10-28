@@ -22,7 +22,7 @@ Electron 壳此前在所有平台绘制 Windows 风格标题栏，且没有应�
 
 ## 后果
 
-Windows 行为不变：标题按钮 overlay、鲸鱼图标和开始菜单快捷方式与之前完全一致。macOS 上红绿灯为原生控件，标题栏为其预留空间，菜单快捷键在 Web GUI 中可用。`window.dshDesktop` IPC 两个变体都保留，供 drag 区双击使用。新的未读已完成提醒也走这条 preload：macOS 按 [macOS dock 已完成角标与跳动](2026-08-20-sidebar-completed-badge-and-dock-bounce.md) 给 dock 加角标并跳动。
+Windows 行为不变：标题按钮 overlay、鲸鱼图标和开始菜单快捷方式与之前完全一致。macOS 上红绿灯为原生控件，标题栏为其预留空间，菜单快捷键在 Web GUI 中可用。`window.dshDesktop` IPC 两个变体都保留，供 drag 区双击使用。新的未读已完成提醒也走这条 preload：macOS 按 [macOS dock 已完成角标与跳动](2026-08-20-sidebar-completed-badge-and-dock-bounce.zh.md) 给 dock 加角标并跳动。
 
 ## 测试
 

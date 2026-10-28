@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-client-panel-remote-namespace-inject.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-29-client-panel-remote-namespace-inject.md
-2026-08-29-client-panel-remote-namespace-inject.md: 458f8b215bc27cc3ce590d5305b38aaf4786b53f
-2026-08-29-client-panel-remote-namespace-inject.zh.md: f59fb737d40be58ac6d5abf165288b042b178471
+/agent-note-client-panels-must-declare-their-remote-namespaces:
+  en: b43669cff3fbce66
+  zh: 02755d212ef54c4f
+/agent-note-client-panels-must-declare-their-remote-namespaces/problem:
+  en: 51a61d5a45e5caba
+  zh: 82cccba49e0010d3
+/agent-note-client-panels-must-declare-their-remote-namespaces/decision:
+  en: bc87b223d5e8fd2f
+  zh: e99994c6d092ae30
+/agent-note-client-panels-must-declare-their-remote-namespaces/consequences:
+  en: 3aab46b9094e3313
+  zh: b478a53f396f6c7f
+/agent-note-client-panels-must-declare-their-remote-namespaces/alternatives-considered:
+  en: 4498f65433c082f1
+  zh: d5d27ec8aaa19a75

@@ -8,7 +8,7 @@ Status: implemented
 
 composer 模型席位的两级菜单通过把根单元格换成所选列表来钻入「模型」和「推理等级」。指针点击会先聚焦根单元格，再把它卸载。即使指针仍在席位内，Chrome 也会发出没有 `relatedTarget` 的冒泡 `focusout`。`ModelSelect` 把任何没有席位内 `relatedTarget` 的失焦当成离开席位并关闭菜单，因此「推理等级」（以及「模型」）看起来没有反应。
 
-目录选择器已经记录：Safari 在按钮上按下指针时，`relatedTarget` 也可以为空（[目录选择器](../architecture/2026-07-28-directory-picker-capability-seam.zh.md)）。那篇笔记负责编辑器取消，而不是这个 composer 菜单。
+目录选择器已经记录：Safari 在按钮上按下指针时，`relatedTarget` 也可以为空（[目录选择器](../../archived/architecture/2026-07-28-directory-picker-capability-seam.md)）。那篇笔记负责编辑器取消，而不是这个 composer 菜单。
 
 ## 决策
 

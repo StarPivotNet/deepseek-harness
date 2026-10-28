@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-user-system-prompts.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-user-system-prompts.md
-2026-08-15-user-system-prompts.md: 59deb06df05d89b7186a09598a5a4db5a27bd288
-2026-08-15-user-system-prompts.zh.md: 98f42a3a51c3e31af22a7d8f571204b105569a8a
+/agent-note-user-system-prompt-library-and-per-model-assembly:
+  en: e3501b7ccd3f77a9
+  zh: e77bfe3010f892b0
+/agent-note-user-system-prompt-library-and-per-model-assembly/problem:
+  en: 9f6f31c66bc1059e
+  zh: 72012d1379c133cb
+/agent-note-user-system-prompt-library-and-per-model-assembly/decision:
+  en: 7a1fa10dd1cb62fd
+  zh: 659e1cc8ba5ce9b1
+/agent-note-user-system-prompt-library-and-per-model-assembly/alternatives-considered:
+  en: da0bde8df2304f9b
+  zh: c6f8731afdc683b8
+/agent-note-user-system-prompt-library-and-per-model-assembly/consequences:
+  en: 0d6871f1282b5ecd
+  zh: 7c1085c185ade46a
+/agent-note-user-system-prompt-library-and-per-model-assembly/testing:
+  en: 1af7eefe464a9a51
+  zh: b0883b45fd54a297

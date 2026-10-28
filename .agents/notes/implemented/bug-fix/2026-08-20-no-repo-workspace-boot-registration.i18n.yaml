@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-no-repo-workspace-boot-registration.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-20-no-repo-workspace-boot-registration.md
-2026-08-20-no-repo-workspace-boot-registration.md: 019c29e29cd2d6ee7c6d896e0e52576cfbc5af6e
-2026-08-20-no-repo-workspace-boot-registration.zh.md: 2328daee043ceffebf141328e2fb8256fa30be70
+/agent-note-register-no-repo-at-gateway-activation:
+  en: 13278755d8761672
+  zh: e142687a9b6dbedc
+/agent-note-register-no-repo-at-gateway-activation/problem:
+  en: 17a36eca48b4590d
+  zh: f7ac222ae8279886
+/agent-note-register-no-repo-at-gateway-activation/decision:
+  en: 217af70f78adeed6
+  zh: 345a62a62cf815c1
+/agent-note-register-no-repo-at-gateway-activation/alternatives-considered:
+  en: 71a5e7b9a8e1fbda
+  zh: e209c507f524a070
+/agent-note-register-no-repo-at-gateway-activation/consequences:
+  en: 35e8aa1a1b5b33e5
+  zh: 36ce1920a9d8a8ee
+/agent-note-register-no-repo-at-gateway-activation/testing:
+  en: ec2bdc90b288c8e1
+  zh: 2ec0490bcad5f981

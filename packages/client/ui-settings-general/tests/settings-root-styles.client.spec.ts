@@ -1,4 +1,4 @@
-/** Settings shell trigger hit-target contracts. */
+/** Settings shell trigger hit-target and carrier geometry contracts. */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -35,5 +35,11 @@ describe('SettingsRoot.module.css', () => {
     expect(declarations('.settingsTrigger')?.get('pointer-events')).toBeUndefined()
     expect(css).not.toContain('pointer-events: none')
     expect(css).not.toContain('.settingsTrigger::after')
+  })
+
+  it('keeps the indicator carrier full-width without inspecting account state', () => {
+    expect(css).toMatch(/\.triggerRow\s*\{[^}]*width: 100%;[^}]*margin: 4px 0;/)
+    expect(css).not.toContain('data-signed-out')
+    expect(css).toMatch(/\.triggerRow\.railRow\s*\{[^}]*width: 36px;/)
   })
 })

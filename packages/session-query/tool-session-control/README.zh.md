@@ -2,9 +2,9 @@
 
 [English](README.md) | 中文
 
-[`ctx.sessionControl`](../session-control/README.md)、[`ctx.sessionTitle`](../../session/session-title/README.md) 与 [`ctx.workspaceRegistry`](../../workspace/workspace/README.md) 的面向模型消费方：搜索、停止、发送、改名、列出工作区、归档、取消归档、改挂与同组调序。
+[`ctx.sessionControl`](../session-control/README.zh.md)、[`ctx.sessionTitle`](../../session/session-title/README.zh.md) 与 [`ctx.workspaceRegistry`](../../workspace/workspace/README.zh.md) 的面向模型消费方：搜索、停止、发送、改名、列出工作区、归档、取消归档、改挂与同组调序。
 
-已发布的 base 组合挂载该包。加载内置 [`dsh-session-control` skill](../../skill/skill-session-control/README.md) 可获得告诉模型何时使用这些工具的目录指令。
+已发布的 base 组合挂载该包。加载内置 [`dsh-session-control` skill](../../skill/skill-session-control/README.zh.md) 可获得告诉模型何时使用这些工具的目录指令。
 
 ## 工具
 
@@ -28,7 +28,7 @@
 
 #### What the model sees
 
-The generated [`session_control_*` schemas](../../../docs/tool-catalog.md#deepseek-aidsh-tool-session-control).
+The generated [`session_control_*` schemas](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-session-control).
 
 #### Token effect
 

@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/automation/automation/README.md
-README.md: 374cf7712b9f938d327643f57c8d051b1391d2eb
-README.zh.md: 06b3475fd273505f3831f15e5da0b05b49224147
+/deepseek-ai-dsh-automation:
+  en: 1c55dd8ae8f7cc2e
+  zh: 454632247ee45765
+/deepseek-ai-dsh-automation/config:
+  en: 50e1eca1021b5de3
+  zh: 779b2a635bbdb931
+/deepseek-ai-dsh-automation/service-contract:
+  en: 65430634bbaae982
+  zh: b0ff50651a736853
+/deepseek-ai-dsh-automation/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-automation/model-experience/fired-session-prompt:
+  en: db270845d20d2f1c
+  zh: f853adea0e85110f
+/deepseek-ai-dsh-automation/model-experience/fired-session-prompt/what-the-model-sees:
+  en: 3cde4f6f40ff8fad
+  zh: 494375e190dbcfd1
+/deepseek-ai-dsh-automation/model-experience/fired-session-prompt/token-effect:
+  en: 75f7471959ba18e0
+  zh: 1e3a8a98d20d9cfc
+/deepseek-ai-dsh-automation/model-experience/fired-session-prompt/kv-cache-effect:
+  en: adc96f4af37946f2
+  zh: 73055ccd5f0ac6c2
+/deepseek-ai-dsh-automation/known-limitations-and-deferred-work:
+  en: 2f243078c9881140
+  zh: 377b98022814a0b5

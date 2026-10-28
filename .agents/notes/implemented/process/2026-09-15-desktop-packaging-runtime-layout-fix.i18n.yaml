@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-09-15-desktop-packaging-runtime-layout-fix.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-15-desktop-packaging-runtime-layout-fix.md
+/agent-note-desktop-packaging-runtime-layout-fix:
+  en: d1cbda2ed3c5d92a
+  zh: 2a7d7f960c4fe176
+/agent-note-desktop-packaging-runtime-layout-fix/problem:
+  en: c42ac34176fa6649
+  zh: 42bf4c7635a4da9c
+/agent-note-desktop-packaging-runtime-layout-fix/decision:
+  en: df033903ed3ec05b
+  zh: 65806dc3ac85befb
+/agent-note-desktop-packaging-runtime-layout-fix/marketplace-on-desktop:
+  en: 507d5c6a78362771
+  zh: db53b90c92876f5d
+/agent-note-desktop-packaging-runtime-layout-fix/verification:
+  en: 249a011c90134737
+  zh: 57a13f19236011be

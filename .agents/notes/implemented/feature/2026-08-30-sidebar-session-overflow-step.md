@@ -14,7 +14,7 @@ The workspace plugin owns a Host settings field `sessionOverflowLimit` under nam
 
 The sidebar browser starts each open Workspace or flat History/idle cluster at that finite base limit. Each **Show more** click advances the mount-local absolute limit by the same step, capped at the ordinary-row count, so a click on twelve rows with step five reveals five more, then two. Blank New Session rows still sit outside the ordinary quota. Choosing **Expand all** leaves idle/History rows unfolded and hides the overflow control. Closing a Workspace clears only that account's transient absolute limit, so reopening returns to the Settings-owned base.
 
-This supersedes the boolean expand-all remainder gesture from [Workspace Sidebar Order and Folding](2026-08-11-workspace-sidebar-order-and-folding.md) while keeping that note's five-row default, blank-row quota, and collapse-reset rule.
+This supersedes the boolean expand-all remainder gesture from [Workspace Sidebar Order and Folding](../../archived/feature/2026-08-11-workspace-sidebar-order-and-folding.md) while keeping that note's five-row default, blank-row quota, and collapse-reset rule.
 
 ## Alternatives considered
 

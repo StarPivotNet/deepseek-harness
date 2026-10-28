@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-29-agent-preset-legacy-id-alias.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-29-agent-preset-legacy-id-alias.md
-2026-08-29-agent-preset-legacy-id-alias.md: 85c893d00882e6f2b4dd683ef04c6b609b1bc62a
-2026-08-29-agent-preset-legacy-id-alias.zh.md: 1c79991f05b2c692d65414b7701630fff9cbe891
+/agent-note-agent-preset-legacy-id-alias:
+  en: f542d6d52b4e6857
+  zh: dc048d62f5908484
+/agent-note-agent-preset-legacy-id-alias/problem:
+  en: 5a74ee62ed495bfa
+  zh: eab765a91eb6e8ee
+/agent-note-agent-preset-legacy-id-alias/decision:
+  en: fb50e5418e05cc0d
+  zh: c5393b926f75a8a5
+/agent-note-agent-preset-legacy-id-alias/consequences:
+  en: d31f6a8bb0c5ab07
+  zh: a7ad3f82f2b8b7da
+/agent-note-agent-preset-legacy-id-alias/alternatives-considered:
+  en: 3672267626b70e0c
+  zh: fcd09f9fcc3d178e

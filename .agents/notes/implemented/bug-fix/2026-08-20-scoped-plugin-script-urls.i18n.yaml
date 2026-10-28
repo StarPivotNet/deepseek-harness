@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-scoped-plugin-script-urls.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-20-scoped-plugin-script-urls.md
-2026-08-20-scoped-plugin-script-urls.md: 7f4f672ee6bd7ddeab3fe5ff09dfacb78ea5d2bc
-2026-08-20-scoped-plugin-script-urls.zh.md: a9a59ffd576dc28534a5376c7bd741ab3208876a
+/agent-note-scoped-client-plugin-script-urls:
+  en: 1a8ac8fc3c404950
+  zh: 5b55855173d93846
+/agent-note-scoped-client-plugin-script-urls/problem:
+  en: 85a31298f499047a
+  zh: 3ae7ec06cb41e736
+/agent-note-scoped-client-plugin-script-urls/decision:
+  en: 8942e54709b59529
+  zh: acb4d04168a79ab0
+/agent-note-scoped-client-plugin-script-urls/alternatives-considered:
+  en: 0c933187b936bd4b
+  zh: 9e2bdd9ee409976c
+/agent-note-scoped-client-plugin-script-urls/consequences:
+  en: e360265b3180f579
+  zh: feebb0bda4349028
+/agent-note-scoped-client-plugin-script-urls/testing:
+  en: e8fe868829f0c473
+  zh: 88682b9bbcb70491

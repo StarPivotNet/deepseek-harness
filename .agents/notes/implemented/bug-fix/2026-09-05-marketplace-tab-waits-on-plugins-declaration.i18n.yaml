@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-05-marketplace-tab-waits-on-plugins-declaration.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-05-marketplace-tab-waits-on-plugins-declaration.md
-2026-09-05-marketplace-tab-waits-on-plugins-declaration.md: 350f6adb5dcaceff3fe30112a9c467a52800fb8c
-2026-09-05-marketplace-tab-waits-on-plugins-declaration.zh.md: 22b77a342de2bee456c4a7f589407dbb14c0c5f0
+/agent-note-marketplace-discover-tab-waits-on-plugins-slot-declaration:
+  en: b3d50942d4e1736a
+  zh: c82d2cd0fb83c94b
+/agent-note-marketplace-discover-tab-waits-on-plugins-slot-declaration/problem:
+  en: c12e5c01f2374b67
+  zh: b5a2a6b01bb096c7
+/agent-note-marketplace-discover-tab-waits-on-plugins-slot-declaration/decision:
+  en: 1a0b46016e3ba335
+  zh: 191bb93eebacf871
+/agent-note-marketplace-discover-tab-waits-on-plugins-slot-declaration/alternatives-considered:
+  en: 68d6ba1e044093c0
+  zh: 077b6f0b027cbcdd
+/agent-note-marketplace-discover-tab-waits-on-plugins-slot-declaration/testing:
+  en: 32ad21c8fef59e55
+  zh: 0931fcdef548a433
+/agent-note-marketplace-discover-tab-waits-on-plugins-slot-declaration/consequences:
+  en: 35bd353c59819353
+  zh: 02547b8169e138d7

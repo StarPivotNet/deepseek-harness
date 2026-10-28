@@ -12,7 +12,7 @@ Status: implemented
 
 本地附件后端默认省略 `maxImageDimension`，除非部署显式设置。源图准入仍在配置的字节和解码像素上限内完整解码，再规范化存储长边。`IMAGE_DIMENSION_TOO_LARGE` 仍是配置上限失败：`read_image` 和 Web 文案在上限存在时点名单边像素，否则回退到通用发送失败或缩小后重试。`imageLimits` 投影和协议 schema 把该字段视为可选，客户端不得自行发明默认值。
 
-本决策与 [统一规范化附件、请求版本与提供方文件](../feature/2026-08-20-unified-image-request-pipeline.zh.md) 并列，后者仍拥有双版本图片路径。该笔记中的源图准入事实现已与本次省略对齐。
+本决策与 [统一规范化附件、请求版本与提供方文件](../../archived/feature/2026-08-20-unified-image-request-pipeline.md) 并列，后者仍拥有双版本图片路径。该笔记中的源图准入事实现已与本次省略对齐。
 
 ## Alternatives considered
 

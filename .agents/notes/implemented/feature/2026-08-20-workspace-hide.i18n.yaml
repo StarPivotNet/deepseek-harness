@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-workspace-hide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-20-workspace-hide.md
-2026-08-20-workspace-hide.md: 261b55556429012e08db93b8f758beb2e00f4a20
-2026-08-20-workspace-hide.zh.md: 1946357660b3c3b3b348cb61e78006a0172128e6
+/agent-note-hide-workspace:
+  en: 78b1b01440bb9f51
+  zh: ab30f9005bb2152c
+/agent-note-hide-workspace/problem:
+  en: 62203b766e7795b7
+  zh: fed604cdea5b89aa
+/agent-note-hide-workspace/decision:
+  en: f5bfb5eab18ebb7f
+  zh: ef6c18dd4957617b
+/agent-note-hide-workspace/decision/durable-set:
+  en: bf7d93e7ac205eb2
+  zh: e567b85a2239c5d4
+/agent-note-hide-workspace/decision/host-wire:
+  en: 174b062fc895b57a
+  zh: 78e8e950a6ea4b63
+/agent-note-hide-workspace/decision/client-projection:
+  en: 111c695bea9db7e7
+  zh: 02bdd4332673c516
+/agent-note-hide-workspace/decision/sidebar:
+  en: 21f4813a7319f650
+  zh: de6bbdc125ebfdd4
+/agent-note-hide-workspace/alternatives-considered:
+  en: d9be917b91e63feb
+  zh: ea2d257e93abef7e
+/agent-note-hide-workspace/consequences:
+  en: be94247b83f14814
+  zh: c510cb64726446ba
+/agent-note-hide-workspace/testing:
+  en: ee61e54e8287744c
+  zh: cdb709b815252818

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-31-collapsed-rail-hides-injected-entry-labels.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-31-collapsed-rail-hides-injected-entry-labels.md
-2026-08-31-collapsed-rail-hides-injected-entry-labels.md: 0389b1b2f434e74bf56c92550a082902ef50815d
-2026-08-31-collapsed-rail-hides-injected-entry-labels.zh.md: 618aaf799fb90f140a5c531e2829fce4e81752ae
+/agent-note-collapsed-rail-hides-injected-entry-labels:
+  en: 08a919d16ca8c1c3
+  zh: fc902fbd35f4d2b8
+/agent-note-collapsed-rail-hides-injected-entry-labels/problem:
+  en: 74fd211c643dae94
+  zh: 35492b68399f1d61
+/agent-note-collapsed-rail-hides-injected-entry-labels/decision:
+  en: 058432db40c0e4f2
+  zh: d320d5e05cf823b5
+/agent-note-collapsed-rail-hides-injected-entry-labels/alternatives-considered:
+  en: 65000f873c5ccf32
+  zh: 9f3764ee4918774b
+/agent-note-collapsed-rail-hides-injected-entry-labels/consequences:
+  en: e04814cdfee00916
+  zh: fe8883f86d41c506

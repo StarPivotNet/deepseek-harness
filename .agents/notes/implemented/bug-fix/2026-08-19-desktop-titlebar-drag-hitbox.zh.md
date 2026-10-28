@@ -10,7 +10,7 @@ Status: implemented
 
 ## 决策
 
-`titlebarStyles` 把 `.dsh-desktop-drag` 画成带明确高度和平台 inset 的绝对定位块：macOS 左侧留 70px 给红绿灯，Windows 右侧留 138px 给标题按钮 overlay。`attachTitlebar` 在 `dom-ready` 用 `webContents.insertCSS` 安装这些样式，并在 `did-finish-load` 只注入 markup。启动页仍把样式写进自己的文档。系统控件 inset 仍由 [macOS 外观笔记](../feature/2026-08-15-desktop-macos-chrome.md) 记录；空白预留条仍由 [省略产品名笔记](../simplification/2026-08-16-desktop-titlebar-omits-product-name.md) 记录。
+`titlebarStyles` 把 `.dsh-desktop-drag` 画成带明确高度和平台 inset 的绝对定位块：macOS 左侧留 70px 给红绿灯，Windows 右侧留 138px 给标题按钮 overlay。`attachTitlebar` 在 `dom-ready` 用 `webContents.insertCSS` 安装这些样式，并在 `did-finish-load` 只注入 markup。启动页仍把样式写进自己的文档。系统控件 inset 仍由 [macOS 外观笔记](../feature/2026-08-15-desktop-macos-chrome.zh.md) 记录；空白预留条仍由 [省略产品名笔记](../simplification/2026-08-16-desktop-titlebar-omits-product-name.zh.md) 记录。
 
 ## 曾考虑的替代方案
 

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-user-subagent-definition-library.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-user-subagent-definition-library.md
-2026-08-15-user-subagent-definition-library.md: 4446038c1956cc3950fa37ded5b9c313838f190e
-2026-08-15-user-subagent-definition-library.zh.md: 3176eb78df765007fb123c7a3d845f84f7694732
+/agent-note-user-authored-subagent-definition-library:
+  en: ed0582447e8929ac
+  zh: 0b65193af3bdc938
+/agent-note-user-authored-subagent-definition-library/problem:
+  en: 8637fac2e209e84b
+  zh: f92e65649a5739df
+/agent-note-user-authored-subagent-definition-library/decision:
+  en: a89fcd8055e2a026
+  zh: 3650f148d7abcc06
+/agent-note-user-authored-subagent-definition-library/alternatives-considered:
+  en: 0910f2789b20d501
+  zh: 6fa2fb358eec0407
+/agent-note-user-authored-subagent-definition-library/consequences:
+  en: ec9a4c78cd2f37de
+  zh: 8486950d682f92ab
+/agent-note-user-authored-subagent-definition-library/testing:
+  en: e3dee5603a25d407
+  zh: 35ff6ae39fda7d6a

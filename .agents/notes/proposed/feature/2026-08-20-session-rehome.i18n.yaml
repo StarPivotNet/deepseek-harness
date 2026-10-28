@@ -1,6 +1,40 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-session-rehome.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/proposed/feature/2026-08-20-session-rehome.md
-2026-08-20-session-rehome.md: 879c9c242e03920366efd4fa5e46c53815feb79e
-2026-08-20-session-rehome.zh.md: 10f02e2ddd1a9d678c02b4251a3016875f3050c4
+/agent-note-session-rehome-and-the-no-repo-workspace:
+  en: 621f2e2159bb02b8
+  zh: 594402e122bdf94c
+/agent-note-session-rehome-and-the-no-repo-workspace/problem:
+  en: 799c26bc33e8e521
+  zh: c05a6a338dd5e7d0
+/agent-note-session-rehome-and-the-no-repo-workspace/proposal:
+  en: b095ea46e162c9a5
+  zh: 1b22f404ffb132cf
+/agent-note-session-rehome-and-the-no-repo-workspace/proposal/effective-home:
+  en: 743a98fa8df9d7ed
+  zh: db9dbdfb63b8b37c
+/agent-note-session-rehome-and-the-no-repo-workspace/proposal/membership:
+  en: 96fb2e3d035387d3
+  zh: c32590470ca317fc
+/agent-note-session-rehome-and-the-no-repo-workspace/proposal/host-session-rehome:
+  en: 698e428abdaaef51
+  zh: 7a15cf299eebb93c
+/agent-note-session-rehome-and-the-no-repo-workspace/proposal/no-repo-workspace:
+  en: 5a8f8ac9b27e3709
+  zh: 2bab6d3edd509cf1
+/agent-note-session-rehome-and-the-no-repo-workspace/proposal/plugin:
+  en: eb4ae063689c02c9
+  zh: a49568ff4ddf5f14
+/agent-note-session-rehome-and-the-no-repo-workspace/proposal/consumers-that-must-read-effective-home:
+  en: ef2ab461f77e24db
+  zh: af0aa8518582db5e
+/agent-note-session-rehome-and-the-no-repo-workspace/alternatives-considered:
+  en: 4b443ddfd37ba551
+  zh: 9166848f1998a4db
+/agent-note-session-rehome-and-the-no-repo-workspace/acceptance-criteria:
+  en: 87601ddeb6800b66
+  zh: 1da002c2f8dafb5f
+/agent-note-session-rehome-and-the-no-repo-workspace/risks:
+  en: 9cd1a1234892d8b3
+  zh: 7018c1f9bc22d089

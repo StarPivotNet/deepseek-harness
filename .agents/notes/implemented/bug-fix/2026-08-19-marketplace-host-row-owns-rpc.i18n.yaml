@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-marketplace-host-row-owns-rpc.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-19-marketplace-host-row-owns-rpc.md
-2026-08-19-marketplace-host-row-owns-rpc.md: f03a6624e5dd7cd6a2dbe693db52981b3abb52d7
-2026-08-19-marketplace-host-row-owns-rpc.zh.md: 32f9c544e2e59c0ce6f0f919ba4ce8cc4b39e2b7
+/agent-note-marketplace-host-row-owns-the-rpc-channel:
+  en: 1735c0faf5ce719a
+  zh: e53ca7f81975624d
+/agent-note-marketplace-host-row-owns-the-rpc-channel/problem:
+  en: cdd897835e03424d
+  zh: b9f743928fe3bb64
+/agent-note-marketplace-host-row-owns-the-rpc-channel/decision:
+  en: d2e31e2eab7bfbde
+  zh: 46d0ea0dab017062
+/agent-note-marketplace-host-row-owns-the-rpc-channel/alternatives-considered:
+  en: 00c84344e50b6986
+  zh: a3fdb3efd1fda3cb
+/agent-note-marketplace-host-row-owns-the-rpc-channel/consequences:
+  en: 1aed5daaeb7a1f62
+  zh: 515a0baa2c3bb88a
+/agent-note-marketplace-host-row-owns-the-rpc-channel/testing:
+  en: f5124683d4cb8d81
+  zh: 2eec4aae9aaa2447

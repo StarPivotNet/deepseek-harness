@@ -1,6 +1,46 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/automation/tool-automation/README.md
-README.md: 92f59ec9bd6e253450a8f4e981d036de6b46f5f8
-README.zh.md: 2e8072af187ddaee50435148a3eed4a06aebebd9
+/deepseek-ai-dsh-tool-automation:
+  en: f65274e4dd1a0969
+  zh: 5d853bb3c8e14809
+/deepseek-ai-dsh-tool-automation/tools:
+  en: 5c2ddb367f6a0846
+  zh: 2374e6dbad72b178
+/deepseek-ai-dsh-tool-automation/authority:
+  en: cb61c164018d8c17
+  zh: f5adc74ed6c1c0e8
+/deepseek-ai-dsh-tool-automation/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-automation/model-experience/system-prompt:
+  en: cf78b9dd5596495f
+  zh: bd44560f8c2435e8
+/deepseek-ai-dsh-tool-automation/model-experience/system-prompt/what-the-model-sees:
+  en: 8fce14c6a1cd2114
+  zh: 97b49df12b0fabc5
+/deepseek-ai-dsh-tool-automation/model-experience/system-prompt/what-the-model-sees/host-automation-policy:
+  en: 6f227587d14947d6
+  zh: 7a66281a5a5593a7
+/deepseek-ai-dsh-tool-automation/model-experience/system-prompt/token-effect:
+  en: 0ca47969efda70ab
+  zh: bfb6dd046182bcfe
+/deepseek-ai-dsh-tool-automation/model-experience/system-prompt/kv-cache-effect:
+  en: 13e7c6007bf6b5dc
+  zh: 40e151742b882423
+/deepseek-ai-dsh-tool-automation/model-experience/scoped-management-tools:
+  en: 9a36762003cc60e9
+  zh: 275b3f8be0547657
+/deepseek-ai-dsh-tool-automation/model-experience/scoped-management-tools/what-the-model-sees:
+  en: 7c0904881490b858
+  zh: b2aeee9477e4b03b
+/deepseek-ai-dsh-tool-automation/model-experience/scoped-management-tools/token-effect:
+  en: 8d6990b11deb9324
+  zh: 1dbe7a13df82081c
+/deepseek-ai-dsh-tool-automation/model-experience/scoped-management-tools/kv-cache-effect:
+  en: 09251911d7c8ff83
+  zh: a1887617229f0cbc
+/deepseek-ai-dsh-tool-automation/known-limitations-and-deferred-work:
+  en: ecb7f155dd11c289
+  zh: 098d2a0bf193fbec

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-05-workspace-session-home-memory.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-05-workspace-session-home-memory.md
-2026-09-05-workspace-session-home-memory.md: 6e9a0383c2bc1bfe88c14b4af45c4a1cfd354086
-2026-09-05-workspace-session-home-memory.zh.md: e98b05ba0c61019cd0e24418264d274d327b308e
+/agent-note-remember-workspace-membership-homes-per-artifact-revision:
+  en: 5e2b32c4b3af02a9
+  zh: 4bd9d04f6441f7d2
+/agent-note-remember-workspace-membership-homes-per-artifact-revision/problem:
+  en: 0a1d32ab90726a3b
+  zh: 487304a2a96161db
+/agent-note-remember-workspace-membership-homes-per-artifact-revision/decision:
+  en: a7888c85730e2215
+  zh: 2efe70add4d5a704
+/agent-note-remember-workspace-membership-homes-per-artifact-revision/alternatives-considered:
+  en: cfc4e7d952102ac0
+  zh: 07b44663d04c35d7
+/agent-note-remember-workspace-membership-homes-per-artifact-revision/consequences:
+  en: 6ccde924e846cdc8
+  zh: bf383546639e8585
+/agent-note-remember-workspace-membership-homes-per-artifact-revision/testing:
+  en: 424d7edfae1107f9
+  zh: 81feeb5907bbf1e8

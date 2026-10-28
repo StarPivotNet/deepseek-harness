@@ -15,7 +15,7 @@ web profile 同时交付两半：
 - [`dsh-host-plugin-catalog`](../../../../packages/host/plugin-catalog/README.zh.md) 在具名 Host 路由 `/plugin-catalog/catalog.json` 上提供已 pin 的 StarPivot `catalog.json`。
 - [`dsh-client-ui-settings-plugin-marketplace`](../../../../packages/client/ui-settings-plugin-marketplace/README.zh.md) 是原先的公开市场，现在是随安装内置的双面包。Host 行导入 `./host`；包入口是空的 Host `apply`，供浏览器行使用，避免两行都注册 `/plugin-marketplace`。它的默认目录 URL 就是这条 Host 路径。Host 半侧仍接受额外的 http(s) 目录 URL。
 
-市场以标签页方式加入插件设置页：[`dsh-client-ui-settings-plugins`](../../../../packages/client/ui-settings-plugins/README.zh.md) 拥有该分区，并通过 `settings.plugins.tab` 槽组合各功能自有的页面（见 [web 插件配置](2026-08-10-web-plugin-configuration.zh.md)）。`ui-settings-plugin-inventory` 行在 web profile 补丁中保持禁用。
+市场以标签页方式加入插件设置页：[`dsh-client-ui-settings-plugins`](../../../../packages/client/ui-settings-plugins/README.zh.md) 拥有该分区，并通过 `settings.plugins.tab` 槽组合各功能自有的页面（见 [web 插件配置](../../archived/feature/2026-08-10-web-plugin-configuration.md)）。`ui-settings-plugin-inventory` 行在 web profile 补丁中保持禁用。
 
 ## Alternatives considered
 

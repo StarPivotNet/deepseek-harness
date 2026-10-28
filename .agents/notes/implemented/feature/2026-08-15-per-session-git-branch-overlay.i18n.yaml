@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-per-session-git-branch-overlay.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-per-session-git-branch-overlay.md
-2026-08-15-per-session-git-branch-overlay.md: 0e394c20e8e1c63fcf2be41fa489dc9fe3e02d20
-2026-08-15-per-session-git-branch-overlay.zh.md: 9bdad9941c54591c80ef1783bed231d7116783d1
+/agent-note-per-session-git-branch-overlay-on-the-new-session-screen:
+  en: 2307f33135e3293e
+  zh: f9af9b0458dc8fc3
+/agent-note-per-session-git-branch-overlay-on-the-new-session-screen/problem:
+  en: 8d0acc64846f660a
+  zh: 43de9299dadc3376
+/agent-note-per-session-git-branch-overlay-on-the-new-session-screen/decision:
+  en: ca781c468a6df9ec
+  zh: c5cb783f50a20338
+/agent-note-per-session-git-branch-overlay-on-the-new-session-screen/alternatives-considered:
+  en: f23e1031d236ef6b
+  zh: 13603404952749dc
+/agent-note-per-session-git-branch-overlay-on-the-new-session-screen/consequences:
+  en: b65e4030fb617fdf
+  zh: 72de87dbd422611b
+/agent-note-per-session-git-branch-overlay-on-the-new-session-screen/testing:
+  en: 086ddf549cf37f2d
+  zh: fc22e0d2f7da09f1

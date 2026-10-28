@@ -68,10 +68,16 @@
 /deepseek-ai-dsh-sandbox-policy/model-experience/current-file-sandbox-policy/what-the-model-sees/danger-full-access:
   en: 4e28324a011422a1
   zh: bf31ffce30f06a09
-/deepseek-ai-dsh-sandbox-policy/model-experience/current-file-sandbox-policy/token-effect:
+/deepseek-ai-dsh-sandbox-policy/model-experience/multi-folder-workspace-map:
+  en: 58b028536852b940
+  zh: 38b2d94c23030bd5
+/deepseek-ai-dsh-sandbox-policy/model-experience/multi-folder-workspace-map/what-the-model-sees:
+  en: 527e5362b42eb21f
+  zh: 6ffa7bf2fde3b015
+/deepseek-ai-dsh-sandbox-policy/model-experience/multi-folder-workspace-map/token-effect:
   en: fe4724cbdaa928b4
   zh: 5c2d6d3d42e863a1
-/deepseek-ai-dsh-sandbox-policy/model-experience/current-file-sandbox-policy/kv-cache-effect:
+/deepseek-ai-dsh-sandbox-policy/model-experience/multi-folder-workspace-map/kv-cache-effect:
   en: a16a657e0e5145fb
   zh: 4b19263a728990dc
 /deepseek-ai-dsh-sandbox-policy/known-limitations-and-deferred-work:

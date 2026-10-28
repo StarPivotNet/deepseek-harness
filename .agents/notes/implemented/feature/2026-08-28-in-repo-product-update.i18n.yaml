@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-28-in-repo-product-update.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-28-in-repo-product-update.md
-2026-08-28-in-repo-product-update.md: 09b49bfc5cecb1c7377f140b10119c2853924ea1
-2026-08-28-in-repo-product-update.zh.md: 573eedeb7318c4bfed04888144ecfaaa64bc1828
+/agent-note-in-repo-product-update:
+  en: df2e952f3779aa34
+  zh: bc9ce6d478b166ce
+/agent-note-in-repo-product-update/problem:
+  en: dcf0244174da09e2
+  zh: 929cb4c8a4bd4d68
+/agent-note-in-repo-product-update/decision:
+  en: ddcf31b4de8d1f63
+  zh: 70e9041aaa77e7d8
+/agent-note-in-repo-product-update/alternatives-considered:
+  en: 5a276db38b5bc834
+  zh: 1e8850cd68dfe932
+/agent-note-in-repo-product-update/consequences:
+  en: e7f554ca8eca63d1
+  zh: 658b21c13775fc01
+/agent-note-in-repo-product-update/testing:
+  en: f34b98f7860e4a09
+  zh: 18a59aff1547551f

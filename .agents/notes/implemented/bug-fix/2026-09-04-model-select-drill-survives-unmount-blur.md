@@ -8,7 +8,7 @@ English | [中文](2026-09-04-model-select-drill-survives-unmount-blur.zh.md)
 
 The composer model seat's two-level menu drills Model and Effort by replacing the root cells with the chosen list. A pointer click that focuses a root cell then unmounts it. Chrome fires a bubbling `focusout` with no `relatedTarget` even though the pointer stayed inside the seat. `ModelSelect` treated any blur without an inside `relatedTarget` as an outside leave and closed the menu, so Effort (and Model) appeared to do nothing.
 
-The directory picker already recorded that Safari pointer-down on a button can also produce a null `relatedTarget` ([directory picker](../architecture/2026-07-28-directory-picker-capability-seam.md)). That note owns editor cancellation, not this composer menu.
+The directory picker already recorded that Safari pointer-down on a button can also produce a null `relatedTarget` ([directory picker](../../archived/architecture/2026-07-28-directory-picker-capability-seam.md)). That note owns editor cancellation, not this composer menu.
 
 ## Decision
 

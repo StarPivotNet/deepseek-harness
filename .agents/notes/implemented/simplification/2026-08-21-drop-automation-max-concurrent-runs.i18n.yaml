@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-drop-automation-max-concurrent-runs.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-21-drop-automation-max-concurrent-runs.md
-2026-08-21-drop-automation-max-concurrent-runs.md: 686568f9996ad141dfd852a6726ce357b3b9fc2a
-2026-08-21-drop-automation-max-concurrent-runs.zh.md: b55200a2e90d6f1568060644bbbc10fbafe10f1f
+/agent-note-drop-host-wide-automation-concurrent-run-admission:
+  en: a1fb2f1058a1a4b9
+  zh: a3a02a7105494155
+/agent-note-drop-host-wide-automation-concurrent-run-admission/problem:
+  en: 5c24a9a40ee4c551
+  zh: 2cd73dac6b70e15f
+/agent-note-drop-host-wide-automation-concurrent-run-admission/decision:
+  en: 70e963ffbe239747
+  zh: 815deeca4f5cb190
+/agent-note-drop-host-wide-automation-concurrent-run-admission/alternatives-considered:
+  en: c7d86673089eef60
+  zh: d908fef84e0bbc93
+/agent-note-drop-host-wide-automation-concurrent-run-admission/verification:
+  en: f310508e7d626f41
+  zh: af0cd885249b8991
+/agent-note-drop-host-wide-automation-concurrent-run-admission/consequences:
+  en: 2ffa54136cd8a5cc
+  zh: c21adf68e0ab7ff8

@@ -1,6 +1,64 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/settings/settings-file/README.md
-README.md: ea578a1739e1bd5d7b7f47be596998b124337ed5
-README.zh.md: 668d771bd64738701de87ca28066234284941873
+/:
+  en: 8d50f4a2be797fc0
+  zh: 8ab038c7a5223b90
+/deepseek-ai-dsh-settings-file:
+  en: 124e9f38fbb5f6c7
+  zh: 8300b8a774f1a79a
+/deepseek-ai-dsh-settings-file/summary:
+  en: 223381a3d9bec2c4
+  zh: 8fae7e47a69d2e6f
+/deepseek-ai-dsh-settings-file/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-settings-file/use-this-package:
+  en: 2ba91502ba1bd898
+  zh: 851f0c48e4042855
+/deepseek-ai-dsh-settings-file/use-this-package/when-to-choose-it:
+  en: 97c45a09e85252bb
+  zh: f1d0ef6caccefd9a
+/deepseek-ai-dsh-settings-file/use-this-package/minimal-configuration:
+  en: 7f7406f79fdb1f1e
+  zh: 23bce9bc78a10cc0
+/deepseek-ai-dsh-settings-file/use-this-package/editing-the-document:
+  en: 424268692136cb8d
+  zh: 11e18bd8a1b5769f
+/deepseek-ai-dsh-settings-file/use-this-package/writing-through-the-service:
+  en: 9ce165203d5fb3e6
+  zh: 827c5644a7db20d3
+/deepseek-ai-dsh-settings-file/use-this-package/failures-and-recovery:
+  en: 52288da8bbe4487c
+  zh: a6b271e73185d126
+/deepseek-ai-dsh-settings-file/understand-the-implementation:
+  en: 538553a9a48e2f93
+  zh: 451548c05c045c22
+/deepseek-ai-dsh-settings-file/understand-the-implementation/design-philosophy:
+  en: b7c324812ee315c6
+  zh: 4cfa3a513458b239
+/deepseek-ai-dsh-settings-file/understand-the-implementation/source-map:
+  en: 99caa093795023c7
+  zh: 901cd65806d239ab
+/deepseek-ai-dsh-settings-file/understand-the-implementation/document-lifecycle:
+  en: 6350420c65ae9f08
+  zh: 51751c143af9d1cf
+/deepseek-ai-dsh-settings-file/understand-the-implementation/render-paths:
+  en: c48c1878a68814ae
+  zh: 47570c20da8a5205
+/deepseek-ai-dsh-settings-file/further-exploration:
+  en: 2d4b90284f1453d5
+  zh: b96123584ffb8de9
+/deepseek-ai-dsh-settings-file/model-experience:
+  en: 6ff942f87d009dc5
+  zh: f59d8c6248f0068c
+/deepseek-ai-dsh-settings-file/model-experience/kv-cache-effect:
+  en: 5eb7f0f7d44028f6
+  zh: d78bec999ca361f4
+/deepseek-ai-dsh-settings-file/known-limitations-and-deferred-work:
+  en: c9873b80bd427fad
+  zh: dec30e895b0cfc27
+/deepseek-ai-dsh-settings-file/known-limitations-and-deferred-work/dev-note:
+  en: 958617b2576f5bc9
+  zh: f18c196f30ce01dd

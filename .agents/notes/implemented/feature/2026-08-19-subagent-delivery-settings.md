@@ -8,7 +8,7 @@ English | [中文](2026-08-19-subagent-delivery-settings.zh.md)
 
 Composer busy-Enter already persists through Host settings. Continuable settlement, child `report`, and Job completion still choose parent inbox placement in code. An operator who wants those notices after the current turn, or who wants a report at the nearest step, has no user setting. The three channels also disagree: settlement steers a busy parent, report always queues a later turn, and a Job injects the next step without a wake.
 
-[Manager-owned settlement](2026-08-06-manager-owned-subagent-settlement-delivery.md) rejected a *deployment* switch that could omit the notice. That rejection still holds. What was missing is placement of a notice that is still always sent.
+[Manager-owned settlement](../../archived/feature/2026-08-06-manager-owned-subagent-settlement-delivery.md) rejected a *deployment* switch that could omit the notice. That rejection still holds. What was missing is placement of a notice that is still always sent.
 
 ## Decision
 

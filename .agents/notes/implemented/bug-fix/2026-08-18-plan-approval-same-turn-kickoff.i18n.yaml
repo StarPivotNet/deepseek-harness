@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-plan-approval-same-turn-kickoff.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-18-plan-approval-same-turn-kickoff.md
-2026-08-18-plan-approval-same-turn-kickoff.md: 18fe257b1f5c17802998023d9f457070352aa449
-2026-08-18-plan-approval-same-turn-kickoff.zh.md: 054971c8ddef31f054da1eab19cc509f629f8326
+/agent-note-approved-plan-review-continues-the-same-turn:
+  en: da5d0c6ff28fc43d
+  zh: 38112ab5c5756c89
+/agent-note-approved-plan-review-continues-the-same-turn/problem:
+  en: 2b8e36419d5b7ad2
+  zh: 6f153b7e31b6f6ce
+/agent-note-approved-plan-review-continues-the-same-turn/decision:
+  en: b59c4248eccbbdad
+  zh: 894f347d3343b41a
+/agent-note-approved-plan-review-continues-the-same-turn/verification:
+  en: aec6eeeadb019b5e
+  zh: f139d8b63c4e1a7c
+/agent-note-approved-plan-review-continues-the-same-turn/alternatives-considered:
+  en: 9160452b3d4fb2b5
+  zh: 248d5656a3c03bdc
+/agent-note-approved-plan-review-continues-the-same-turn/consequences:
+  en: 3dd8213a809bd4e1
+  zh: a84163c48c59a512

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-30-windows-reveal-explorer-label.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-30-windows-reveal-explorer-label.md
-2026-08-30-windows-reveal-explorer-label.md: 3834ad773c63b46fe94d166dfa910e09539e8368
-2026-08-30-windows-reveal-explorer-label.zh.md: 782bfb7cdf584a4dd10213e269643b3b00479429
+/agent-note-windows-reveal-menu-uses-file-explorer-wording:
+  en: c67e6ce3b9b31437
+  zh: 5eae9a500e7e6acd
+/agent-note-windows-reveal-menu-uses-file-explorer-wording/problem:
+  en: 881b8fa19b709c83
+  zh: 8a615c45f8670719
+/agent-note-windows-reveal-menu-uses-file-explorer-wording/decision:
+  en: 251827a144afa7c7
+  zh: 297c9d4a8600c1ee
+/agent-note-windows-reveal-menu-uses-file-explorer-wording/alternatives-considered:
+  en: acdc5bc323d3173c
+  zh: 8ad6cfe373f56adb
+/agent-note-windows-reveal-menu-uses-file-explorer-wording/consequences:
+  en: fdf08da6dfbd3da1
+  zh: 01d50f4aae34bc41
+/agent-note-windows-reveal-menu-uses-file-explorer-wording/testing:
+  en: cdfa7ef8fc1bde58
+  zh: 34a6734a774b2ad3

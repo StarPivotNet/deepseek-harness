@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-discover-provider-reasoning-efforts.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-18-discover-provider-reasoning-efforts.md
-2026-08-18-discover-provider-reasoning-efforts.md: 55744a950775927283222cefae1b3f2fda2723cf
-2026-08-18-discover-provider-reasoning-efforts.zh.md: 11521564b70a7cefe8df8ba0530de00bb6b49751
+/agent-note-discover-provider-reasoning-efforts:
+  en: 28c91a5356689638
+  zh: 4eb389c47b3e5d32
+/agent-note-discover-provider-reasoning-efforts/problem:
+  en: 1500290c2c8417d2
+  zh: c4d1342991df65b8
+/agent-note-discover-provider-reasoning-efforts/decision:
+  en: 674bf2ce0a0482bd
+  zh: d809226a188ac3ee
+/agent-note-discover-provider-reasoning-efforts/alternatives-considered:
+  en: 5abe130cc35b5680
+  zh: 6006908aa0711933
+/agent-note-discover-provider-reasoning-efforts/consequences:
+  en: 433eae3632f1be5f
+  zh: 816b0b21d0c59c79
+/agent-note-discover-provider-reasoning-efforts/testing:
+  en: c8f1b784aad94c60
+  zh: f0f54589c793e578

@@ -12,7 +12,7 @@ Status: implemented
 
 发现页与清单页一样使用 `ctx.slots.inject('settings.plugins.tab', …)`。注入会等待插件分区声明该 slot，在声明被替换时重新注册，并随市场 fiber 离开。该贡献仍不带 `children` 表：发现页不渲染 `settings.plugin.item`，再次声明这个嵌套 slot 会与可配置标签页冲突。
 
-slot 级等待是 [slot 声明注入](../architecture/2026-08-05-slot-declaration-injection.zh.md) 的通用规则。市场仍按 [随安装内置的插件目录与市场](../feature/2026-08-18-in-box-plugin-catalog-and-marketplace.zh.md) 以标签页加入插件设置。
+slot 级等待是 [slot 声明注入](../../archived/architecture/2026-08-05-slot-declaration-injection.md) 的通用规则。市场仍按 [随安装内置的插件目录与市场](../feature/2026-08-18-in-box-plugin-catalog-and-marketplace.zh.md) 以标签页加入插件设置。
 
 ## 备选方案
 

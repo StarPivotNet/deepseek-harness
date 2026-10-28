@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-30-question-composer-long-title-scroll.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-30-question-composer-long-title-scroll.md
-2026-08-30-question-composer-long-title-scroll.md: 7f6e34a4440face63da31e6a3698eedc5c9116f2
-2026-08-30-question-composer-long-title-scroll.zh.md: 3b7a3078e379e7948c7820aa8e63e44c81303a1c
+/agent-note-long-question-titles-scroll-with-the-choices:
+  en: e6beb741e9c3ac2a
+  zh: c6270e26df312ee5
+/agent-note-long-question-titles-scroll-with-the-choices/problem:
+  en: 3a8099a614b67293
+  zh: 5d98bb92b2aea603
+/agent-note-long-question-titles-scroll-with-the-choices/decision:
+  en: 0ce23b51d850b012
+  zh: 8555b049b9c704f8
+/agent-note-long-question-titles-scroll-with-the-choices/alternatives-considered:
+  en: 2bf72aa17ace49ce
+  zh: fcd0a101979f7b1e
+/agent-note-long-question-titles-scroll-with-the-choices/testing:
+  en: 4802072facdf1d42
+  zh: 78d36eb00d6358db
+/agent-note-long-question-titles-scroll-with-the-choices/consequences:
+  en: b12acd34c9870247
+  zh: 2017a0ba278df228
