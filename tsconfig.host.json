@@ -1,4 +1,4 @@
-{
+﻿{
   // Host aggregate (one of the two check units; see tsconfig.json). packages/client
   // type-checks in tsconfig.client.json: the two sides merge cordis Context under
   // the same keys, one program cannot see both.
@@ -513,6 +513,7 @@
     { "path": "./packages/acp/acp" },
     { "path": "./packages/bundle/acp-app" },
     { "path": "./packages/bundle/base" },
+    { "path": "./packages/bundle/grok-code" },
     { "path": "./packages/bundle/purge" },
     { "path": "./packages/bundle/redteam" },
     { "path": "./packages/bundle/headless" },

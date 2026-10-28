@@ -8,6 +8,10 @@
 
 *.pdf binary
 
+# The VMProtect unpacker reads these Windows images byte for byte; the default
+# `text=auto eol=lf` would rewrite their line endings and break the export names.
+packages/bundle/grok-code/presets/grok-code/skills/agi-reverse/library/re-vmp/catalog/*.dll binary
+
 # The persistence catalog is the readable projection of these generated schemas.
 docs/persistence-schema.json linguist-generated=true
 docs/persistence-changes/*.schema.json linguist-generated=true

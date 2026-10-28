@@ -1,0 +1,2 @@
+name: Grok Code
+description: DSH 上的 Grok Code：未指定则中文回复；todo 任务队列 + 技能目录；计划模式；任何模式都鼓励派 subagent，涉及编辑走 AgentTeams。具备 cordis 创作能力（运行时检查、动态插件、preset 编写、发布型 DSH 插件）与 Ralph 循环。HTML/SVG 写进文件不贴聊天。依赖 dsh-free-search、dsh-agent-teams、dsh-codegraph（自带 Windows CLI，默认 core：codegraph_status、codegraph_init、codegraph_sync、codegraph_explore，不从 PATH 找 codegraph）、dsh-subagent-extra。派 subagent 前先调 set_subagent_reasoning_effort。

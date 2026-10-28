@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bbmodel-maker"
+version = "0.1.1"
+description = "程序化生成 Blockbench .bbmodel、烘焙骨骼动画、headless 渲染核验的离线工具库"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Kizunad" }]
+keywords = ["minecraft", "blockbench", "bbmodel", "geckolib", "3d", "procedural"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
+dependencies = ["numpy>=1.24", "pillow>=10"]
+
+[project.optional-dependencies]
+# bbmodel → GeckoLib 的转换驱动的是 web Blockbench 的官方 codec，只有那条路径要浏览器
+geckolib = ["playwright>=1.40"]
+
+[project.urls]
+Homepage = "https://github.com/Kizunad/bbmodel-maker"
+
+[project.scripts]
+bbmodel-render = "bbmodel_maker.render.render_bbmodel:main"
+bbmodel-contact-sheet = "bbmodel_maker.workbench.contact_sheet:main"
+bbmodel-armor-preview = "bbmodel_maker.workbench.preview_armor_on_body:main"
+bbmodel-to-pose = "bbmodel_maker.workbench.bbmodel_to_pose:main"
+bbmodel-to-geckolib = "bbmodel_maker.workbench.bbmodel_to_geckolib:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

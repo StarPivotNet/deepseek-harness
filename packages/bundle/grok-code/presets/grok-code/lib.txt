@@ -1,0 +1,17 @@
+@aiwayds/dsh-dcp
+@dsh-external/dsh-super-goals
+@liustack/modsearch
+@michengai/dsh-archive-manager
+@nanmicoder/dsh-agent-teams
+dsh-chart
+dsh-exfat-workspace
+dsh-better-reasoning-effort
+dsh-eyrove-free
+dsh-codegraph
+dsh-json-string-repair
+dsh-explorer-reveal
+dsh-solo-chat
+dsh-file-tools
+dsh-rewind-plugin
+dsh-subagent-extra
+dsh-context

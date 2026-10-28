@@ -1,0 +1,45 @@
+{
+  "name": "@deepseek-ai/dsh-grok-code",
+  "description": "Built-in Grok Code preset: Grok work strategy, think-act queue, plan mode, bundled reverse-engineering and authoring skills",
+  "version": "0.2.1-rc.4",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/bundle/grok-code"
+  },
+  "homepage": "https://github.com/StarPivotNet/deepseek-harness",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./presets/*": "./presets/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "presets",
+    "LICENSE",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:~"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis-plugin-include": "workspace:*",
+    "js-yaml": "^4.3.2",
+    "jsrsasign": "^11.1.0",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:~"
+  }
+}
