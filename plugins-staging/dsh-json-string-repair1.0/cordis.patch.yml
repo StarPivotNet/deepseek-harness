@@ -1,0 +1,4 @@
+# Escape raw control characters inside model tool-call argument strings before JSON.parse.
+- insert:
+    - id: dsh-json-string-repair
+      name: dsh-json-string-repair

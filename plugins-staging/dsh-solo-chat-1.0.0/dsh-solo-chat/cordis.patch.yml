@@ -1,0 +1,4 @@
+# Solo chat list. Restart the profile after plugin add.
+- insert:
+    - id: dsh-solo-chat
+      name: dsh-solo-chat

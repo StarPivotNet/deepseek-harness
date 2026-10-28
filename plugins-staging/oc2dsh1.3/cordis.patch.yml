@@ -1,0 +1,9 @@
+# OC2DSH DSH plugin — bundle patch: insert the plugin row (deployment-global).
+#
+# Defaults need no edits: registers the OC2DSH LlmAdapter for OpenCode Zen
+# free models (anonymous public key, reasoning effort off).
+# Override any option via the config object below (see src/config.ts).
+- insert:
+    - id: oc2dsh
+      name: OC2DSH
+      config: {}

@@ -29,6 +29,13 @@
       name: '@deepseek-ai/dsh-purge'
       disabled: true
 
+    # The built-in Grok Code preset. It lives on the base plane so every profile
+    # gets the mode, including profiles that do not select the organization
+    # bundle. The runtime polls for `agentPresets`, which the Web bundle mounts
+    # later in the layer order, so this row sits ahead of the registry.
+    - id: dsh-grok-code
+      name: '@deepseek-ai/dsh-grok-code'
+
     # Profile configuration reloads by default; module roots are opt-in.
     - id: hmr
       name: '@deepseek-ai/dsh-hmr'

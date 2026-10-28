@@ -1,0 +1,5 @@
+# Session-scoped subagent reasoning effort. One host row, no isolate:
+# the agent/request listener must see child sessions, which do not share a preset realm.
+- insert:
+    - id: dsh-subagent-extra
+      name: dsh-subagent-extra

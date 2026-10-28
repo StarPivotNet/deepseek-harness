@@ -1,0 +1,12 @@
+{
+  "name": "rpk-analysis-and-crack-toolchain",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Bundled QuickJS JSC + AIoT RPK SignUtil toolchain for library/re-rpk",
+  "scripts": {
+    "test": "node --test tests/rpk-analysis-and-crack.test.js"
+  },
+  "bin": {
+    "rpk-analysis-and-crack": "./cli.js"
+  }
+}

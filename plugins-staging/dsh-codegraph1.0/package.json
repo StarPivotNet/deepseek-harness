@@ -1,0 +1,40 @@
+{
+  "name": "dsh-codegraph",
+  "version": "1.0.0",
+  "description": "CodeGraph tools for DSH. Launches the bundled Windows codegraph 1.6.2 under vendor/codegraph-win32-x64 instead of a codegraph binary on PATH.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "codegraph",
+    "code-graph",
+    "code-search",
+    "deepseek-harness"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "lib",
+    "vendor",
+    "cordis.patch.yml",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": ">=0.0.1-rc.1 <0.1.0 || >=0.1.0-rc.1 <0.3.0-0",
+    "@deepseek-ai/dsh-tools": ">=0.0.1-rc.1 <0.1.0 || >=0.1.0-rc.1 <0.3.0-0",
+    "@deepseek-ai/schemastery": ">=3.0.0 <4.0.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

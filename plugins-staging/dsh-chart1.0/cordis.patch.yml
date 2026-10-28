@@ -1,0 +1,4 @@
+# Chat charts: pie, bar, line, histogram, function, and scatter.
+- insert:
+    - id: dsh-chart
+      name: dsh-chart

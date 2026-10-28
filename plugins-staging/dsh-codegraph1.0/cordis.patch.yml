@@ -1,0 +1,7 @@
+# Bundled Windows codegraph. frontload stays off so a structural prompt
+# does not insert an extra chat row.
+- insert:
+    - id: dsh-codegraph
+      name: dsh-codegraph
+      config:
+        frontload: false

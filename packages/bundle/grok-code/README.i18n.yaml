@@ -1,0 +1,49 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/bundle/grok-code/README.md
+/:
+  en: 5d5254dfc4980328
+  zh: a74756f0ec060dbb
+/deepseek-ai-dsh-grok-code:
+  en: ce4cd752ef09e04c
+  zh: 6f9f0b79286fe69f
+/deepseek-ai-dsh-grok-code/summary:
+  en: 839cc44baa196932
+  zh: 9fc21ae3fcfbba5f
+/deepseek-ai-dsh-grok-code/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: d152484eb41ac6b4
+/deepseek-ai-dsh-grok-code/use-this-package:
+  en: 37cada4603019544
+  zh: 034563d748ef4c91
+/deepseek-ai-dsh-grok-code/understand-the-implementation:
+  en: a62b4907950eb1aa
+  zh: a24bf0563e68edb9
+/deepseek-ai-dsh-grok-code/understand-the-implementation/source-map:
+  en: 1edb5204239302c5
+  zh: a73193619d58c486
+/deepseek-ai-dsh-grok-code/further-exploration:
+  en: 6dae5c0947ff653d
+  zh: 740223c8b5cca579
+/deepseek-ai-dsh-grok-code/model-experience:
+  en: 215e7ba838619b7b
+  zh: 215e7ba838619b7b
+/deepseek-ai-dsh-grok-code/model-experience/grok-code-composition:
+  en: 905b9afb112205d3
+  zh: 67818da4a7d0b2c4
+/deepseek-ai-dsh-grok-code/model-experience/grok-code-composition/what-the-model-sees:
+  en: 69fb415c375e9cd8
+  zh: 1941c54e6cf8fd32
+/deepseek-ai-dsh-grok-code/model-experience/grok-code-composition/token-effect:
+  en: ae729257928a6725
+  zh: 54c9e24ceb40cfb3
+/deepseek-ai-dsh-grok-code/model-experience/grok-code-composition/kv-cache-effect:
+  en: 46e9a09d6c24ccad
+  zh: 3a31517ae55d3a86
+/deepseek-ai-dsh-grok-code/known-limitations-and-deferred-work:
+  en: 5e409e8590be42d3
+  zh: b31e8acd041a7f6d
+/deepseek-ai-dsh-grok-code/known-limitations-and-deferred-work/dev-note:
+  en: 811849b0b12ebcfd
+  zh: 369b632f3e3e6276

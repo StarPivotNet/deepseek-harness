@@ -1,0 +1,5 @@
+# Admit Windows workspaces on volumes DSH Desktop otherwise rejects
+# (exFAT, FAT32, network drives, uninspectable volumes).
+- insert:
+    - id: dsh-exfat-workspace
+      name: dsh-exfat-workspace

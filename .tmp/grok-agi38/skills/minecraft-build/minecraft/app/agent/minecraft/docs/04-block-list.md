@@ -1,0 +1,1101 @@
+# Block IDs and Properties
+
+This list enumerates every known block ID and the discrete property values that appear in its blockstate definitions. It's important to specify the correct properties when instantiating blocks.
+
+## How to Use This List
+
+Each entry shows a block ID followed by its properties and allowed values. Pass these properties directly as a dictionary to the `Block` constructor:
+
+```python
+# Format: property_name [allowed_values]
+# Example entry: minecraft:iron_bars: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+
+# To use: pass properties as {"property_name": "value"} - all values are strings!
+Block(
+    "minecraft:iron_bars",
+    catalog=catalog,
+    properties={"east": "true", "west": "true", "north": "false", "south": "false"},
+)
+```
+
+**Key points:**
+- Property values are **always strings** (e.g., `"true"` not `True`, `"1"` not `1`)
+- Blocks marked "no properties (single state)" don't need a `properties` argument
+- Connecting blocks (iron_bars, glass_pane, fences, walls, vines) accept `"true"` **and** `"false"` for directions; the table may only list `"true"` because that’s how the assets encode connections. Omit or set `"false"` to leave a side unconnected.
+- Slabs **require** a `type` property (`"bottom"`, `"top"`, or `"double"`); set it explicitly to avoid missing-property errors.
+- Provide properties directly; consult this list for names/values (e.g., stairs need `facing`/`half`/`shape`, logs need `axis`).
+
+### Common Patterns
+
+| Pattern | Example Blocks | Properties |
+|---------|---------------|------------|
+| Directional connections | iron_bars, glass_pane, fences, vines | `east/north/south/west`: `"true"` or `"false"` |
+| Facing | furnace, stairs | `facing`: `"north"`, `"south"`, `"east"`, `"west"` |
+| Axis (logs, pillars) | oak_log, chain, bone_block | `axis`: `"x"`, `"y"`, `"z"` |
+| Slab type | stone_slab, oak_slab | `type`: `"bottom"`, `"top"`, `"double"` |
+| Lit state | furnace, redstone_lamp, campfire | `lit`: `"true"` or `"false"` |
+
+---
+
+- `minecraft:acacia_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:acacia_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:acacia_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:acacia_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:acacia_hanging_sign`: no properties (single state)
+- `minecraft:acacia_leaves`: no properties (single state)
+- `minecraft:acacia_log`: axis [x, y, z]
+- `minecraft:acacia_planks`: no properties (single state)
+- `minecraft:acacia_pressure_plate`: powered [false, true]
+- `minecraft:acacia_sapling`: no properties (single state)
+- `minecraft:acacia_sign`: no properties (single state)
+- `minecraft:acacia_slab`: type [bottom, double, top]
+- `minecraft:acacia_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:acacia_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:acacia_wall_hanging_sign`: no properties (single state)
+- `minecraft:acacia_wall_sign`: no properties (single state)
+- `minecraft:acacia_wood`: axis [x, y, z]
+- `minecraft:activator_rail`: powered [false, true]; shape [ascending_east, ascending_north, ascending_south, ascending_west, east_west, north_south]
+- `minecraft:air`: no properties (single state)
+- `minecraft:allium`: no properties (single state)
+- `minecraft:amethyst_block`: no properties (single state)
+- `minecraft:amethyst_cluster`: facing [down, east, north, south, up, west]
+- `minecraft:ancient_debris`: no properties (single state)
+- `minecraft:andesite`: no properties (single state)
+- `minecraft:andesite_slab`: type [bottom, double, top]
+- `minecraft:andesite_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:andesite_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:anvil`: facing [east, north, south, west]
+- `minecraft:attached_melon_stem`: facing [east, north, south, west]
+- `minecraft:attached_pumpkin_stem`: facing [east, north, south, west]
+- `minecraft:azalea`: no properties (single state)
+- `minecraft:azalea_leaves`: no properties (single state)
+- `minecraft:azure_bluet`: no properties (single state)
+- `minecraft:bamboo`: age [0, 1]; leaves [large, small]
+- `minecraft:bamboo_block`: axis [x, y, z]
+- `minecraft:bamboo_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:bamboo_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:bamboo_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:bamboo_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:bamboo_hanging_sign`: no properties (single state)
+- `minecraft:bamboo_mosaic`: no properties (single state)
+- `minecraft:bamboo_mosaic_slab`: type [bottom, double, top]
+- `minecraft:bamboo_mosaic_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:bamboo_planks`: no properties (single state)
+- `minecraft:bamboo_pressure_plate`: powered [false, true]
+- `minecraft:bamboo_sapling`: no properties (single state)
+- `minecraft:bamboo_sign`: no properties (single state)
+- `minecraft:bamboo_slab`: type [bottom, double, top]
+- `minecraft:bamboo_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:bamboo_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:bamboo_wall_hanging_sign`: no properties (single state)
+- `minecraft:bamboo_wall_sign`: no properties (single state)
+- `minecraft:barrel`: facing [down, east, north, south, up, west]; open [false, true]
+- `minecraft:barrier`: no properties (single state)
+- `minecraft:basalt`: axis [x, y, z]
+- `minecraft:beacon`: no properties (single state)
+- `minecraft:bedrock`: no properties (single state)
+- `minecraft:bee_nest`: facing [east, north, south, west]; honey_level [0, 1, 2, 3, 4, 5]
+- `minecraft:beehive`: facing [east, north, south, west]; honey_level [0, 1, 2, 3, 4, 5]
+- `minecraft:beetroots`: age [0, 1, 2, 3]
+- `minecraft:bell`: attachment [ceiling, double_wall, floor, single_wall]; facing [east, north, south, west]
+- `minecraft:big_dripleaf`: facing [east, north, south, west]; tilt [full, none, partial, unstable]
+- `minecraft:big_dripleaf_stem`: facing [east, north, south, west]
+- `minecraft:birch_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:birch_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:birch_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:birch_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:birch_hanging_sign`: no properties (single state)
+- `minecraft:birch_leaves`: no properties (single state)
+- `minecraft:birch_log`: axis [x, y, z]
+- `minecraft:birch_planks`: no properties (single state)
+- `minecraft:birch_pressure_plate`: powered [false, true]
+- `minecraft:birch_sapling`: no properties (single state)
+- `minecraft:birch_sign`: no properties (single state)
+- `minecraft:birch_slab`: type [bottom, double, top]
+- `minecraft:birch_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:birch_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:birch_wall_hanging_sign`: no properties (single state)
+- `minecraft:birch_wall_sign`: no properties (single state)
+- `minecraft:birch_wood`: axis [x, y, z]
+- `minecraft:black_banner`: no properties (single state)
+- `minecraft:black_bed`: no properties (single state)
+- `minecraft:black_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:black_candle_cake`: lit [false, true]
+- `minecraft:black_carpet`: no properties (single state)
+- `minecraft:black_concrete`: no properties (single state)
+- `minecraft:black_concrete_powder`: no properties (single state)
+- `minecraft:black_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:black_shulker_box`: no properties (single state)
+- `minecraft:black_stained_glass`: no properties (single state)
+- `minecraft:black_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:black_terracotta`: no properties (single state)
+- `minecraft:black_wall_banner`: no properties (single state)
+- `minecraft:black_wool`: no properties (single state)
+- `minecraft:blackstone`: no properties (single state)
+- `minecraft:blackstone_slab`: type [bottom, double, top]
+- `minecraft:blackstone_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:blackstone_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:blast_furnace`: facing [east, north, south, west]; lit [false, true]
+- `minecraft:blue_banner`: no properties (single state)
+- `minecraft:blue_bed`: no properties (single state)
+- `minecraft:blue_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:blue_candle_cake`: lit [false, true]
+- `minecraft:blue_carpet`: no properties (single state)
+- `minecraft:blue_concrete`: no properties (single state)
+- `minecraft:blue_concrete_powder`: no properties (single state)
+- `minecraft:blue_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:blue_ice`: no properties (single state)
+- `minecraft:blue_orchid`: no properties (single state)
+- `minecraft:blue_shulker_box`: no properties (single state)
+- `minecraft:blue_stained_glass`: no properties (single state)
+- `minecraft:blue_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:blue_terracotta`: no properties (single state)
+- `minecraft:blue_wall_banner`: no properties (single state)
+- `minecraft:blue_wool`: no properties (single state)
+- `minecraft:bone_block`: axis [x, y, z]
+- `minecraft:bookshelf`: no properties (single state)
+- `minecraft:brain_coral`: no properties (single state)
+- `minecraft:brain_coral_block`: no properties (single state)
+- `minecraft:brain_coral_fan`: no properties (single state)
+- `minecraft:brain_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:brewing_stand`: has_bottle_0 [false, true]; has_bottle_1 [false, true]; has_bottle_2 [false, true]
+- `minecraft:brick_slab`: type [bottom, double, top]
+- `minecraft:brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:bricks`: no properties (single state)
+- `minecraft:brown_banner`: no properties (single state)
+- `minecraft:brown_bed`: no properties (single state)
+- `minecraft:brown_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:brown_candle_cake`: lit [false, true]
+- `minecraft:brown_carpet`: no properties (single state)
+- `minecraft:brown_concrete`: no properties (single state)
+- `minecraft:brown_concrete_powder`: no properties (single state)
+- `minecraft:brown_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:brown_mushroom`: no properties (single state)
+- `minecraft:brown_mushroom_block`: down [false, true]; east [false, true]; north [false, true]; south [false, true]; up [false, true]; west [false, true]
+- `minecraft:brown_shulker_box`: no properties (single state)
+- `minecraft:brown_stained_glass`: no properties (single state)
+- `minecraft:brown_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:brown_terracotta`: no properties (single state)
+- `minecraft:brown_wall_banner`: no properties (single state)
+- `minecraft:brown_wool`: no properties (single state)
+- `minecraft:bubble_column`: no properties (single state)
+- `minecraft:bubble_coral`: no properties (single state)
+- `minecraft:bubble_coral_block`: no properties (single state)
+- `minecraft:bubble_coral_fan`: no properties (single state)
+- `minecraft:bubble_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:budding_amethyst`: no properties (single state)
+- `minecraft:cactus`: no properties (single state)
+- `minecraft:cake`: bites [0, 1, 2, 3, 4, 5, 6]
+- `minecraft:calcite`: no properties (single state)
+- `minecraft:calibrated_sculk_sensor`: facing [east, north, south, west]; sculk_sensor_phase [active, cooldown, inactive]
+- `minecraft:campfire`: facing [east, north, south, west]; lit [false, true]
+- `minecraft:candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:candle_cake`: lit [false, true]
+- `minecraft:carrots`: age [0, 1, 2, 3, 4, 5, 6, 7]
+- `minecraft:cartography_table`: no properties (single state)
+- `minecraft:carved_pumpkin`: facing [east, north, south, west]
+- `minecraft:cauldron`: no properties (single state)
+- `minecraft:cave_air`: no properties (single state)
+- `minecraft:cave_vines`: berries [false, true]
+- `minecraft:cave_vines_plant`: berries [false, true]
+- `minecraft:chain`: axis [x, y, z]
+- `minecraft:chain_command_block`: conditional [false, true]; facing [down, east, north, south, up, west]
+- `minecraft:cherry_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:cherry_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:cherry_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:cherry_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:cherry_hanging_sign`: no properties (single state)
+- `minecraft:cherry_leaves`: no properties (single state)
+- `minecraft:cherry_log`: axis [x, y, z]
+- `minecraft:cherry_planks`: no properties (single state)
+- `minecraft:cherry_pressure_plate`: powered [false, true]
+- `minecraft:cherry_sapling`: no properties (single state)
+- `minecraft:cherry_sign`: no properties (single state)
+- `minecraft:cherry_slab`: type [bottom, double, top]
+- `minecraft:cherry_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:cherry_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:cherry_wall_hanging_sign`: no properties (single state)
+- `minecraft:cherry_wall_sign`: no properties (single state)
+- `minecraft:cherry_wood`: axis [x, y, z]
+- `minecraft:chest`: no properties (single state)
+- `minecraft:chipped_anvil`: facing [east, north, south, west]
+- `minecraft:chiseled_bookshelf`: facing [east, north, south, west]; slot_0_occupied [false, true]; slot_1_occupied [false, true]; slot_2_occupied [false, true]; slot_3_occupied [false, true]; slot_4_occupied [false, true]; slot_5_occupied [false, true]
+- `minecraft:chiseled_copper`: no properties (single state)
+- `minecraft:chiseled_deepslate`: no properties (single state)
+- `minecraft:chiseled_nether_bricks`: no properties (single state)
+- `minecraft:chiseled_polished_blackstone`: no properties (single state)
+- `minecraft:chiseled_quartz_block`: no properties (single state)
+- `minecraft:chiseled_red_sandstone`: no properties (single state)
+- `minecraft:chiseled_sandstone`: no properties (single state)
+- `minecraft:chiseled_stone_bricks`: no properties (single state)
+- `minecraft:chiseled_tuff`: no properties (single state)
+- `minecraft:chiseled_tuff_bricks`: no properties (single state)
+- `minecraft:chorus_flower`: age [0, 1, 2, 3, 4, 5]
+- `minecraft:chorus_plant`: down [false, true]; east [false, true]; north [false, true]; south [false, true]; up [false, true]; west [false, true]
+- `minecraft:clay`: no properties (single state)
+- `minecraft:coal_block`: no properties (single state)
+- `minecraft:coal_ore`: no properties (single state)
+- `minecraft:coarse_dirt`: no properties (single state)
+- `minecraft:cobbled_deepslate`: no properties (single state)
+- `minecraft:cobbled_deepslate_slab`: type [bottom, double, top]
+- `minecraft:cobbled_deepslate_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:cobbled_deepslate_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:cobblestone`: no properties (single state)
+- `minecraft:cobblestone_slab`: type [bottom, double, top]
+- `minecraft:cobblestone_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:cobblestone_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:cobweb`: no properties (single state)
+- `minecraft:cocoa`: age [0, 1, 2]; facing [east, north, south, west]
+- `minecraft:command_block`: conditional [false, true]; facing [down, east, north, south, up, west]
+- `minecraft:comparator`: facing [east, north, south, west]; mode [compare, subtract]; powered [false, true]
+- `minecraft:composter`: level [1, 2, 3, 4, 5, 6, 7, 8]
+- `minecraft:conduit`: no properties (single state)
+- `minecraft:copper_block`: no properties (single state)
+- `minecraft:copper_bulb`: lit [false, true]; powered [false, true]
+- `minecraft:copper_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:copper_grate`: no properties (single state)
+- `minecraft:copper_ore`: no properties (single state)
+- `minecraft:copper_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:cornflower`: no properties (single state)
+- `minecraft:cracked_deepslate_bricks`: no properties (single state)
+- `minecraft:cracked_deepslate_tiles`: no properties (single state)
+- `minecraft:cracked_nether_bricks`: no properties (single state)
+- `minecraft:cracked_polished_blackstone_bricks`: no properties (single state)
+- `minecraft:cracked_stone_bricks`: no properties (single state)
+- `minecraft:crafter`: crafting [false, true]; orientation [down_east, down_north, down_south, down_west, east_up, north_up, south_up, up_east, up_north, up_south, up_west, west_up]; triggered [false, true]
+- `minecraft:crafting_table`: no properties (single state)
+- `minecraft:creeper_head`: no properties (single state)
+- `minecraft:creeper_wall_head`: no properties (single state)
+- `minecraft:crimson_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:crimson_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:crimson_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:crimson_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:crimson_fungus`: no properties (single state)
+- `minecraft:crimson_hanging_sign`: no properties (single state)
+- `minecraft:crimson_hyphae`: axis [x, y, z]
+- `minecraft:crimson_nylium`: no properties (single state)
+- `minecraft:crimson_planks`: no properties (single state)
+- `minecraft:crimson_pressure_plate`: powered [false, true]
+- `minecraft:crimson_roots`: no properties (single state)
+- `minecraft:crimson_sign`: no properties (single state)
+- `minecraft:crimson_slab`: type [bottom, double, top]
+- `minecraft:crimson_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:crimson_stem`: axis [x, y, z]
+- `minecraft:crimson_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:crimson_wall_hanging_sign`: no properties (single state)
+- `minecraft:crimson_wall_sign`: no properties (single state)
+- `minecraft:crying_obsidian`: no properties (single state)
+- `minecraft:cut_copper`: no properties (single state)
+- `minecraft:cut_copper_slab`: type [bottom, double, top]
+- `minecraft:cut_copper_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:cut_red_sandstone`: no properties (single state)
+- `minecraft:cut_red_sandstone_slab`: type [bottom, double, top]
+- `minecraft:cut_sandstone`: no properties (single state)
+- `minecraft:cut_sandstone_slab`: type [bottom, double, top]
+- `minecraft:cyan_banner`: no properties (single state)
+- `minecraft:cyan_bed`: no properties (single state)
+- `minecraft:cyan_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:cyan_candle_cake`: lit [false, true]
+- `minecraft:cyan_carpet`: no properties (single state)
+- `minecraft:cyan_concrete`: no properties (single state)
+- `minecraft:cyan_concrete_powder`: no properties (single state)
+- `minecraft:cyan_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:cyan_shulker_box`: no properties (single state)
+- `minecraft:cyan_stained_glass`: no properties (single state)
+- `minecraft:cyan_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:cyan_terracotta`: no properties (single state)
+- `minecraft:cyan_wall_banner`: no properties (single state)
+- `minecraft:cyan_wool`: no properties (single state)
+- `minecraft:damaged_anvil`: facing [east, north, south, west]
+- `minecraft:dandelion`: no properties (single state)
+- `minecraft:dark_oak_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:dark_oak_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:dark_oak_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:dark_oak_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:dark_oak_hanging_sign`: no properties (single state)
+- `minecraft:dark_oak_leaves`: no properties (single state)
+- `minecraft:dark_oak_log`: axis [x, y, z]
+- `minecraft:dark_oak_planks`: no properties (single state)
+- `minecraft:dark_oak_pressure_plate`: powered [false, true]
+- `minecraft:dark_oak_sapling`: no properties (single state)
+- `minecraft:dark_oak_sign`: no properties (single state)
+- `minecraft:dark_oak_slab`: type [bottom, double, top]
+- `minecraft:dark_oak_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:dark_oak_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:dark_oak_wall_hanging_sign`: no properties (single state)
+- `minecraft:dark_oak_wall_sign`: no properties (single state)
+- `minecraft:dark_oak_wood`: axis [x, y, z]
+- `minecraft:dark_prismarine`: no properties (single state)
+- `minecraft:dark_prismarine_slab`: type [bottom, double, top]
+- `minecraft:dark_prismarine_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:daylight_detector`: inverted [false, true]
+- `minecraft:dead_brain_coral`: no properties (single state)
+- `minecraft:dead_brain_coral_block`: no properties (single state)
+- `minecraft:dead_brain_coral_fan`: no properties (single state)
+- `minecraft:dead_brain_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:dead_bubble_coral`: no properties (single state)
+- `minecraft:dead_bubble_coral_block`: no properties (single state)
+- `minecraft:dead_bubble_coral_fan`: no properties (single state)
+- `minecraft:dead_bubble_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:dead_bush`: no properties (single state)
+- `minecraft:dead_fire_coral`: no properties (single state)
+- `minecraft:dead_fire_coral_block`: no properties (single state)
+- `minecraft:dead_fire_coral_fan`: no properties (single state)
+- `minecraft:dead_fire_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:dead_horn_coral`: no properties (single state)
+- `minecraft:dead_horn_coral_block`: no properties (single state)
+- `minecraft:dead_horn_coral_fan`: no properties (single state)
+- `minecraft:dead_horn_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:dead_tube_coral`: no properties (single state)
+- `minecraft:dead_tube_coral_block`: no properties (single state)
+- `minecraft:dead_tube_coral_fan`: no properties (single state)
+- `minecraft:dead_tube_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:decorated_pot`: no properties (single state)
+- `minecraft:deepslate`: axis [x, y, z]
+- `minecraft:deepslate_brick_slab`: type [bottom, double, top]
+- `minecraft:deepslate_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:deepslate_brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:deepslate_bricks`: no properties (single state)
+- `minecraft:deepslate_coal_ore`: no properties (single state)
+- `minecraft:deepslate_copper_ore`: no properties (single state)
+- `minecraft:deepslate_diamond_ore`: no properties (single state)
+- `minecraft:deepslate_emerald_ore`: no properties (single state)
+- `minecraft:deepslate_gold_ore`: no properties (single state)
+- `minecraft:deepslate_iron_ore`: no properties (single state)
+- `minecraft:deepslate_lapis_ore`: no properties (single state)
+- `minecraft:deepslate_redstone_ore`: no properties (single state)
+- `minecraft:deepslate_tile_slab`: type [bottom, double, top]
+- `minecraft:deepslate_tile_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:deepslate_tile_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:deepslate_tiles`: no properties (single state)
+- `minecraft:detector_rail`: powered [false, true]; shape [ascending_east, ascending_north, ascending_south, ascending_west, east_west, north_south]
+- `minecraft:diamond_block`: no properties (single state)
+- `minecraft:diamond_ore`: no properties (single state)
+- `minecraft:diorite`: no properties (single state)
+- `minecraft:diorite_slab`: type [bottom, double, top]
+- `minecraft:diorite_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:diorite_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:dirt`: no properties (single state)
+- `minecraft:dirt_path`: no properties (single state)
+- `minecraft:dispenser`: facing [down, east, north, south, up, west]
+- `minecraft:dragon_egg`: no properties (single state)
+- `minecraft:dragon_head`: no properties (single state)
+- `minecraft:dragon_wall_head`: no properties (single state)
+- `minecraft:dried_kelp_block`: no properties (single state)
+- `minecraft:dripstone_block`: no properties (single state)
+- `minecraft:dropper`: facing [down, east, north, south, up, west]
+- `minecraft:emerald_block`: no properties (single state)
+- `minecraft:emerald_ore`: no properties (single state)
+- `minecraft:enchanting_table`: no properties (single state)
+- `minecraft:end_gateway`: no properties (single state)
+- `minecraft:end_portal`: no properties (single state)
+- `minecraft:end_portal_frame`: eye [false, true]; facing [east, north, south, west]
+- `minecraft:end_rod`: facing [down, east, north, south, up, west]
+- `minecraft:end_stone`: no properties (single state)
+- `minecraft:end_stone_brick_slab`: type [bottom, double, top]
+- `minecraft:end_stone_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:end_stone_brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:end_stone_bricks`: no properties (single state)
+- `minecraft:ender_chest`: no properties (single state)
+- `minecraft:exposed_chiseled_copper`: no properties (single state)
+- `minecraft:exposed_copper`: no properties (single state)
+- `minecraft:exposed_copper_bulb`: lit [false, true]; powered [false, true]
+- `minecraft:exposed_copper_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:exposed_copper_grate`: no properties (single state)
+- `minecraft:exposed_copper_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:exposed_cut_copper`: no properties (single state)
+- `minecraft:exposed_cut_copper_slab`: type [bottom, double, top]
+- `minecraft:exposed_cut_copper_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:farmland`: moisture [0, 1, 2, 3, 4, 5, 6, 7]
+- `minecraft:fern`: no properties (single state)
+- `minecraft:fire`: east [false, true]; north [false, true]; south [false, true]; up [false, true]; west [false, true]
+- `minecraft:fire_coral`: no properties (single state)
+- `minecraft:fire_coral_block`: no properties (single state)
+- `minecraft:fire_coral_fan`: no properties (single state)
+- `minecraft:fire_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:fletching_table`: no properties (single state)
+- `minecraft:flower_pot`: no properties (single state)
+- `minecraft:flowering_azalea`: no properties (single state)
+- `minecraft:flowering_azalea_leaves`: no properties (single state)
+- `minecraft:frogspawn`: no properties (single state)
+- `minecraft:frosted_ice`: age [0, 1, 2, 3]
+- `minecraft:furnace`: facing [east, north, south, west]; lit [false, true]
+- `minecraft:gilded_blackstone`: no properties (single state)
+- `minecraft:glass`: no properties (single state)
+- `minecraft:glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:glow_item_frame`: map [false, true]
+- `minecraft:glow_lichen`: down [false, true]; east [false, true]; north [false, true]; south [false, true]; up [false, true]; west [false, true]
+- `minecraft:glowstone`: no properties (single state)
+- `minecraft:gold_block`: no properties (single state)
+- `minecraft:gold_ore`: no properties (single state)
+- `minecraft:granite`: no properties (single state)
+- `minecraft:granite_slab`: type [bottom, double, top]
+- `minecraft:granite_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:granite_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:grass_block`: snowy [false, true]
+- `minecraft:gravel`: no properties (single state)
+- `minecraft:gray_banner`: no properties (single state)
+- `minecraft:gray_bed`: no properties (single state)
+- `minecraft:gray_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:gray_candle_cake`: lit [false, true]
+- `minecraft:gray_carpet`: no properties (single state)
+- `minecraft:gray_concrete`: no properties (single state)
+- `minecraft:gray_concrete_powder`: no properties (single state)
+- `minecraft:gray_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:gray_shulker_box`: no properties (single state)
+- `minecraft:gray_stained_glass`: no properties (single state)
+- `minecraft:gray_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:gray_terracotta`: no properties (single state)
+- `minecraft:gray_wall_banner`: no properties (single state)
+- `minecraft:gray_wool`: no properties (single state)
+- `minecraft:green_banner`: no properties (single state)
+- `minecraft:green_bed`: no properties (single state)
+- `minecraft:green_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:green_candle_cake`: lit [false, true]
+- `minecraft:green_carpet`: no properties (single state)
+- `minecraft:green_concrete`: no properties (single state)
+- `minecraft:green_concrete_powder`: no properties (single state)
+- `minecraft:green_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:green_shulker_box`: no properties (single state)
+- `minecraft:green_stained_glass`: no properties (single state)
+- `minecraft:green_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:green_terracotta`: no properties (single state)
+- `minecraft:green_wall_banner`: no properties (single state)
+- `minecraft:green_wool`: no properties (single state)
+- `minecraft:grindstone`: face [ceiling, floor, wall]; facing [east, north, south, west]
+- `minecraft:hanging_roots`: no properties (single state)
+- `minecraft:hay_block`: axis [x, y, z]
+- `minecraft:heavy_core`: no properties (single state)
+- `minecraft:heavy_weighted_pressure_plate`: power [0, 1, 10, 11, 12, 13, 14, 15, 2, 3, 4, 5, 6, 7, 8, 9]
+- `minecraft:honey_block`: no properties (single state)
+- `minecraft:honeycomb_block`: no properties (single state)
+- `minecraft:hopper`: facing [down, east, north, south, west]
+- `minecraft:horn_coral`: no properties (single state)
+- `minecraft:horn_coral_block`: no properties (single state)
+- `minecraft:horn_coral_fan`: no properties (single state)
+- `minecraft:horn_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:ice`: no properties (single state)
+- `minecraft:infested_chiseled_stone_bricks`: no properties (single state)
+- `minecraft:infested_cobblestone`: no properties (single state)
+- `minecraft:infested_cracked_stone_bricks`: no properties (single state)
+- `minecraft:infested_deepslate`: axis [x, y, z]
+- `minecraft:infested_mossy_stone_bricks`: no properties (single state)
+- `minecraft:infested_stone`: no properties (single state)
+- `minecraft:infested_stone_bricks`: no properties (single state)
+- `minecraft:iron_bars`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:iron_block`: no properties (single state)
+- `minecraft:iron_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:iron_ore`: no properties (single state)
+- `minecraft:iron_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:item_frame`: map [false, true]
+- `minecraft:jack_o_lantern`: facing [east, north, south, west]
+- `minecraft:jigsaw`: orientation [down_east, down_north, down_south, down_west, east_up, north_up, south_up, up_east, up_north, up_south, up_west, west_up]
+- `minecraft:jukebox`: no properties (single state)
+- `minecraft:jungle_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:jungle_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:jungle_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:jungle_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:jungle_hanging_sign`: no properties (single state)
+- `minecraft:jungle_leaves`: no properties (single state)
+- `minecraft:jungle_log`: axis [x, y, z]
+- `minecraft:jungle_planks`: no properties (single state)
+- `minecraft:jungle_pressure_plate`: powered [false, true]
+- `minecraft:jungle_sapling`: no properties (single state)
+- `minecraft:jungle_sign`: no properties (single state)
+- `minecraft:jungle_slab`: type [bottom, double, top]
+- `minecraft:jungle_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:jungle_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:jungle_wall_hanging_sign`: no properties (single state)
+- `minecraft:jungle_wall_sign`: no properties (single state)
+- `minecraft:jungle_wood`: axis [x, y, z]
+- `minecraft:kelp`: no properties (single state)
+- `minecraft:kelp_plant`: no properties (single state)
+- `minecraft:ladder`: facing [east, north, south, west]
+- `minecraft:lantern`: hanging [false, true]
+- `minecraft:lapis_block`: no properties (single state)
+- `minecraft:lapis_ore`: no properties (single state)
+- `minecraft:large_amethyst_bud`: facing [down, east, north, south, up, west]
+- `minecraft:large_fern`: half [lower, upper]
+- `minecraft:lava`: no properties (single state)
+- `minecraft:lava_cauldron`: no properties (single state)
+- `minecraft:lectern`: facing [east, north, south, west]
+- `minecraft:lever`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:light`: level [0, 1, 10, 11, 12, 13, 14, 15, 2, 3, 4, 5, 6, 7, 8, 9]
+- `minecraft:light_blue_banner`: no properties (single state)
+- `minecraft:light_blue_bed`: no properties (single state)
+- `minecraft:light_blue_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:light_blue_candle_cake`: lit [false, true]
+- `minecraft:light_blue_carpet`: no properties (single state)
+- `minecraft:light_blue_concrete`: no properties (single state)
+- `minecraft:light_blue_concrete_powder`: no properties (single state)
+- `minecraft:light_blue_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:light_blue_shulker_box`: no properties (single state)
+- `minecraft:light_blue_stained_glass`: no properties (single state)
+- `minecraft:light_blue_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:light_blue_terracotta`: no properties (single state)
+- `minecraft:light_blue_wall_banner`: no properties (single state)
+- `minecraft:light_blue_wool`: no properties (single state)
+- `minecraft:light_gray_banner`: no properties (single state)
+- `minecraft:light_gray_bed`: no properties (single state)
+- `minecraft:light_gray_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:light_gray_candle_cake`: lit [false, true]
+- `minecraft:light_gray_carpet`: no properties (single state)
+- `minecraft:light_gray_concrete`: no properties (single state)
+- `minecraft:light_gray_concrete_powder`: no properties (single state)
+- `minecraft:light_gray_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:light_gray_shulker_box`: no properties (single state)
+- `minecraft:light_gray_stained_glass`: no properties (single state)
+- `minecraft:light_gray_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:light_gray_terracotta`: no properties (single state)
+- `minecraft:light_gray_wall_banner`: no properties (single state)
+- `minecraft:light_gray_wool`: no properties (single state)
+- `minecraft:light_weighted_pressure_plate`: power [0, 1, 10, 11, 12, 13, 14, 15, 2, 3, 4, 5, 6, 7, 8, 9]
+- `minecraft:lightning_rod`: facing [down, east, north, south, up, west]; powered [false, true]
+- `minecraft:lilac`: half [lower, upper]
+- `minecraft:lily_of_the_valley`: no properties (single state)
+- `minecraft:lily_pad`: no properties (single state)
+- `minecraft:lime_banner`: no properties (single state)
+- `minecraft:lime_bed`: no properties (single state)
+- `minecraft:lime_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:lime_candle_cake`: lit [false, true]
+- `minecraft:lime_carpet`: no properties (single state)
+- `minecraft:lime_concrete`: no properties (single state)
+- `minecraft:lime_concrete_powder`: no properties (single state)
+- `minecraft:lime_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:lime_shulker_box`: no properties (single state)
+- `minecraft:lime_stained_glass`: no properties (single state)
+- `minecraft:lime_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:lime_terracotta`: no properties (single state)
+- `minecraft:lime_wall_banner`: no properties (single state)
+- `minecraft:lime_wool`: no properties (single state)
+- `minecraft:lodestone`: no properties (single state)
+- `minecraft:loom`: facing [east, north, south, west]
+- `minecraft:magenta_banner`: no properties (single state)
+- `minecraft:magenta_bed`: no properties (single state)
+- `minecraft:magenta_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:magenta_candle_cake`: lit [false, true]
+- `minecraft:magenta_carpet`: no properties (single state)
+- `minecraft:magenta_concrete`: no properties (single state)
+- `minecraft:magenta_concrete_powder`: no properties (single state)
+- `minecraft:magenta_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:magenta_shulker_box`: no properties (single state)
+- `minecraft:magenta_stained_glass`: no properties (single state)
+- `minecraft:magenta_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:magenta_terracotta`: no properties (single state)
+- `minecraft:magenta_wall_banner`: no properties (single state)
+- `minecraft:magenta_wool`: no properties (single state)
+- `minecraft:magma_block`: no properties (single state)
+- `minecraft:mangrove_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:mangrove_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:mangrove_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:mangrove_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:mangrove_hanging_sign`: no properties (single state)
+- `minecraft:mangrove_leaves`: no properties (single state)
+- `minecraft:mangrove_log`: axis [x, y, z]
+- `minecraft:mangrove_planks`: no properties (single state)
+- `minecraft:mangrove_pressure_plate`: powered [false, true]
+- `minecraft:mangrove_propagule`: age [0, 1, 2, 3, 4]; hanging [false, true]
+- `minecraft:mangrove_roots`: no properties (single state)
+- `minecraft:mangrove_sign`: no properties (single state)
+- `minecraft:mangrove_slab`: type [bottom, double, top]
+- `minecraft:mangrove_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:mangrove_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:mangrove_wall_hanging_sign`: no properties (single state)
+- `minecraft:mangrove_wall_sign`: no properties (single state)
+- `minecraft:mangrove_wood`: axis [x, y, z]
+- `minecraft:medium_amethyst_bud`: facing [down, east, north, south, up, west]
+- `minecraft:melon`: no properties (single state)
+- `minecraft:melon_stem`: age [0, 1, 2, 3, 4, 5, 6, 7]
+- `minecraft:moss_block`: no properties (single state)
+- `minecraft:moss_carpet`: no properties (single state)
+- `minecraft:mossy_cobblestone`: no properties (single state)
+- `minecraft:mossy_cobblestone_slab`: type [bottom, double, top]
+- `minecraft:mossy_cobblestone_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:mossy_cobblestone_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:mossy_stone_brick_slab`: type [bottom, double, top]
+- `minecraft:mossy_stone_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:mossy_stone_brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:mossy_stone_bricks`: no properties (single state)
+- `minecraft:moving_piston`: no properties (single state)
+- `minecraft:mud`: no properties (single state)
+- `minecraft:mud_brick_slab`: type [bottom, double, top]
+- `minecraft:mud_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:mud_brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:mud_bricks`: no properties (single state)
+- `minecraft:muddy_mangrove_roots`: axis [x, y, z]
+- `minecraft:mushroom_stem`: down [false, true]; east [false, true]; north [false, true]; south [false, true]; up [false, true]; west [false, true]
+- `minecraft:mycelium`: snowy [false, true]
+- `minecraft:nether_brick_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:nether_brick_slab`: type [bottom, double, top]
+- `minecraft:nether_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:nether_brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:nether_bricks`: no properties (single state)
+- `minecraft:nether_gold_ore`: no properties (single state)
+- `minecraft:nether_portal`: axis [x, z]
+- `minecraft:nether_quartz_ore`: no properties (single state)
+- `minecraft:nether_sprouts`: no properties (single state)
+- `minecraft:nether_wart`: age [0, 1, 2, 3]
+- `minecraft:nether_wart_block`: no properties (single state)
+- `minecraft:netherite_block`: no properties (single state)
+- `minecraft:netherrack`: no properties (single state)
+- `minecraft:note_block`: no properties (single state)
+- `minecraft:oak_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:oak_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:oak_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:oak_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:oak_hanging_sign`: no properties (single state)
+- `minecraft:oak_leaves`: no properties (single state)
+- `minecraft:oak_log`: axis [x, y, z]
+- `minecraft:oak_planks`: no properties (single state)
+- `minecraft:oak_pressure_plate`: powered [false, true]
+- `minecraft:oak_sapling`: no properties (single state)
+- `minecraft:oak_sign`: no properties (single state)
+- `minecraft:oak_slab`: type [bottom, double, top]
+- `minecraft:oak_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:oak_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:oak_wall_hanging_sign`: no properties (single state)
+- `minecraft:oak_wall_sign`: no properties (single state)
+- `minecraft:oak_wood`: axis [x, y, z]
+- `minecraft:observer`: facing [down, east, north, south, up, west]; powered [false, true]
+- `minecraft:obsidian`: no properties (single state)
+- `minecraft:ochre_froglight`: axis [x, y, z]
+- `minecraft:orange_banner`: no properties (single state)
+- `minecraft:orange_bed`: no properties (single state)
+- `minecraft:orange_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:orange_candle_cake`: lit [false, true]
+- `minecraft:orange_carpet`: no properties (single state)
+- `minecraft:orange_concrete`: no properties (single state)
+- `minecraft:orange_concrete_powder`: no properties (single state)
+- `minecraft:orange_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:orange_shulker_box`: no properties (single state)
+- `minecraft:orange_stained_glass`: no properties (single state)
+- `minecraft:orange_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:orange_terracotta`: no properties (single state)
+- `minecraft:orange_tulip`: no properties (single state)
+- `minecraft:orange_wall_banner`: no properties (single state)
+- `minecraft:orange_wool`: no properties (single state)
+- `minecraft:oxeye_daisy`: no properties (single state)
+- `minecraft:oxidized_chiseled_copper`: no properties (single state)
+- `minecraft:oxidized_copper`: no properties (single state)
+- `minecraft:oxidized_copper_bulb`: lit [false, true]; powered [false, true]
+- `minecraft:oxidized_copper_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:oxidized_copper_grate`: no properties (single state)
+- `minecraft:oxidized_copper_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:oxidized_cut_copper`: no properties (single state)
+- `minecraft:oxidized_cut_copper_slab`: type [bottom, double, top]
+- `minecraft:oxidized_cut_copper_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:packed_ice`: no properties (single state)
+- `minecraft:packed_mud`: no properties (single state)
+- `minecraft:pearlescent_froglight`: axis [x, y, z]
+- `minecraft:peony`: half [lower, upper]
+- `minecraft:petrified_oak_slab`: type [bottom, double, top]
+- `minecraft:piglin_head`: no properties (single state)
+- `minecraft:piglin_wall_head`: no properties (single state)
+- `minecraft:pink_banner`: no properties (single state)
+- `minecraft:pink_bed`: no properties (single state)
+- `minecraft:pink_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:pink_candle_cake`: lit [false, true]
+- `minecraft:pink_carpet`: no properties (single state)
+- `minecraft:pink_concrete`: no properties (single state)
+- `minecraft:pink_concrete_powder`: no properties (single state)
+- `minecraft:pink_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:pink_petals`: facing [east, north, south, west]; flower_amount [1|2|3|4, 2|3|4, 3|4, 4]
+- `minecraft:pink_shulker_box`: no properties (single state)
+- `minecraft:pink_stained_glass`: no properties (single state)
+- `minecraft:pink_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:pink_terracotta`: no properties (single state)
+- `minecraft:pink_tulip`: no properties (single state)
+- `minecraft:pink_wall_banner`: no properties (single state)
+- `minecraft:pink_wool`: no properties (single state)
+- `minecraft:piston`: extended [false, true]; facing [down, east, north, south, up, west]
+- `minecraft:piston_head`: facing [down, east, north, south, up, west]; short [false, true]; type [normal, sticky]
+- `minecraft:pitcher_crop`: age [0, 1, 2, 3, 4]; half [lower, upper]
+- `minecraft:pitcher_plant`: half [lower, upper]
+- `minecraft:player_head`: no properties (single state)
+- `minecraft:player_wall_head`: no properties (single state)
+- `minecraft:podzol`: snowy [false, true]
+- `minecraft:pointed_dripstone`: thickness [base, frustum, middle, tip, tip_merge]; vertical_direction [down, up]
+- `minecraft:polished_andesite`: no properties (single state)
+- `minecraft:polished_andesite_slab`: type [bottom, double, top]
+- `minecraft:polished_andesite_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:polished_basalt`: axis [x, y, z]
+- `minecraft:polished_blackstone`: no properties (single state)
+- `minecraft:polished_blackstone_brick_slab`: type [bottom, double, top]
+- `minecraft:polished_blackstone_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:polished_blackstone_brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:polished_blackstone_bricks`: no properties (single state)
+- `minecraft:polished_blackstone_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:polished_blackstone_pressure_plate`: powered [false, true]
+- `minecraft:polished_blackstone_slab`: type [bottom, double, top]
+- `minecraft:polished_blackstone_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:polished_blackstone_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:polished_deepslate`: no properties (single state)
+- `minecraft:polished_deepslate_slab`: type [bottom, double, top]
+- `minecraft:polished_deepslate_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:polished_deepslate_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:polished_diorite`: no properties (single state)
+- `minecraft:polished_diorite_slab`: type [bottom, double, top]
+- `minecraft:polished_diorite_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:polished_granite`: no properties (single state)
+- `minecraft:polished_granite_slab`: type [bottom, double, top]
+- `minecraft:polished_granite_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:polished_tuff`: no properties (single state)
+- `minecraft:polished_tuff_slab`: type [bottom, double, top]
+- `minecraft:polished_tuff_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:polished_tuff_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:poppy`: no properties (single state)
+- `minecraft:potatoes`: age [0, 1, 2, 3, 4, 5, 6, 7]
+- `minecraft:potted_acacia_sapling`: no properties (single state)
+- `minecraft:potted_allium`: no properties (single state)
+- `minecraft:potted_azalea_bush`: no properties (single state)
+- `minecraft:potted_azure_bluet`: no properties (single state)
+- `minecraft:potted_bamboo`: no properties (single state)
+- `minecraft:potted_birch_sapling`: no properties (single state)
+- `minecraft:potted_blue_orchid`: no properties (single state)
+- `minecraft:potted_brown_mushroom`: no properties (single state)
+- `minecraft:potted_cactus`: no properties (single state)
+- `minecraft:potted_cherry_sapling`: no properties (single state)
+- `minecraft:potted_cornflower`: no properties (single state)
+- `minecraft:potted_crimson_fungus`: no properties (single state)
+- `minecraft:potted_crimson_roots`: no properties (single state)
+- `minecraft:potted_dandelion`: no properties (single state)
+- `minecraft:potted_dark_oak_sapling`: no properties (single state)
+- `minecraft:potted_dead_bush`: no properties (single state)
+- `minecraft:potted_fern`: no properties (single state)
+- `minecraft:potted_flowering_azalea_bush`: no properties (single state)
+- `minecraft:potted_jungle_sapling`: no properties (single state)
+- `minecraft:potted_lily_of_the_valley`: no properties (single state)
+- `minecraft:potted_mangrove_propagule`: no properties (single state)
+- `minecraft:potted_oak_sapling`: no properties (single state)
+- `minecraft:potted_orange_tulip`: no properties (single state)
+- `minecraft:potted_oxeye_daisy`: no properties (single state)
+- `minecraft:potted_pink_tulip`: no properties (single state)
+- `minecraft:potted_poppy`: no properties (single state)
+- `minecraft:potted_red_mushroom`: no properties (single state)
+- `minecraft:potted_red_tulip`: no properties (single state)
+- `minecraft:potted_spruce_sapling`: no properties (single state)
+- `minecraft:potted_torchflower`: no properties (single state)
+- `minecraft:potted_warped_fungus`: no properties (single state)
+- `minecraft:potted_warped_roots`: no properties (single state)
+- `minecraft:potted_white_tulip`: no properties (single state)
+- `minecraft:potted_wither_rose`: no properties (single state)
+- `minecraft:powder_snow`: no properties (single state)
+- `minecraft:powder_snow_cauldron`: level [1, 2, 3]
+- `minecraft:powered_rail`: powered [false, true]; shape [ascending_east, ascending_north, ascending_south, ascending_west, east_west, north_south]
+- `minecraft:prismarine`: no properties (single state)
+- `minecraft:prismarine_brick_slab`: type [bottom, double, top]
+- `minecraft:prismarine_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:prismarine_bricks`: no properties (single state)
+- `minecraft:prismarine_slab`: type [bottom, double, top]
+- `minecraft:prismarine_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:prismarine_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:pumpkin`: no properties (single state)
+- `minecraft:pumpkin_stem`: age [0, 1, 2, 3, 4, 5, 6, 7]
+- `minecraft:purple_banner`: no properties (single state)
+- `minecraft:purple_bed`: no properties (single state)
+- `minecraft:purple_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:purple_candle_cake`: lit [false, true]
+- `minecraft:purple_carpet`: no properties (single state)
+- `minecraft:purple_concrete`: no properties (single state)
+- `minecraft:purple_concrete_powder`: no properties (single state)
+- `minecraft:purple_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:purple_shulker_box`: no properties (single state)
+- `minecraft:purple_stained_glass`: no properties (single state)
+- `minecraft:purple_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:purple_terracotta`: no properties (single state)
+- `minecraft:purple_wall_banner`: no properties (single state)
+- `minecraft:purple_wool`: no properties (single state)
+- `minecraft:purpur_block`: no properties (single state)
+- `minecraft:purpur_pillar`: axis [x, y, z]
+- `minecraft:purpur_slab`: type [bottom, double, top]
+- `minecraft:purpur_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:quartz_block`: no properties (single state)
+- `minecraft:quartz_bricks`: no properties (single state)
+- `minecraft:quartz_pillar`: axis [x, y, z]
+- `minecraft:quartz_slab`: type [bottom, double, top]
+- `minecraft:quartz_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:rail`: shape [ascending_east, ascending_north, ascending_south, ascending_west, east_west, north_east, north_south, north_west, south_east, south_west]
+- `minecraft:raw_copper_block`: no properties (single state)
+- `minecraft:raw_gold_block`: no properties (single state)
+- `minecraft:raw_iron_block`: no properties (single state)
+- `minecraft:red_banner`: no properties (single state)
+- `minecraft:red_bed`: no properties (single state)
+- `minecraft:red_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:red_candle_cake`: lit [false, true]
+- `minecraft:red_carpet`: no properties (single state)
+- `minecraft:red_concrete`: no properties (single state)
+- `minecraft:red_concrete_powder`: no properties (single state)
+- `minecraft:red_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:red_mushroom`: no properties (single state)
+- `minecraft:red_mushroom_block`: down [false, true]; east [false, true]; north [false, true]; south [false, true]; up [false, true]; west [false, true]
+- `minecraft:red_nether_brick_slab`: type [bottom, double, top]
+- `minecraft:red_nether_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:red_nether_brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:red_nether_bricks`: no properties (single state)
+- `minecraft:red_sand`: no properties (single state)
+- `minecraft:red_sandstone`: no properties (single state)
+- `minecraft:red_sandstone_slab`: type [bottom, double, top]
+- `minecraft:red_sandstone_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:red_sandstone_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:red_shulker_box`: no properties (single state)
+- `minecraft:red_stained_glass`: no properties (single state)
+- `minecraft:red_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:red_terracotta`: no properties (single state)
+- `minecraft:red_tulip`: no properties (single state)
+- `minecraft:red_wall_banner`: no properties (single state)
+- `minecraft:red_wool`: no properties (single state)
+- `minecraft:redstone_block`: no properties (single state)
+- `minecraft:redstone_lamp`: lit [false, true]
+- `minecraft:redstone_ore`: no properties (single state)
+- `minecraft:redstone_torch`: lit [false, true]
+- `minecraft:redstone_wall_torch`: facing [east, north, south, west]; lit [false, true]
+- `minecraft:redstone_wire`: east [none, side|up, up]; north [none, side|up, up]; south [none, side|up, up]; west [none, side|up, up]
+- `minecraft:reinforced_deepslate`: no properties (single state)
+- `minecraft:repeater`: delay [1, 2, 3, 4]; facing [east, north, south, west]; locked [false, true]; powered [false, true]
+- `minecraft:repeating_command_block`: conditional [false, true]; facing [down, east, north, south, up, west]
+- `minecraft:respawn_anchor`: charges [0, 1, 2, 3, 4]
+- `minecraft:rooted_dirt`: no properties (single state)
+- `minecraft:rose_bush`: half [lower, upper]
+- `minecraft:sand`: no properties (single state)
+- `minecraft:sandstone`: no properties (single state)
+- `minecraft:sandstone_slab`: type [bottom, double, top]
+- `minecraft:sandstone_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:sandstone_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:scaffolding`: bottom [false, true]
+- `minecraft:sculk`: no properties (single state)
+- `minecraft:sculk_catalyst`: bloom [false, true]
+- `minecraft:sculk_sensor`: sculk_sensor_phase [active, cooldown, inactive]
+- `minecraft:sculk_shrieker`: can_summon [false, true]
+- `minecraft:sculk_vein`: down [false, true]; east [false, true]; north [false, true]; south [false, true]; up [false, true]; west [false, true]
+- `minecraft:sea_lantern`: no properties (single state)
+- `minecraft:sea_pickle`: pickles [1, 2, 3, 4]; waterlogged [false, true]
+- `minecraft:seagrass`: no properties (single state)
+- `minecraft:short_grass`: no properties (single state)
+- `minecraft:shroomlight`: no properties (single state)
+- `minecraft:shulker_box`: no properties (single state)
+- `minecraft:skeleton_skull`: no properties (single state)
+- `minecraft:skeleton_wall_skull`: no properties (single state)
+- `minecraft:slime_block`: no properties (single state)
+- `minecraft:small_amethyst_bud`: facing [down, east, north, south, up, west]
+- `minecraft:small_dripleaf`: facing [east, north, south, west]; half [lower, upper]
+- `minecraft:smithing_table`: no properties (single state)
+- `minecraft:smoker`: facing [east, north, south, west]; lit [false, true]
+- `minecraft:smooth_basalt`: no properties (single state)
+- `minecraft:smooth_quartz`: no properties (single state)
+- `minecraft:smooth_quartz_slab`: type [bottom, double, top]
+- `minecraft:smooth_quartz_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:smooth_red_sandstone`: no properties (single state)
+- `minecraft:smooth_red_sandstone_slab`: type [bottom, double, top]
+- `minecraft:smooth_red_sandstone_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:smooth_sandstone`: no properties (single state)
+- `minecraft:smooth_sandstone_slab`: type [bottom, double, top]
+- `minecraft:smooth_sandstone_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:smooth_stone`: no properties (single state)
+- `minecraft:smooth_stone_slab`: type [bottom, double, top]
+- `minecraft:sniffer_egg`: hatch [0, 1, 2]
+- `minecraft:snow`: layers [1, 2, 3, 4, 5, 6, 7, 8]
+- `minecraft:snow_block`: no properties (single state)
+- `minecraft:soul_campfire`: facing [east, north, south, west]; lit [false, true]
+- `minecraft:soul_fire`: no properties (single state)
+- `minecraft:soul_lantern`: hanging [false, true]
+- `minecraft:soul_sand`: no properties (single state)
+- `minecraft:soul_soil`: no properties (single state)
+- `minecraft:soul_torch`: no properties (single state)
+- `minecraft:soul_wall_torch`: facing [east, north, south, west]
+- `minecraft:spawner`: no properties (single state)
+- `minecraft:sponge`: no properties (single state)
+- `minecraft:spore_blossom`: no properties (single state)
+- `minecraft:spruce_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:spruce_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:spruce_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:spruce_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:spruce_hanging_sign`: no properties (single state)
+- `minecraft:spruce_leaves`: no properties (single state)
+- `minecraft:spruce_log`: axis [x, y, z]
+- `minecraft:spruce_planks`: no properties (single state)
+- `minecraft:spruce_pressure_plate`: powered [false, true]
+- `minecraft:spruce_sapling`: no properties (single state)
+- `minecraft:spruce_sign`: no properties (single state)
+- `minecraft:spruce_slab`: type [bottom, double, top]
+- `minecraft:spruce_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:spruce_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:spruce_wall_hanging_sign`: no properties (single state)
+- `minecraft:spruce_wall_sign`: no properties (single state)
+- `minecraft:spruce_wood`: axis [x, y, z]
+- `minecraft:sticky_piston`: extended [false, true]; facing [down, east, north, south, up, west]
+- `minecraft:stone`: no properties (single state)
+- `minecraft:stone_brick_slab`: type [bottom, double, top]
+- `minecraft:stone_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:stone_brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:stone_bricks`: no properties (single state)
+- `minecraft:stone_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:stone_pressure_plate`: powered [false, true]
+- `minecraft:stone_slab`: type [bottom, double, top]
+- `minecraft:stone_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:stonecutter`: facing [east, north, south, west]
+- `minecraft:stripped_acacia_log`: axis [x, y, z]
+- `minecraft:stripped_acacia_wood`: axis [x, y, z]
+- `minecraft:stripped_bamboo_block`: axis [x, y, z]
+- `minecraft:stripped_birch_log`: axis [x, y, z]
+- `minecraft:stripped_birch_wood`: axis [x, y, z]
+- `minecraft:stripped_cherry_log`: axis [x, y, z]
+- `minecraft:stripped_cherry_wood`: axis [x, y, z]
+- `minecraft:stripped_crimson_hyphae`: axis [x, y, z]
+- `minecraft:stripped_crimson_stem`: axis [x, y, z]
+- `minecraft:stripped_dark_oak_log`: axis [x, y, z]
+- `minecraft:stripped_dark_oak_wood`: axis [x, y, z]
+- `minecraft:stripped_jungle_log`: axis [x, y, z]
+- `minecraft:stripped_jungle_wood`: axis [x, y, z]
+- `minecraft:stripped_mangrove_log`: axis [x, y, z]
+- `minecraft:stripped_mangrove_wood`: axis [x, y, z]
+- `minecraft:stripped_oak_log`: axis [x, y, z]
+- `minecraft:stripped_oak_wood`: axis [x, y, z]
+- `minecraft:stripped_spruce_log`: axis [x, y, z]
+- `minecraft:stripped_spruce_wood`: axis [x, y, z]
+- `minecraft:stripped_warped_hyphae`: axis [x, y, z]
+- `minecraft:stripped_warped_stem`: axis [x, y, z]
+- `minecraft:structure_block`: mode [corner, data, load, save]
+- `minecraft:structure_void`: no properties (single state)
+- `minecraft:sugar_cane`: no properties (single state)
+- `minecraft:sunflower`: half [lower, upper]
+- `minecraft:suspicious_gravel`: dusted [0, 1, 2, 3]
+- `minecraft:suspicious_sand`: dusted [0, 1, 2, 3]
+- `minecraft:sweet_berry_bush`: age [0, 1, 2, 3]
+- `minecraft:tall_grass`: half [lower, upper]
+- `minecraft:tall_seagrass`: half [lower, upper]
+- `minecraft:target`: no properties (single state)
+- `minecraft:terracotta`: no properties (single state)
+- `minecraft:tinted_glass`: no properties (single state)
+- `minecraft:tnt`: no properties (single state)
+- `minecraft:torch`: no properties (single state)
+- `minecraft:torchflower`: no properties (single state)
+- `minecraft:torchflower_crop`: age [0, 1]
+- `minecraft:trapped_chest`: no properties (single state)
+- `minecraft:trial_spawner`: ominous [false, true]; trial_spawner_state [active, cooldown, ejecting_reward, inactive, waiting_for_players, waiting_for_reward_ejection]
+- `minecraft:tripwire`: attached [false, true]; east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:tripwire_hook`: attached [false, true]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:tube_coral`: no properties (single state)
+- `minecraft:tube_coral_block`: no properties (single state)
+- `minecraft:tube_coral_fan`: no properties (single state)
+- `minecraft:tube_coral_wall_fan`: facing [east, north, south, west]
+- `minecraft:tuff`: no properties (single state)
+- `minecraft:tuff_brick_slab`: type [bottom, double, top]
+- `minecraft:tuff_brick_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:tuff_brick_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:tuff_bricks`: no properties (single state)
+- `minecraft:tuff_slab`: type [bottom, double, top]
+- `minecraft:tuff_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:tuff_wall`: east [low, tall]; north [low, tall]; south [low, tall]; up [true]; west [low, tall]
+- `minecraft:turtle_egg`: eggs [1, 2, 3, 4]; hatch [0, 1, 2]
+- `minecraft:twisting_vines`: no properties (single state)
+- `minecraft:twisting_vines_plant`: no properties (single state)
+- `minecraft:vault`: facing [east, north, south, west]; ominous [false, true]; vault_state [active, ejecting, inactive, unlocking]
+- `minecraft:verdant_froglight`: axis [x, y, z]
+- `minecraft:vine`: east [false, true]; north [false, true]; south [false, true]; up [false, true]; west [false, true]
+- `minecraft:void_air`: no properties (single state)
+- `minecraft:wall_torch`: facing [east, north, south, west]
+- `minecraft:warped_button`: face [ceiling, floor, wall]; facing [east, north, south, west]; powered [false, true]
+- `minecraft:warped_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:warped_fence`: east [true]; north [true]; south [true]; west [true]
+- `minecraft:warped_fence_gate`: facing [east, north, south, west]; in_wall [false, true]; open [false, true]
+- `minecraft:warped_fungus`: no properties (single state)
+- `minecraft:warped_hanging_sign`: no properties (single state)
+- `minecraft:warped_hyphae`: axis [x, y, z]
+- `minecraft:warped_nylium`: no properties (single state)
+- `minecraft:warped_planks`: no properties (single state)
+- `minecraft:warped_pressure_plate`: powered [false, true]
+- `minecraft:warped_roots`: no properties (single state)
+- `minecraft:warped_sign`: no properties (single state)
+- `minecraft:warped_slab`: type [bottom, double, top]
+- `minecraft:warped_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:warped_stem`: axis [x, y, z]
+- `minecraft:warped_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:warped_wall_hanging_sign`: no properties (single state)
+- `minecraft:warped_wall_sign`: no properties (single state)
+- `minecraft:warped_wart_block`: no properties (single state)
+- `minecraft:water`: no properties (single state)
+- `minecraft:water_cauldron`: level [1, 2, 3]
+- `minecraft:waxed_chiseled_copper`: no properties (single state)
+- `minecraft:waxed_copper_block`: no properties (single state)
+- `minecraft:waxed_copper_bulb`: lit [false, true]; powered [false, true]
+- `minecraft:waxed_copper_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:waxed_copper_grate`: no properties (single state)
+- `minecraft:waxed_copper_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:waxed_cut_copper`: no properties (single state)
+- `minecraft:waxed_cut_copper_slab`: type [bottom, double, top]
+- `minecraft:waxed_cut_copper_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:waxed_exposed_chiseled_copper`: no properties (single state)
+- `minecraft:waxed_exposed_copper`: no properties (single state)
+- `minecraft:waxed_exposed_copper_bulb`: lit [false, true]; powered [false, true]
+- `minecraft:waxed_exposed_copper_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:waxed_exposed_copper_grate`: no properties (single state)
+- `minecraft:waxed_exposed_copper_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:waxed_exposed_cut_copper`: no properties (single state)
+- `minecraft:waxed_exposed_cut_copper_slab`: type [bottom, double, top]
+- `minecraft:waxed_exposed_cut_copper_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:waxed_oxidized_chiseled_copper`: no properties (single state)
+- `minecraft:waxed_oxidized_copper`: no properties (single state)
+- `minecraft:waxed_oxidized_copper_bulb`: lit [false, true]; powered [false, true]
+- `minecraft:waxed_oxidized_copper_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:waxed_oxidized_copper_grate`: no properties (single state)
+- `minecraft:waxed_oxidized_copper_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:waxed_oxidized_cut_copper`: no properties (single state)
+- `minecraft:waxed_oxidized_cut_copper_slab`: type [bottom, double, top]
+- `minecraft:waxed_oxidized_cut_copper_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:waxed_weathered_chiseled_copper`: no properties (single state)
+- `minecraft:waxed_weathered_copper`: no properties (single state)
+- `minecraft:waxed_weathered_copper_bulb`: lit [false, true]; powered [false, true]
+- `minecraft:waxed_weathered_copper_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:waxed_weathered_copper_grate`: no properties (single state)
+- `minecraft:waxed_weathered_copper_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:waxed_weathered_cut_copper`: no properties (single state)
+- `minecraft:waxed_weathered_cut_copper_slab`: type [bottom, double, top]
+- `minecraft:waxed_weathered_cut_copper_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:weathered_chiseled_copper`: no properties (single state)
+- `minecraft:weathered_copper`: no properties (single state)
+- `minecraft:weathered_copper_bulb`: lit [false, true]; powered [false, true]
+- `minecraft:weathered_copper_door`: facing [east, north, south, west]; half [lower, upper]; hinge [left, right]; open [false, true]
+- `minecraft:weathered_copper_grate`: no properties (single state)
+- `minecraft:weathered_copper_trapdoor`: facing [east, north, south, west]; half [bottom, top]; open [false, true]
+- `minecraft:weathered_cut_copper`: no properties (single state)
+- `minecraft:weathered_cut_copper_slab`: type [bottom, double, top]
+- `minecraft:weathered_cut_copper_stairs`: facing [east, north, south, west]; half [bottom, top]; shape [inner_left, inner_right, outer_left, outer_right, straight]
+- `minecraft:weeping_vines`: no properties (single state)
+- `minecraft:weeping_vines_plant`: no properties (single state)
+- `minecraft:wet_sponge`: no properties (single state)
+- `minecraft:wheat`: age [0, 1, 2, 3, 4, 5, 6, 7]
+- `minecraft:white_banner`: no properties (single state)
+- `minecraft:white_bed`: no properties (single state)
+- `minecraft:white_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:white_candle_cake`: lit [false, true]
+- `minecraft:white_carpet`: no properties (single state)
+- `minecraft:white_concrete`: no properties (single state)
+- `minecraft:white_concrete_powder`: no properties (single state)
+- `minecraft:white_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:white_shulker_box`: no properties (single state)
+- `minecraft:white_stained_glass`: no properties (single state)
+- `minecraft:white_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:white_terracotta`: no properties (single state)
+- `minecraft:white_tulip`: no properties (single state)
+- `minecraft:white_wall_banner`: no properties (single state)
+- `minecraft:white_wool`: no properties (single state)
+- `minecraft:wither_rose`: no properties (single state)
+- `minecraft:wither_skeleton_skull`: no properties (single state)
+- `minecraft:wither_skeleton_wall_skull`: no properties (single state)
+- `minecraft:yellow_banner`: no properties (single state)
+- `minecraft:yellow_bed`: no properties (single state)
+- `minecraft:yellow_candle`: candles [1, 2, 3, 4]; lit [false, true]
+- `minecraft:yellow_candle_cake`: lit [false, true]
+- `minecraft:yellow_carpet`: no properties (single state)
+- `minecraft:yellow_concrete`: no properties (single state)
+- `minecraft:yellow_concrete_powder`: no properties (single state)
+- `minecraft:yellow_glazed_terracotta`: facing [east, north, south, west]
+- `minecraft:yellow_shulker_box`: no properties (single state)
+- `minecraft:yellow_stained_glass`: no properties (single state)
+- `minecraft:yellow_stained_glass_pane`: east [false, true]; north [false, true]; south [false, true]; west [false, true]
+- `minecraft:yellow_terracotta`: no properties (single state)
+- `minecraft:yellow_wall_banner`: no properties (single state)
+- `minecraft:yellow_wool`: no properties (single state)
+- `minecraft:zombie_head`: no properties (single state)
+- `minecraft:zombie_wall_head`: no properties (single state)

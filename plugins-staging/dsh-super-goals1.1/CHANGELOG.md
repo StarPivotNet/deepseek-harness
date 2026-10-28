@@ -1,0 +1,70 @@
+# Changelog
+
+本插件遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与语义化版本。
+
+## [Unreleased]
+### Removed
+- 删除已失效的人审队列：`super_goals_edit` 继续当场生效，`board.json` 不再写 `pendingApprovals` / `apSeq`，`POST /approve` 删除。读旧板时丢掉这两个字段，不回写文件。
+- 删除已失效的 L7 越界拦截：`src/guard.ts`、`enforceScope` 配置与 `POST /guard` 均删除。write/edit 仍不按 doing 任务 scope 拒绝。
+
+## [0.3.0] - 2026-09-27
+### Changed
+- 不再把每次工具调用追加到 `<DSH_HOME>/dsh-super-goals/tool-calls.jsonl`。越界拦截仍然关闭：write/edit 不按 doing 任务 scope 拒绝。`observeTools` 与 `stateDir` 配置键已删除。
+- 插件身份从 `dsh-plan-board` 改为 `dsh-super-goals`：npm 包 `@dsh-external/dsh-super-goals`、host `name` / cordis `id` / HTTP 前缀 `/_dsh/dsh-super-goals` / 面板文案 SuperGoals。工具仍是 `super_goals_*`，落盘仍是 `<cwd>/.super-goals/<session>/board.json`。GitHub 仓仍是 `hoyyang/dsh-plan-board`。
+## [0.2.2] - 2026-09-16
+
+### Fixed
+- **入口按钮槽位 order 撞车修复**：header.utilities 注册 order 由 -1 改为 **-0.5**（升序槽位下的唯一插值：落在 android-pane(-1) 之右、SLog(0)/delete(1) 之左）。v0.2.0 从 android-pane 克隆注册骨架时复制了同值 order:-1，与 @dsh-external/dsh-android-pane 同槽同值，渲染顺序退化为「谁最后 reload 谁靠右」，两按钮随任一方热重载乒乓换位（09-16 12:55/12:57/17:04/18:00 四次实录）。改值后位置由 order 梯队固化，不再随 reload 翻面；终点态 = 设计基准 [billing(-2)][Android(-1)][PlanBoard(-0.5)]，PlanBoard 右缘回到 1160px 锚位。
+
+## [0.2.1] - 2026-09-16
+
+### Fixed
+
+- **入口按钮收起态与展开态的圆角弧度不一致**（用户实测截图指出）：收起态用的是 11px（看着是"圆角方形"），展开态是 15.5px，两者切换时弧度会跳一下。现两态统一为 **15.5px（= 高度 31px 的一半）** —— 收起时 31×31 上即**正圆**，展开成胶囊时弧度完全不动，过渡中间不会出现弧度突变。
+
+## [0.2.0] - 2026-09-15
+
+### Added
+
+- **模块级依赖参与发号**（用户拍板）：模块上写的依赖现在会**向下冒泡到它的子任务**。`readyTasks` 改用有效依赖（自身 deps ∪ 全部祖先模块 deps），所以「大任务3 依赖 大任务2」这种自然写法真的会卡住小任务3-1 的发号，而不是被静默忽略。
+  - 模块「完成」判定：显式 `done`，**或**它名下的任务全部 done/canceled（至少 1 个）。空模块不会自动算完成（否则会白送一个空洞的通过）。
+  - 新增 lint 死锁检测：声明图无环、但冒泡后成环（例如「A 模块依赖 B 模块，而 B 的子任务又依赖 A 的子任务」）会在提交时当场拒绝；任务依赖自己的祖先模块同样报错。
+  - 拓扑执行序号把模块依赖算进约束；`plan_next` 在无任务可发时给出具名等待理由（`t31 ← m2`）。
+- **模块收卷**：`task_update` 现在也接受 module 节点（`planned ⇄ done`、`→ canceled`），done 同样受 L3 证据门约束——容器不再只能永远停在 planned。
+- **入口按钮收起/展开动效**：静止时收成一个 31×31 圆角方形，只留银河图标；悬停（或键盘聚焦、面板开启）时向左展开成完整胶囊。
+
+### Changed
+
+- 入口按钮右缘固定：按钮在 `conversation.session.header.utilities` 内是流内 flex item，右邻「⋯ 更多操作」保持 8px 槽位间距；展开时向左生长，邻居（Android 面板等）平滑让位，三点按钮本身不动。`transform-origin` 移到右缘，悬停放大不再越过右边界。
+- 圆角由 `999px` 改为 `15.5px`（31px 盒子的胶囊半径，**渲染结果与 999px 完全一致**，但能参与补间——999px 会因「超过半高即被 clamp」而在动画最后一帧才跳变）。内层极光/流光环改用 `border-radius:inherit` 跟随。
+- 收起态不再显示状态点，改由**银河图标的光晕颜色**继续传达状态（青=无进行中 / 琥珀=进行中 / 红=阻断 / 灰=未设置），标题与 aria-label 仍带完整状态文案。
+- **悬停不再放大缩小**（用户 2026-09-15 要求）：去掉按钮 `scale(1.05)`、按压 `scale(.94)`、图标 `scale(1.18)`，只保留 1.5px 上浮 + 提亮 + 辉光——让「收起/展开」成为唯一的形变动效，避免两种缩放叠加。
+
+## [0.1.1] - 2026-09-11
+
+### Fixed
+
+- **新项目「起板」死循环**：在没有 `.plan-board/` 的项目上调用 `plan_edit init_board` 必然返回 `PLAN_NOT_FOUND`，而报错文案与面板空态又都写着「用 plan_edit init_board 初始化」→ 谁也起不了板。根因：`PlanStore.ensure(projectDir, opts, init)` 这条起板入口从未被任何调用方接线，所有路径都走要求文件已存在的 `PlanStore.open`。现已在 `tools.ts` 的 `openStore` 接受 `init`（由 `plan_edit` 的 `init_board` op 提供），起板一次通过（实测：`/tmp/pb-demo` v1→v3）。
+- **面板空态无处下手**：项目路径为空时面板只显示一句「输入项目路径后开始轮询（未找到 .plan-board/ 时先让 Agent 跑 plan_edit init_board）」，与「板子不存在」混为一谈，用户不知道该填什么。现改为：空态直接列出注册表里**最近打开过的项目**（`GET /_dsh/dsh-plan-board/projects`，一键进入），并区分「未填路径」与「该路径下确实没有板子」两种文案，附能力边界说明。
+
+## [0.1.0] - 2026-09-11
+
+### Added
+
+- 入口按钮（`conversation.session.header.utilities` 槽位）UI 美术升级：**深色极光玻璃底**（近黑玻璃内层 + `#22d3ee→#38bdf8→#8b5cf6→#e879f9` 渐变描边环，静止即发光）＋ C 能量核心图标（亮核心呼吸 / 倾斜轨道环 / 双卫星脉冲，悬停时轨道转为流动虚线）＋ 悬停扫光 + 三层辉光。
+- **深/浅主题同款**：按钮不再随主题反白（浅色下也只是把外发光加强），避免同一个按钮在两种主题里颜色不一致。
+- 按钮状态点：15s 轮询 `GET /state` 显示板子状态（青=无进行中 / 琥珀=N 个进行中 / 红=漂移阻断或阻塞 / 灰=未设置项目路径或未找到 `.plan-board/`），悬停提示含版本号与 Agent 站位。
+- 深浅色两套配色（跟随 app body 亮度采样）、`aria-pressed` 开启态、`focus-visible` 主题焦点环、`prefers-reduced-motion` 降级。
+
+### Changed
+
+- 按钮几何与同槽位「Android 面板」严格对齐：高度 31px、胶囊圆角 999px（原为 23px / 8px 的内联样式方块）。
+- 图标由 emoji 🗺 换为自绘 SVG（无字体/emoji 依赖）。
+
+### Notes
+
+- 无 config 结构变更，老用户自定义配置不受影响；host 侧代码与 5 个 Agent 工具行为未变。
+
+## [0.0.1] - 2026-09-09
+
+- M1 转正 + M2 第一批（/stream 流式 + 主题跟随）+ M2 第二批（L7 阻断级）+ M2 第三批（面板直编辑）。

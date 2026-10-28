@@ -1,0 +1,4 @@
+# Public Eyrove free-generation tool. No API key; one queued image per call.
+- insert:
+    - id: dsh-eyrove-free
+      name: dsh-eyrove-free

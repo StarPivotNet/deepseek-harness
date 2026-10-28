@@ -1,0 +1,4 @@
+# Register concurrent read and create-capable filesystem tools beside the official suite.
+- insert:
+    - id: dsh-file-tools
+      name: dsh-file-tools
