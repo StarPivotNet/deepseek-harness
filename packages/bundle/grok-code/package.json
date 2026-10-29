@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-grok-code",
   "description": "Built-in Grok Code preset: Grok work strategy, think-act queue, plan mode, bundled reverse-engineering and authoring skills",
-  "version": "0.2.1-rc.4",
+  "version": "0.2.2-alpha.2.1",
   "publishConfig": {
     "access": "public"
   },
