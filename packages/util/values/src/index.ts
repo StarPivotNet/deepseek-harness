@@ -58,89 +58,92 @@ function enumerableStringKeys(value: object): string[] | undefined {
   return keys as string[]
 }
 
-/** One cursor per active container, independent of the number of pending siblings. */
-type JsonWalkFrame = {
-  source: Record<string, unknown> | unknown[]
-  target: { [key: string]: JsonValue } | JsonValue[] | undefined
-  keys: string[] | undefined
-  length: number
-  index: number
-}
+/** One active container, with child reads in its captured key or index order. */
+type JsonWalkFrame =
+  | { kind: 'array'; source: unknown[]; length: number; index: number; key: number; indices: number[] | undefined; target: JsonValue[] | undefined }
+  | { kind: 'object'; source: Record<string, unknown>; keys: string[]; index: number; key: string; target: { [key: string]: JsonValue } | undefined }
 
 /** Validate lossless JSON iteratively, optionally materializing a detached snapshot. */
 function walkJsonValue(value: unknown, detach: boolean): JsonValue | true | undefined {
   const ancestors = new Set<object>()
-  const frames: JsonWalkFrame[] = []
   let root: JsonValue | undefined
-  let current = value
-  let destination: JsonWalkFrame | undefined
-  let destinationKey: string | number = 0
+  let parent: JsonWalkFrame | undefined
   const assign = (item: JsonValue): void => {
-    if (!detach) return
-    if (destination === undefined) {
-      root = item
-    } else if (destination.target !== undefined) {
-      if (typeof destinationKey === 'number') {
-        (destination.target as JsonValue[])[destinationKey] = item
-      } else {
-        Object.defineProperty(destination.target, destinationKey, {
-          value: item,
-          enumerable: true,
-          configurable: true,
-          writable: true,
-        })
-      }
+    if (parent === undefined) {
+      if (detach) root = item
+    } else if (parent.kind === 'array') {
+      if (parent.target !== undefined) parent.target[parent.key] = item
+    } else if (parent.target !== undefined) {
+      Object.defineProperty(parent.target, parent.key, {
+        value: item,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      })
     }
   }
 
+  const frames: JsonWalkFrame[] = []
+  let current: unknown = value
   for (;;) {
-    if (current === null || typeof current === 'boolean' || typeof current === 'string') {
+    if (current === null) {
+      assign(null)
+    } else if (typeof current === 'boolean' || typeof current === 'string') {
       assign(current)
     } else if (typeof current === 'number') {
       if (!Number.isFinite(current) || Object.is(current, -0)) return undefined
       assign(current)
     } else {
-      if (typeof current !== 'object' || ancestors.has(current)) return undefined
-      let frame: JsonWalkFrame
+      if (typeof current !== 'object') return undefined
+      if (ancestors.has(current)) return undefined
       if (Array.isArray(current)) {
         if (!hasPlainArrayPrototype(current)) return undefined
         const length = current.length
         if (Reflect.ownKeys(current).length !== length + 1) return undefined
-        frame = { source: current, target: detach ? [] : undefined, keys: undefined, length, index: 0 }
+        const target = detach ? [] as JsonValue[] : undefined
+        if (target !== undefined) assign(target)
+        let indices: number[] | undefined
+        if (!Number.isInteger(length)) {
+          // Capture indices with one subtraction for fractional or coercible Proxy lengths.
+          indices = []
+          for (let index = length - 1; index >= 0; index--) indices.push(index)
+        }
+        frames.push({ kind: 'array', source: current, length: indices?.length ?? length, index: 0, key: 0, indices, target })
       } else {
         if (!hasPlainObjectPrototype(current)) return undefined
         const keys = enumerableStringKeys(current)
         if (keys === undefined) return undefined
-        frame = {
-          source: current as Record<string, unknown>, target: detach ? {} : undefined,
-          keys, length: keys.length, index: 0,
-        }
+        const target = detach ? {} as { [key: string]: JsonValue } : undefined
+        if (target !== undefined) assign(target)
+        frames.push({ kind: 'object', source: current as Record<string, unknown>, keys, index: 0, key: '', target })
       }
-      if (frame.target !== undefined) assign(frame.target)
       ancestors.add(current)
-      frames.push(frame)
     }
 
     for (;;) {
-      const frame = frames[frames.length - 1]
+      const frame = frames.at(-1)
       if (frame === undefined) return detach ? root : true
-      if (frame.index === frame.length) {
+      const length = frame.kind === 'array' ? frame.length : frame.keys.length
+      if (frame.index >= length) {
         ancestors.delete(frame.source)
         frames.pop()
         continue
       }
       const index = frame.index++
-      destination = frame
-      if (frame.keys === undefined) {
-        if (!Object.prototype.hasOwnProperty.call(frame.source, index)) return undefined
-        destinationKey = index
-        current = (frame.source as unknown[])[index]
+      parent = frame
+      if (frame.kind === 'array') {
+        const key = frame.indices === undefined ? index : frame.indices[frame.indices.length - index - 1]
+        /* v8 ignore next -- the loop is bounded by the captured index count. */
+        if (key === undefined) return undefined
+        if (!Object.prototype.hasOwnProperty.call(frame.source, key)) return undefined
+        frame.key = key
+        current = frame.source[key]
       } else {
         const key = frame.keys[index]
-        /* v8 ignore next -- the cursor is bounded by the captured key count. */
+        /* v8 ignore next -- the loop is bounded by the captured key count. */
         if (key === undefined) return undefined
-        destinationKey = key
-        current = (frame.source as Record<string, unknown>)[key]
+        frame.key = key
+        current = frame.source[key]
       }
       break
     }

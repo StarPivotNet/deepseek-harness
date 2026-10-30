@@ -609,6 +609,12 @@ export const IconAppsAddOutlineRegular = appsAddIcon('regular')
 /** Three entry tiles and an add mark with 1.3px strokes. */
 export const IconAppsAddOutlineMedium = appsAddIcon('medium')
 
+/** Regular floppy-disk save action. */
+export const IconSaveOutlineRegular = productIcon('save-outline', 'regular')
+
+/** Medium floppy-disk save action. */
+export const IconSaveOutlineMedium = productIcon('save-outline', 'medium')
+
 /** Fork-era size-suffixed aliases mapped onto the official weight-named icons. */
 export const IconChevronDownOutline14 = IconChevronDownOutlineMedium
 export const IconChevronUpOutline14 = IconChevronUpOutlineMedium
