@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-util-time",
   "description": "Time vocabulary for a caller zone, a wall-clock selector, or an elapsed time: canonicalClientTimeZone, strict RFC 3339 instants, local-calendar and zone resolution, a millisecond Duration span, and bounded Cron/RRULE recurrence arithmetic",
-  "version": "0.2.2-alpha.2.1",
+  "version": "0.2.2-alpha.2.2",
   "publishConfig": {
     "access": "public"
   },

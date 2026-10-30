@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-session-control",
   "description": "Trusted in-process session directory: search every session with live status, stop a turn, and deliver a message (ctx.sessionControl)",
-  "version": "0.2.2-alpha.2.1",
+  "version": "0.2.2-alpha.2.2",
   "publishConfig": {
     "access": "public"
   },
