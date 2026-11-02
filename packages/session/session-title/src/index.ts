@@ -517,7 +517,7 @@ export class SessionTitleService extends Service {
 
   /** Schedule current-provider work; activation-time messages only request the fallback. */
   private async onUserMessage(session: Session, event: Extract<SessionEvent, { type: 'user/message' }>): Promise<void> {
-    if (event.data.source.kind !== 'user' || sessionTitleUserMessageOf(event) === undefined) return
+    if (!isSessionTitleInput(event.data.source) || sessionTitleUserMessageOf(event) === undefined) return
     if (this.ownerFiber.state === FiberState.LOADING) {
       await this.ownerFiber.await()
       if (this.serviceActive() && this.ctx.sessions.get(session.id) === session) await this.ensureFallback(session)

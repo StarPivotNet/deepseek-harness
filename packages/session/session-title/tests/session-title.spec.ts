@@ -157,6 +157,8 @@ describe('SessionTitleService', () => {
   it('titles a Host Automation plugin task', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(AgentRegistry)
     await ctx.plugin(SessionTitleService, CONFIG)
     const session = ctx.sessions.create(SessionId('automation'))
     session.append('turn/start', { turn: 1 })
