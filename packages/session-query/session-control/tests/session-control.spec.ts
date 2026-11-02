@@ -3,6 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import SessionStore, { Session, SESSION_FORMAT_VERSION, SessionId } from '@deepseek-ai/dsh-session'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SessionQueryEngine from '@deepseek-ai/dsh-session-query'
 import SessionControl, {
   DEFAULT_SEARCH_LIMIT,
@@ -30,6 +31,7 @@ class TestSessionQueryEngine extends SessionQueryEngine {
 async function harness(config?: { searchLimit?: number }): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SessionStore)
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(TestSessionQueryEngine)
   await ctx.plugin(SessionControl, config ?? {})
@@ -72,6 +74,7 @@ describe('SessionControl', () => {
   it('rejects a non-positive searchLimit at load', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(TestSessionQueryEngine)
     await expect(ctx.plugin(SessionControl, { searchLimit: 0 })).rejects.toEqual(
@@ -87,7 +90,7 @@ describe('SessionControl', () => {
       origin: 'automation',
       parentSession: SessionId('live'),
     })
-    ctx.agents.register(stubAgent(live, 'running'))
+    await ctx.agents.register(stubAgent(live, 'running'))
 
     const rows = await ctx.sessionControl.search()
     const byId = Object.fromEntries(rows.map(row => [row.sessionId, row]))
@@ -110,7 +113,7 @@ describe('SessionControl', () => {
       archived: false,
     })
     const idle = createNamed(ctx, 'idle', 'Idle work')
-    ctx.agents.register(stubAgent(idle, 'idle'))
+    await ctx.agents.register(stubAgent(idle, 'idle'))
     await expect(ctx.sessionControl.get(idle.id)).resolves.toMatchObject({ activity: 'idle' })
     await ctx.fiber.dispose()
   })
@@ -254,7 +257,7 @@ describe('SessionControl', () => {
     const live = createNamed(ctx, 'live', 'Live')
     const attached = createNamed(ctx, 'attached', 'Attached')
     const agent = stubAgent(live, 'running')
-    ctx.agents.register(agent)
+    await ctx.agents.register(agent)
 
     await expect(ctx.sessionControl.stop(live.id)).resolves.toEqual({ accepted: true, attached: true })
     expect(agent.cancel).toHaveBeenCalledWith({ kind: 'user' }, { keepInbox: true })
@@ -266,7 +269,7 @@ describe('SessionControl', () => {
     const ctx = await harness()
     const session = createNamed(ctx, 'live', 'Live')
     const agent = stubAgent(session)
-    ctx.agents.register(agent)
+    await ctx.agents.register(agent)
 
     const queued = await ctx.sessionControl.send({ sessionId: session.id, message: 'hello' })
     const steered = await ctx.sessionControl.send({ sessionId: session.id, message: 'now', mode: 'steer' })
@@ -305,7 +308,7 @@ describe('SessionControl', () => {
     agent.followup = vi.fn(() => {
       throw new Error('inbox closed')
     })
-    ctx.agents.register(agent)
+    await ctx.agents.register(agent)
 
     await expect(ctx.sessionControl.send({ sessionId: session.id, message: 'hi' })).rejects.toEqual(
       expectCode('SESSION_CONTROL_DELIVERY_FAILED'),

@@ -11,16 +11,18 @@ function agentStub(options: {
   root?: boolean
 }) {
   const id = SessionId('session-root')
+  const events = options.events ?? [
+    { type: 'turn/start', data: { turn: 1 } },
+    { type: 'user/message', data: { source: { kind: 'user' } } },
+  ]
   const agent = {
     id,
     status: options.status ?? 'running',
     session: {
       id,
       header: { cwd: '/work/project' },
-      events: options.events ?? [
-        { type: 'turn/start', data: { turn: 1 } },
-        { type: 'user/message', data: { source: { kind: 'user' } } },
-      ],
+      events,
+      snapshotEvents: () => events,
     },
     ctx: new Context(),
   }
