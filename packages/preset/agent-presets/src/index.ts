@@ -746,7 +746,17 @@ export class AgentPresets extends Service {
     // conversation may have started, since this call was queued. A turn is one
     // model-loop execution; standalone plugin events never open one, so a
     // session that has only run commands is still blank.
-    const boundary = this.selfCtx.agents.turnBoundaryOf(agent.session)
+    // The registry is read, not injected: composing or listing presets works in
+    // hosts without an agent registry, and only a switch needs the turn record.
+    const agents = this.selfCtx.get('agents')
+    if (agents === undefined) {
+      throw new RemoteError(
+        'agent-preset/invalid',
+        'agent-presets: switching a session needs the live agent registry',
+        { agentPreset, reason: 'the live agent registry is not loaded in this composition' },
+      )
+    }
+    const boundary = agents.turnBoundaryOf(agent.session)
     if (boundary.openTurnStartSeq !== null || boundary.lastTurn > 0) {
       throw new RemoteError(
         'agent-preset/locked',
