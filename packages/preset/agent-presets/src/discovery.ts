@@ -60,6 +60,18 @@ export const USER_PRESET_DIR = '.agent-presets'
 export const SHIPPED_PRESET_ROOT = fileURLToPath(new URL('../presets/', import.meta.url))
 
 /**
+ * The installed harness's own package root.
+ *
+ * A composition authored outside the harness — every preset under the user
+ * root, and any profile that declares one by hand — is loaded by a base whose
+ * `node_modules` never contains the first-party packages, so resolving its
+ * rows only against that base reads a working preset as broken. Falling back
+ * to the package that ships this discovery reaches the harness install the
+ * mount itself resolves from.
+ */
+const HARNESS_PACKAGE_BASE = new URL('..', import.meta.url).href
+
+/**
  * Why `rows` cannot be an entry list, or undefined when it can.
  *
  * A shallow shape check, deliberately short of the loader's work: it does not
@@ -135,7 +147,11 @@ async function rowResolves(
   row: RowSpecifier, presetBase: string, harnessBase: string, resolves: PackageResolves,
 ): Promise<boolean> {
   if (row.kind === 'builtin') return true
-  if (row.kind === 'package') return isBuiltin(row.specifier) || resolves(row.specifier, harnessBase)
+  if (row.kind === 'package') {
+    return isBuiltin(row.specifier)
+      || resolves(row.specifier, harnessBase)
+      || resolves(row.specifier, HARNESS_PACKAGE_BASE)
+  }
   const url = row.kind === 'file' ? new URL(row.specifier) : new URL(row.specifier, presetBase)
   return await isFile(fileURLToPath(url))
 }

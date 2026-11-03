@@ -354,6 +354,31 @@ describe('rows naming a plugin that cannot be resolved', () => {
     expect(preset?.broken).toBe('row "p" names a plugin that cannot be resolved: @scope/pkg')
   })
 
+  it('resolves a first-party row from the harness install, not only the declaring base', async () => {
+    // A composition under the user root, or one a profile declares by hand, is
+    // loaded by a base whose node_modules never holds the harness packages;
+    // judging rows by that base alone turns a working preset into a permanent
+    // 加载失败 card.
+    const home = await mkdtemp(join(tmpdir(), 'dsh-presets-harness-'))
+    roots.push(home)
+    await mkdir(join(home, 'presets', 'probe'), { recursive: true })
+    await writeFile(join(home, 'presets', 'probe', COMPOSITION_FILE), "- id: p\n  name: '@deepseek-ai/dsh-tool-web'\n")
+    const packageRoot = new URL('..', import.meta.url).href
+    const bases: string[] = []
+
+    const [preset] = await scanRoot(
+      { path: join(home, 'presets'), trust: 'user' },
+      pathToFileURL(join(home, 'app/')).href,
+      (specifier, base) => {
+        bases.push(base)
+        return specifier === '@deepseek-ai/dsh-tool-web' && base === packageRoot
+      },
+    )
+
+    expect(preset?.broken).toBeUndefined()
+    expect(bases).toContain(packageRoot)
+  })
+
   it('leaves a node builtin alone', async () => {
     // Nothing installs `node:fs`, so the disk walk finds nothing; calling a
     // composition broken over a name Node always supplies would be a false
