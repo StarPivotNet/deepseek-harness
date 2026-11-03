@@ -10,6 +10,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import { entryListProblem } from '@deepseek-ai/dsh-agent-preset-registry'
 import * as yaml from 'js-yaml'
 import { buildDefinition, packagePaths } from '../src/index.ts'
 
@@ -95,6 +96,18 @@ describe('dsh-grok-code bundle', () => {
     expect(byId('official-file-prompt-shadow')?.disabled).toBe(true)
     expect((byId('tool-web')?.config as { fetch?: boolean }).fetch).toBe(true)
     expect((byId('tool-subagent')?.config as { agentPreset?: string }).agentPreset).toBe('grok-code')
+  })
+
+  it('declares rows the registry can activate', () => {
+    // `AgentPresetRegistry.activate()` refuses the definition before mounting
+    // anything, and the mode then reads 加载失败 in Settings. Shape and row ids
+    // are the two ways a hand-edited composition loses that check.
+    const definition = buildDefinition()
+    expect(entryListProblem(definition.plugins)).toBeUndefined()
+    const ids = collect(definition.plugins as Row[])
+      .map((row) => row.id)
+      .filter((id): id is string => typeof id === 'string')
+    expect(new Set(ids).size, `duplicate row id in ${ids.join(', ')}`).toBe(ids.length)
   })
 
   it('parses with the Loader dialect the roster uses', () => {

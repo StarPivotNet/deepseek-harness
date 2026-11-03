@@ -182,7 +182,20 @@ export function apply(ctx: Context): void {
         else ctx.logger.info('grok-code: declared for the mode dropdown')
       })
       .catch((error: unknown) => {
-        ctx.logger.warn('grok-code: register failed: %s', error instanceof Error ? error.message : String(error))
+        const message = error instanceof Error ? error.message : String(error)
+        // A hand-copied `agent-preset` row in the profile claims the same id first.
+        // Nothing in this package can retire another plugin's declaration, so say
+        // which row to delete instead of leaving a stale copy as the only mode.
+        if (message.includes('Duplicate agent preset')) {
+          ctx.logger.warn(
+            'grok-code: preset "%s" is already declared by an earlier row (usually a hand-copied agent-preset in the profile composition); '
+            + 'the shipped preset stays undeclared until that row is removed: %s',
+            PRESET_ID,
+            message,
+          )
+          return
+        }
+        ctx.logger.warn('grok-code: register failed: %s', message)
       })
   }
 
