@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-web-search-deepseek",
   "description": "DeepSeek-backed search provider (native web_search via the Anthropic-compatible API) for the DeepSeek Harness web capability seam (ctx.web)",
-  "version": "0.2.2-alpha.2.4",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },
@@ -36,7 +36,8 @@
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-web": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-settings": "workspace:*"
+    "@deepseek-ai/dsh-settings": "workspace:*",
+    "@deepseek-ai/dsh-llm-deepseek": "workspace:*"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "workspace:~"
@@ -51,7 +52,8 @@
     "@deepseek-ai/dsh-web": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/dsh-http-proxy": "workspace:*",
-    "@deepseek-ai/dsh-settings": "workspace:*"
+    "@deepseek-ai/dsh-settings": "workspace:*",
+    "@deepseek-ai/dsh-llm-deepseek": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh-deepseek-account": {

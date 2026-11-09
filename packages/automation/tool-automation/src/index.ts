@@ -11,7 +11,7 @@ import type { AtInput, CreateAutomationRuleRequest, LocalClockInput, UpdateAutom
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
-import { automationToolExecution, requireDirectHuman } from './authority.ts'
+import { automationToolExecution, isRuntimeRootAgent, requireDirectHuman } from './authority.ts'
 export const name = 'tool-automation'
 export const inject = ['agents', 'automation', 'systemPrompt', 'tools', 'workspaceRegistry']
 const LIST_DESCRIPTION = 'List every Host Automation rule: name, next fire time, enabled state, overlap policy, and workspace. '
@@ -267,8 +267,7 @@ export function apply(ctx: Context): void {
   })
   ctx.effect(() => {
     const stop = ctx.on('agent/created', ({ agent }) => {
-      if (!ctx.agents.roots().includes(agent))
-        return
+      if (!isRuntimeRootAgent(agent)) return
       registerAutomationTools(ctx, agent.ctx)
     })
     return stop

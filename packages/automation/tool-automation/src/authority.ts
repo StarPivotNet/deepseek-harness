@@ -47,6 +47,18 @@ export function automationToolExecution(ctx: Context, exec: ToolRunContext): {
   return { agent, ...openTurn(agent) }
 }
 /**
+ * Whether this Agent is a runtime root rather than a subagent child.
+ *
+ * A subagent child records `origin: 'subagent'` in its Session header when it
+ * is created, so the durable header alone decides. Ordinary Session forks and
+ * resumed Sessions carry no such origin and lead their own trees.
+ * @param agent - candidate live Agent.
+ * @returns true for a top-level Agent, false for a subagent child.
+ */
+export function isRuntimeRootAgent(agent: Agent): boolean {
+  return agent.session.header.origin !== 'subagent'
+}
+/**
  * Whether host-attested human input appears in the current root-agent turn.
  * An omitted `Agent.followup()` / `steer()` source resolves to `user`, so
  * Automation fires and other plugins must pass their own source.
@@ -54,7 +66,7 @@ export function automationToolExecution(ctx: Context, exec: ToolRunContext): {
  * @param execution - Authenticated turn window.
  */
 export function requireDirectHuman(ctx: Context, execution: { agent: Agent; events: SessionEvent[] }): void {
-  if (!ctx.agents.roots().includes(execution.agent)) {
+  if (!isRuntimeRootAgent(execution.agent)) {
     reject('automation tools refuse subagent callers', 'AUTOMATION_TOOL_AUTHORITY_REQUIRED')
   }
   const human = execution.events.some(event => event.type === 'user/message' && event.data.source.kind === 'user')

@@ -27,7 +27,8 @@
     "src/archived-session-gate.ts",
     "src/skill-catalog.ts",
     "src/git.ts",
-    "src/usage.ts"
+    "src/usage.ts",
+    "src/continuation.ts"
   ],
   "references": [
     {
@@ -137,6 +138,9 @@
     },
     {
       "path": "../../util/home-paths"
+    },
+    {
+      "path": "../../util/brand"
     }
   ]
 }

@@ -8,7 +8,7 @@ import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 function agentStub(options: {
   status?: 'idle' | 'running'
   events?: Array<{ type: string; data?: unknown }>
-  root?: boolean
+  origin?: 'subagent'
 }) {
   const id = SessionId('session-root')
   const events = options.events ?? [
@@ -20,13 +20,13 @@ function agentStub(options: {
     status: options.status ?? 'running',
     session: {
       id,
-      header: { cwd: '/work/project' },
+      header: { cwd: '/work/project', ...options.origin === undefined ? {} : { origin: options.origin } },
       events,
       snapshotEvents: () => events,
     },
     ctx: new Context(),
   }
-  return { agent, root: options.root ?? true }
+  return { agent }
 }
 
 describe('automation tool authority', () => {
@@ -36,7 +36,6 @@ describe('automation tool authority', () => {
     ctx.provide('agents', {
       get: () => agent,
       currentInitiator: () => agent,
-      roots: () => [agent],
     })
     const execution = automationToolExecution(ctx, { agent } as unknown as ToolRunContext)
     expect(() => { requireDirectHuman(ctx, execution) }).not.toThrow()
@@ -53,19 +52,17 @@ describe('automation tool authority', () => {
     ctx.provide('agents', {
       get: () => agent,
       currentInitiator: () => agent,
-      roots: () => [agent],
     })
     const execution = automationToolExecution(ctx, { agent } as unknown as ToolRunContext)
     expect(() => { requireDirectHuman(ctx, execution) }).toThrow(HarnessError)
   })
 
   it('rejects a subagent caller', () => {
-    const { agent } = agentStub({})
+    const { agent } = agentStub({ origin: 'subagent' })
     const ctx = new Context()
     ctx.provide('agents', {
       get: () => agent,
       currentInitiator: () => agent,
-      roots: () => [],
     })
     const execution = automationToolExecution(ctx, { agent } as unknown as ToolRunContext)
     expect(() => { requireDirectHuman(ctx, execution) }).toThrow(/subagent/)

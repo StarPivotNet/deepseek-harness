@@ -106,20 +106,21 @@ class PresetTree extends Include {
   /**
    * A preset is an input, never a persistence target.
    *
-   * The Loader writes a tree back through this method whenever it decides the
-   * config changed — a plugin self-disposing is enough, and tearing an agent
-   * down disposes its whole subtree. Inherited, that rewrites the preset file
-   * with whatever the dying tree held, which in practice means truncating a
-   * shipped composition to `[]` the first time a session ends. Persisting a
-   * preset is also meaningless: nothing here is user state, and the same file
-   * backs every session that names it.
+   * The Loader reports a tree-side change through `commit()` whenever it
+   * decides the config changed — a plugin self-disposing is enough, and
+   * tearing an agent down disposes its whole subtree. Inherited, that records
+   * the change and rewrites the preset file with whatever the dying tree held,
+   * which in practice means truncating a shipped composition to `[]` the
+   * first time a session ends. Persisting a preset is also meaningless:
+   * nothing here is user state, and the same file backs every session that
+   * names it.
    *
-   * Dropping the write drops the `loader/config-update` the inherited method
+   * Dropping the commit drops the `loader/config-update` the inherited method
    * emits with it. No consumer observes one for a preset subtree, and a
    * future "edit your preset while it runs" flow needs a deliberate
    * persistence path rather than this method's return.
    */
-  override write(): void {
+  override commit(): void {
   }
 }
 

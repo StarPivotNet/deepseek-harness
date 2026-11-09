@@ -9,7 +9,7 @@
  * occupant's own create-folder affordance already covers creating one.
  */
 import type { ReactNode, RefObject } from 'react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Button, IconFolderCloseRegular, IconPlusOutlineRegular, Menu, Modal, type MenuEntry,
 } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -88,14 +88,13 @@ export function WorkspacePickFlow({
   side = 'bottom',
   selectedId,
 }: WorkspacePickFlowProps) {
+  // Without an owner-provided anchor, the menu remains hidden.
+  const absentAnchor = useRef<HTMLElement>(null)
   const workspaceSnapshot = useWorkspaces(state => state)
+  // Fork customization: hidden workspaces and the No Repo placeholder stay out of the picker list.
   const hidden = new Set(workspaceSnapshot.hiddenWorkspaceIds)
   const workspaces = workspaceSnapshot.items.filter(workspace =>
     !hidden.has(workspace.workspaceId) && !isNoRepoWorkspace(workspace))
-  const getAnchorRect = useCallback(
-    () => anchorRef?.current?.getBoundingClientRect() ?? null,
-    [anchorRef],
-  )
   const [errorOpen, setErrorOpen] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
   const [flowOpen, setFlowOpen] = useState(false)
@@ -258,7 +257,7 @@ export function WorkspacePickFlow({
         onClose={onClose}
         side={side}
         portal
-        getAnchorRect={getAnchorRect}
+        anchorRef={anchorRef ?? absentAnchor}
       />
       {open && !addIsTheOnlyEntry && !menuIsEmpty && workspaceSnapshot.phase === 'pending' && <div className={css.menuStatus} role="status">{t('picker.loading')}</div>}
       {renderDirectoryFlow(flowOwner)}
