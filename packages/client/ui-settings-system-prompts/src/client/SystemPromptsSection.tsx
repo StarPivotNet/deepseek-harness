@@ -6,11 +6,11 @@ import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import {
   Button,
-  IconChevronDownOutline14,
-  IconChevronUpOutline14,
-  IconEditOutline16,
-  IconPlusOutline16,
-  IconTrashOutline16,
+  IconChevronDownOutlineMedium,
+  IconChevronUpOutlineMedium,
+  IconEditOutlineMedium,
+  IconPlusOutlineMedium,
+  IconTrashOutlineMedium,
   Modal,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
@@ -125,7 +125,7 @@ export function SystemPromptsSection(props: SystemPromptsSectionProps): ReactNod
                       aria-label={`${t('edit')}: ${section.name}`}
                       onClick={() => { props.beginEditBuiltIn(section.name) }}
                     >
-                      <IconEditOutline16 />
+                      <IconEditOutlineMedium />
                     </button>
                     <button
                       type="button"
@@ -162,7 +162,7 @@ export function SystemPromptsSection(props: SystemPromptsSectionProps): ReactNod
                       aria-label={`${t('edit')}: ${prompt.name}`}
                       onClick={() => { props.beginEdit(prompt.id) }}
                     >
-                      <IconEditOutline16 />
+                      <IconEditOutlineMedium />
                     </button>
                     <button
                       type="button"
@@ -171,7 +171,7 @@ export function SystemPromptsSection(props: SystemPromptsSectionProps): ReactNod
                       aria-label={`${t('delete')}: ${prompt.name}`}
                       onClick={() => { props.confirmDelete(prompt.id) }}
                     >
-                      <IconTrashOutline16 />
+                      <IconTrashOutlineMedium />
                     </button>
                   </div>
                 </li>
@@ -184,7 +184,7 @@ export function SystemPromptsSection(props: SystemPromptsSectionProps): ReactNod
           disabled={!state.writable}
           onClick={() => { props.beginCreate() }}
         >
-          <IconPlusOutline16 size={14} />
+          <IconPlusOutlineMedium size={14} />
           {t('addPrompt')}
         </button>
       </section>
@@ -231,7 +231,7 @@ export function SystemPromptsSection(props: SystemPromptsSectionProps): ReactNod
                                 void props.setPromptIds(entry.provider, entry.model, next)
                               }}
                             >
-                              <IconChevronUpOutline14 />
+                              <IconChevronUpOutlineMedium />
                             </button>
                             <button
                               type="button"
@@ -248,7 +248,7 @@ export function SystemPromptsSection(props: SystemPromptsSectionProps): ReactNod
                                 void props.setPromptIds(entry.provider, entry.model, next)
                               }}
                             >
-                              <IconChevronDownOutline14 />
+                              <IconChevronDownOutlineMedium />
                             </button>
                             <button
                               type="button"
@@ -263,7 +263,7 @@ export function SystemPromptsSection(props: SystemPromptsSectionProps): ReactNod
                                 )
                               }}
                             >
-                              <IconTrashOutline16 />
+                              <IconTrashOutlineMedium />
                             </button>
                           </li>
                         )

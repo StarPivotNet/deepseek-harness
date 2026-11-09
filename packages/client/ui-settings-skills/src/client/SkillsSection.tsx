@@ -1,8 +1,8 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import type { SkillCatalogEntry } from '@deepseek-ai/dsh-api-remotes/client'
 import {
-  IconChevronDownOutline14,
-  IconSearchOutline16,
+  IconChevronDownOutlineMedium,
+  IconSearchOutlineMedium,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { matchesSkill, sourceLabelKey } from './catalog.ts'
@@ -87,7 +87,7 @@ export function SkillsSection({ list, t }: SkillsSectionProps): ReactNode {
       {state.status === 'ready' ? (
         <div className={css.catalog}>
           <label className={css.search}>
-            <IconSearchOutline16 aria-hidden="true" />
+            <IconSearchOutlineMedium aria-hidden="true" />
             <span className={css.visuallyHidden}>{t('search')}</span>
             <input
               type="search"
@@ -142,7 +142,7 @@ export function SkillsSection({ list, t }: SkillsSectionProps): ReactNode {
                         >
                           {origin}
                         </span>
-                        <IconChevronDownOutline14 className={css.chevron} size={12} aria-hidden="true" />
+                        <IconChevronDownOutlineMedium className={css.chevron} size={12} aria-hidden="true" />
                       </span>
                     </button>
                     {open ? (

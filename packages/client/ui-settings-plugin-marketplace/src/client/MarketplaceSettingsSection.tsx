@@ -3,11 +3,11 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  IconCloseOutline16,
-  IconEditOutline16,
-  IconRefreshOutline14,
-  IconSearchOutline16,
-  IconTrashOutline16,
+  IconCloseOutlineMedium,
+  IconEditOutlineMedium,
+  IconRefreshOutlineMedium,
+  IconSearchOutlineMedium,
+  IconTrashOutlineMedium,
   Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {
@@ -293,7 +293,7 @@ export function MarketplaceSettingsSection({
       >
         {tab !== 'installed' ? (
           <label className={css.search}>
-            <IconSearchOutline16 aria-hidden="true" />
+            <IconSearchOutlineMedium aria-hidden="true" />
             <span className={css.visuallyHidden}>{t('search')}</span>
             <input
               type="search"
@@ -472,7 +472,7 @@ function DiscoverPage(props: {
                       disabled={props.refreshingUrl !== null}
                       onClick={() => { props.onRefresh(source.url) }}
                     >
-                      <IconRefreshOutline14 className={sourceRefreshing ? css.spin : undefined} size={14} />
+                      <IconRefreshOutlineMedium className={sourceRefreshing ? css.spin : undefined} size={14} />
                     </button>
                   </Tooltip>
                   <Tooltip label={t('editMarket')} side="bottom">
@@ -482,7 +482,7 @@ function DiscoverPage(props: {
                       aria-label={t('editMarket')}
                       onClick={() => { setEditing({ from: source.url, value: source.url }) }}
                     >
-                      <IconEditOutline16 size={14} />
+                      <IconEditOutlineMedium size={14} />
                     </button>
                   </Tooltip>
                   <Tooltip label={t('removeMarket')} side="bottom">
@@ -493,7 +493,7 @@ function DiscoverPage(props: {
                       disabled={props.savingUrl}
                       onClick={() => { removeSource(source.url) }}
                     >
-                      <IconTrashOutline16 size={14} />
+                      <IconTrashOutlineMedium size={14} />
                     </button>
                   </Tooltip>
                 </div>
@@ -863,7 +863,7 @@ function DetailsDialog(props: {
             aria-label={t('closeDetails')}
             onClick={props.onClose}
           >
-            <IconCloseOutline16 size={14} />
+            <IconCloseOutlineMedium size={14} />
           </button>
         </div>
         <dl className={css.dialogMeta}>
@@ -1054,7 +1054,7 @@ function InstalledDetailsDialog(props: {
                   setDirty(true)
                 }}
               >
-                <IconCloseOutline16 size={10} />
+                <IconCloseOutlineMedium size={10} />
               </button>
             </span>
           ))}

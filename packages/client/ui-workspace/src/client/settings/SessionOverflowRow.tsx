@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { IconChevronDownOutline14, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutlineMedium, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import {
   SESSION_OVERFLOW_ALL, SESSION_OVERFLOW_LIMITS, type SessionOverflowLimit,
@@ -78,7 +78,7 @@ export function SessionOverflowRow({
             onClick={() => { setOpen(value => !value) }}
           >
             {t(selectedLabel)}
-            <IconChevronDownOutline14 className={css.chevron} />
+            <IconChevronDownOutlineMedium className={css.chevron} />
           </button>
         )}
       />

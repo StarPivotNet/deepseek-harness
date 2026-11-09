@@ -263,6 +263,7 @@ export class WorkspaceController extends TypertRemoteService {
         items: items.map(item => ({ ...item, sessionIds: sessions(item.sessionIds) })),
         archivedSessionIds: sessions(value.archivedSessionIds),
         pinnedSessionIds: sessions(value.pinnedSessionIds),
+        ...value.hiddenWorkspaceIds === undefined ? {} : { hiddenWorkspaceIds: [...value.hiddenWorkspaceIds] },
       }
     }
     for await (const frame of this.feed.follow(signal)) {

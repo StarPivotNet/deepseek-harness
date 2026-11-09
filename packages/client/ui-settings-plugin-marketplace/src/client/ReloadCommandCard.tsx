@@ -1,5 +1,5 @@
 import { useState, useSyncExternalStore, type ReactNode } from 'react'
-import { DisclosureRow, IconApiOutline14, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { DisclosureRow, IconApiOutlineMedium, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { reloadCardCopy, sameReloadProgress, type ReloadCardNode } from './reload-card.ts'
 import type { ReloadProgress } from './ReloadProgressToast.tsx'
 import css from './ReloadCommandCard.module.css'
@@ -22,7 +22,7 @@ export interface ReloadCommandCardProps {
 }
 
 function leadingFor(state: 'running' | 'ok' | 'error'): ReactNode {
-  return state === 'error' ? <StateDot state="error" /> : <IconApiOutline14 size={14} />
+  return state === 'error' ? <StateDot state="error" /> : <IconApiOutlineMedium size={14} />
 }
 
 function useReloadSnapshot(

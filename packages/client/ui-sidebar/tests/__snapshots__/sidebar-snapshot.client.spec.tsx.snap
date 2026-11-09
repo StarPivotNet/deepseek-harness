@@ -55,6 +55,15 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
       </span>
     </button>
     <div
+      class="automationArea"
+      data-dsh-sidebar-actions=""
+    >
+      <div
+        data-slot="sidebar.automation"
+        style="display: contents;"
+      />
+    </div>
+    <div
       class="scrollRegion"
     >
       <div
@@ -211,6 +220,15 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
       </span>
     </button>
     <div
+      class="automationArea"
+      data-dsh-sidebar-actions=""
+    >
+      <div
+        data-slot="sidebar.automation"
+        style="display: contents;"
+      />
+    </div>
+    <div
       class="scrollRegion"
     >
       <div
@@ -327,6 +345,15 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
         </span>
       </span>
     </button>
+    <div
+      class="automationArea"
+      data-dsh-sidebar-actions=""
+    >
+      <div
+        data-slot="sidebar.automation"
+        style="display: contents;"
+      />
+    </div>
     <div
       class="scrollRegion"
     >
@@ -484,6 +511,15 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
       </span>
     </button>
     <div
+      class="automationArea"
+      data-dsh-sidebar-actions=""
+    >
+      <div
+        data-slot="sidebar.automation"
+        style="display: contents;"
+      />
+    </div>
+    <div
       class="scrollRegion"
     >
       <div
@@ -640,6 +676,15 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
         </span>
       </span>
     </button>
+    <div
+      class="automationArea"
+      data-dsh-sidebar-actions=""
+    >
+      <div
+        data-slot="sidebar.automation"
+        style="display: contents;"
+      />
+    </div>
     <div
       class="scrollRegion"
     >

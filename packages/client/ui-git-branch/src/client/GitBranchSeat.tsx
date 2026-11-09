@@ -11,7 +11,7 @@ import { useState } from 'react'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import {
-  Button, IconBranchOutline16, IconChevronDownOutline14, Input, Menu, Modal,
+  Button, IconBranchOutlineMedium, IconChevronDownOutlineMedium, Input, Menu, Modal,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 // Type-only: pulls the ui-conversation SlotMap merge (the hero seat).
@@ -126,9 +126,9 @@ export function GitBranchSeat({
             disabled={state.busy}
             onClick={() => { setOpen(value => !value) }}
           >
-            <IconBranchOutline16 className={css.seatIcon} />
+            <IconBranchOutlineMedium className={css.seatIcon} />
             {view.detached ? t('seat.detached') : view.currentBranch}
-            <IconChevronDownOutline14 className={css.chevron} />
+            <IconChevronDownOutlineMedium className={css.chevron} />
           </button>
         )}
       />

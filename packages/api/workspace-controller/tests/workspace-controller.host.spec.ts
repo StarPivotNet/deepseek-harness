@@ -477,6 +477,7 @@ describe('WorkspaceController follow', () => {
         items: [expect.objectContaining({ workspaceId: shownId, sessionIds: [shared.id] })],
         archivedSessionIds: [],
         pinnedSessionIds: [shared.id],
+        hiddenWorkspaceIds: [],
       },
     })
 

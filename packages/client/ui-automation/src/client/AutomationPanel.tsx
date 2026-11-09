@@ -5,8 +5,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
-  Button, IconClockOutline16, IconCloseOutline16, IconPlayOutline16, IconPlusOutline16,
-  IconRefreshOutline16, IconTrashOutline16, IconWarningOutline16, Input, Modal, Tooltip,
+  Button, IconClockOutlineMedium, IconCloseOutlineMedium, IconPlayOutlineMedium, IconPlusOutlineMedium,
+  IconRefreshOutlineMedium, IconTrashOutlineMedium, IconWarningOutlineMedium, Input, Modal, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
@@ -119,7 +119,7 @@ export function AutomationPanel(props: AutomationPanelProps): ReactNode {
         aria-label={t('trigger.label')}
         onClick={() => { setPageOpen(!pageOpen) }}
       >
-        <IconClockOutline16 size={wide ? 14 : 18} />
+        <IconClockOutlineMedium size={wide ? 14 : 18} />
         {wide && <span className={css.label}>{t('trigger')}</span>}
       </button>
     </Tooltip>
@@ -233,13 +233,13 @@ function AutomationPageChrome({
                   disabled={refreshing}
                   onClick={refresh}
                 >
-                  <IconRefreshOutline16 size={16} />
+                  <IconRefreshOutlineMedium size={16} />
                 </button>
                 {state.status !== 'error' || state.items.length > 0
                   ? (
                     <Button
                       variant="primary"
-                      icon={<IconPlusOutline16 size={16} />}
+                      icon={<IconPlusOutlineMedium size={16} />}
                       onClick={() => { openCreate() }}
                     >
                       {t('add')}
@@ -249,7 +249,7 @@ function AutomationPageChrome({
               </>
             )}
           <button type="button" className={css.pageClose} aria-label={t('close')} onClick={() => { setPageOpen(false) }}>
-            <IconCloseOutline16 size={16} />
+            <IconCloseOutlineMedium size={16} />
           </button>
         </div>
       </header>
@@ -347,7 +347,7 @@ function AutomationBody({
     <div className={css.body}>
       {state.error !== null && <p className={css.notice} role="alert">{state.error}</p>}
       <div className={css.keepAwake}>
-        <IconWarningOutline16 size={14} />
+        <IconWarningOutlineMedium size={14} />
         <div className={css.keepAwakeCopy}>
           <span>{t('keepAwake')}</span>
           <span className={css.keepAwakeHint}>{t('keepAwake.hint')}</span>
@@ -444,7 +444,7 @@ function RuleCard({
         </div>
         <div className={css.cardMeta}>
           <span className={[css.scheduleChip, stateClass].join(' ')}>
-            <IconClockOutline16 size={12} />
+            <IconClockOutlineMedium size={12} />
             <span className={css.visuallyHidden}>{formatState(rule.state, t)}</span>
             {t('scheduleChip', { schedule: formatSelector(rule.selector, t), when: nextWhen })}
           </span>
@@ -470,7 +470,7 @@ function RuleCard({
         <Button
           size="sm"
           variant="outline"
-          icon={<IconPlayOutline16 size={14} />}
+          icon={<IconPlayOutlineMedium size={14} />}
           disabled={busy}
           onClick={() => { run(() => runNow(rule.id)) }}
         >
@@ -478,7 +478,7 @@ function RuleCard({
         </Button>
         <Button
           size="sm"
-          icon={<IconTrashOutline16 size={14} />}
+          icon={<IconTrashOutlineMedium size={14} />}
           disabled={busy}
           onClick={() => { setConfirming(true) }}
         >

@@ -7,9 +7,9 @@ import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import {
   Button,
-  IconEditOutline16,
-  IconPlusOutline16,
-  IconTrashOutline16,
+  IconEditOutlineMedium,
+  IconPlusOutlineMedium,
+  IconTrashOutlineMedium,
   Modal,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
@@ -181,7 +181,7 @@ export function SubagentsSection(props: SubagentsSectionProps): ReactNode {
                       aria-label={t('edit') + ': ' + definition.name}
                       onClick={() => { props.beginEdit(definition.id) }}
                     >
-                      <IconEditOutline16 />
+                      <IconEditOutlineMedium />
                     </button>
                     <button
                       type="button"
@@ -190,7 +190,7 @@ export function SubagentsSection(props: SubagentsSectionProps): ReactNode {
                       aria-label={t('delete') + ': ' + definition.name}
                       onClick={() => { props.confirmDelete(definition.id) }}
                     >
-                      <IconTrashOutline16 />
+                      <IconTrashOutlineMedium />
                     </button>
                   </div>
                 </li>
@@ -203,7 +203,7 @@ export function SubagentsSection(props: SubagentsSectionProps): ReactNode {
           disabled={!state.writable}
           onClick={() => { props.beginCreate() }}
         >
-          <IconPlusOutline16 size={14} />
+          <IconPlusOutlineMedium size={14} />
           {t('addDefinition')}
         </button>
       </section>

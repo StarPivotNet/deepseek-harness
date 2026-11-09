@@ -1,7 +1,7 @@
 /** One busy-state delivery selector inside the Subagents Behavior group. */
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { IconChevronDownOutline14, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutlineMedium, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SubagentBusyDelivery } from '../delivery-settings.ts'
 import type { SubagentsKey } from './locales.ts'
 import css from './DeliveryRow.module.css'
@@ -69,7 +69,7 @@ export function DeliveryRow({
             onClick={() => { setOpen(current => !current) }}
           >
             {t(selectedLabel)}
-            <IconChevronDownOutline14 className={css.chevron} />
+            <IconChevronDownOutlineMedium className={css.chevron} />
           </button>
         )}
       />

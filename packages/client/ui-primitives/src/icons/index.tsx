@@ -620,19 +620,3 @@ export const IconSaveOutlineRegular = productIcon('save-outline', 'regular')
 
 /** Medium floppy-disk save action. */
 export const IconSaveOutlineMedium = productIcon('save-outline', 'medium')
-
-/** Fork-era size-suffixed aliases mapped onto the official weight-named icons. */
-export const IconChevronDownOutline14 = IconChevronDownOutlineMedium
-export const IconChevronUpOutline14 = IconChevronUpOutlineMedium
-export const IconRefreshOutline14 = IconRefreshOutlineMedium
-export const IconRefreshOutline16 = IconRefreshOutlineMedium
-export const IconWarningOutline16 = IconWarningOutlineMedium
-export const IconApiOutline14 = IconApiOutlineMedium
-export const IconSearchOutline16 = IconSearchOutlineMedium
-export const IconEditOutline16 = IconEditOutlineMedium
-export const IconPlusOutline16 = IconPlusOutlineMedium
-export const IconTrashOutline16 = IconTrashOutlineMedium
-export const IconCloseOutline16 = IconCloseOutlineMedium
-export const IconClockOutline16 = IconClockOutlineMedium
-export const IconPlayOutline16 = IconPlayOutlineMedium
-export const IconBranchOutline16 = IconBranchOutlineMedium
