@@ -381,8 +381,9 @@ export class LocalSandboxProvider extends SandboxProvider {
    * `--temp-write-sid` and grants nothing itself. Agentless workspace-write
    * calls pass the ambient temp ROOT and no SID flags: the runner creates and
    * removes a random private child directory for that one invocation.
-   * Additional directory grants apply only to harness filesystem operations
-   * on Windows; process confinement keeps the workspace and private temp grants.
+   * Additional workspace folders grant nothing here: Windows process
+   * confinement covers the workspace and private temp roots, while the harness
+   * filesystem fence honors the extra folders.
    * @param policy - the resolved per-call policy.
    * @returns the runner invocation.
    */
@@ -392,17 +393,14 @@ export class LocalSandboxProvider extends SandboxProvider {
       return [
         ...this.windowsAclRunnerInvocation(),
         '--workspace', policy.workspaceRoot,
-        ...(policy.additionalWritableRoots ?? []).flatMap(root => ['--workspace', root]),
         '--temp', tmpdir(),
         '--mode', policy.mode,
       ]
     }
-    const extraRoots = policy.additionalWritableRoots ?? []
-    const temp = this.materializeAclGrant(sessionId, policy.workspaceRoot, extraRoots)
+    const temp = this.materializeAclGrant(sessionId, policy.workspaceRoot)
     return [
       ...this.windowsAclRunnerInvocation(),
       '--workspace', policy.workspaceRoot,
-      ...extraRoots.flatMap(root => ['--workspace', root]),
       '--temp', temp.dir,
       '--mode', policy.mode,
       '--write-sid', workspaceWriteSid(policy.workspaceRoot),
@@ -424,31 +422,22 @@ export class LocalSandboxProvider extends SandboxProvider {
    * platform error as `cause`.
    * @param sessionId - the policy's calling-session identity.
    * @param workspaceRoot - the resolved policy root.
-   * @param additionalRoots - extra workspace folders sharing the same write SID.
    * @returns the pair's private temp directory and write capability.
    */
-  private materializeAclGrant(
-    sessionId: SessionId,
-    workspaceRoot: string,
-    additionalRoots: readonly string[] = [],
-  ): AclTempCapability {
-    // Every root sharing the write SID must sit outside the private temp
-    // directory, or the temp grant would inherit the workspace grant.
-    for (const root of [workspaceRoot, ...additionalRoots]) {
-      let tempInsideWorkspace: boolean
-      try {
-        tempInsideWorkspace = isTempRootInsideWorkspace(root, tmpdir())
-      } catch (error) {
-        throw aclPreparationFailure('workspace and temp directory resolution', error)
-      }
-      if (tempInsideWorkspace) {
-        throw new SandboxPreparationError(
-          `sandbox-local: windows-acl temp root must be outside the workspace: workspace=${root}; temp=${tmpdir()}. `
-          + 'A private temp directory there would inherit the workspace grant, so the command did not run. '
-          + 'Set TEMP and TMP to a directory outside the workspace, or open a workspace that does not contain the temp directory.',
-          'SANDBOX_INVALID_TEMP_ROOT',
-        )
-      }
+  private materializeAclGrant(sessionId: SessionId, workspaceRoot: string): AclTempCapability {
+    let tempInsideWorkspace: boolean
+    try {
+      tempInsideWorkspace = isTempRootInsideWorkspace(workspaceRoot, tmpdir())
+    } catch (error) {
+      throw aclPreparationFailure('workspace and temp directory resolution', error)
+    }
+    if (tempInsideWorkspace) {
+      throw new SandboxPreparationError(
+        `sandbox-local: windows-acl temp root must be outside the workspace: workspace=${workspaceRoot}; temp=${tmpdir()}. `
+        + 'A private temp directory there would inherit the workspace grant, so the command did not run. '
+        + 'Set TEMP and TMP to a directory outside the workspace, or open a workspace that does not contain the temp directory.',
+        'SANDBOX_INVALID_TEMP_ROOT',
+      )
     }
     const writeSid = workspaceWriteSid(workspaceRoot)
     if (!this.workspaceGrants.has(workspaceRoot)) {
@@ -460,7 +449,6 @@ export class LocalSandboxProvider extends SandboxProvider {
       }
       try {
         grant.add(workspaceRoot, true)
-        for (const extra of additionalRoots) grant.add(extra, true)
       } catch (error) {
         // Free the SID; a standing ACE (if the apply succeeded before a
         // post-apply throw) is the intended end state, not an error

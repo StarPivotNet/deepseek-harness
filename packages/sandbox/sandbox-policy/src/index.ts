@@ -261,11 +261,11 @@ export class SandboxPolicyService extends Service {
     // the process cwd is real branching, resolved absolute either way.
     this.defaultMode = config.mode as SandboxMode
     // Execution-world spelling is preserved; enforcing providers resolve filesystem identity on their host.
-    const workspaceRoot = config.workspaceRoot ?? process.cwd()
-    if (!isExecutionWorldPath(workspaceRoot)) {
+    const configuredRoot = config.workspaceRoot ?? process.cwd()
+    if (!isExecutionWorldPath(configuredRoot)) {
       throw new Error('sandbox-policy: workspace root must be an absolute execution-world path without NUL bytes')
     }
-    this.workspaceRoot = workspaceRoot
+    this.workspaceRoot = canonicalWorkspaceFolder(configuredRoot)
     setGitDescribeCacheMs(config.gitDescribeCacheMs as number)
     this.additionalWritableRoots = resolveAdditionalWritableRoots(config.additionalWritableRoots)
   }
@@ -342,7 +342,7 @@ export class SandboxPolicyService extends Service {
    * workspace-write boundary. A logged `workspace/home` or `git/worktree` overlay
    * outranks the immutable header cwd.
    * @param session - session whose boundary is resolved, or undefined for agentless calls.
-   * @returns the boundary in its execution-world spelling.
+   * @returns the boundary's canonical path, matching the folder identity and search roots derived from it.
    * @throws `SandboxInvalidRootError` when the recorded cwd is relative or contains a NUL byte.
    */
   private sessionWorkspaceRoot(session: Session | undefined): string {
@@ -351,7 +351,7 @@ export class SandboxPolicyService extends Service {
     if (!isExecutionWorldPath(cwd)) {
       throw new SandboxInvalidRootError(cwd, 'the Session working directory must be an absolute execution-world path without NUL bytes', 'sandbox workspace root')
     }
-    return cwd
+    return canonicalWorkspaceFolder(cwd)
   }
 
   /**
