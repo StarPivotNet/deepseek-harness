@@ -67,7 +67,7 @@ async function agentWithSession(
     inject(message: UserMessage) {
       session.append('user/message', message, { surfaceOp: 'append' })
     },
-  } as unknown as Agent & { session: Session }
+  } as Agent & { session: Session }
   let scoped!: Context
   await ctx.plugin(Object.assign((inner: Context) => { scoped = createScope(inner, agent).ctx }, {
     inject: ['tools'],
@@ -509,7 +509,7 @@ describe('the soft layer', () => {
 
       readonly language = 'typescript'
       readonly isolation = 'fake'
-      run(_request: PtcRunRequest): Promise<PtcRunResult> { return Promise.resolve({ logs: [] }) }
+      run(_request: PtcRunRequest): Promise<PtcRunResult> { return Promise.resolve({ output: [] }) }
     }
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
@@ -534,7 +534,7 @@ describe('the soft layer', () => {
 
       readonly language = 'typescript'
       readonly isolation = 'fake'
-      run(_request: PtcRunRequest): Promise<PtcRunResult> { return Promise.resolve({ logs: [] }) }
+      run(_request: PtcRunRequest): Promise<PtcRunResult> { return Promise.resolve({ output: [] }) }
     }
     const withPlanMode = new Context()
     await withPlanMode.plugin(SystemPrompt)
@@ -954,7 +954,7 @@ describe('exit_plan_mode', () => {
       async run(request: PtcRunRequest): Promise<PtcRunResult> {
         const exit = request.bindings[0]?.functions[EXIT_PLAN_MODE]
         if (exit === undefined) throw new Error('missing exit_plan_mode binding')
-        return { logs: [], value: await exit({ plan }) }
+        return { output: [], value: await exit({ plan }) }
       }
     }
     const ctx = new Context()

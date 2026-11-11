@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-purge",
   "description": "Organization-managed Purge prompt controls, host compatibility patches, and red-team workspace",
-  "version": "0.2.2-rc.1.1",
+  "version": "0.2.2-rc.2",
   "icon": "./icon.svg",
   "publishConfig": {
     "access": "public"
@@ -38,7 +38,10 @@
     "LICENSE",
     "NOTICE.md",
     "DISCLAIMER.md",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dsh": {

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-redteam",
   "description": "Built-in red-team workspace, preset, skills, tools, and engagement store",
-  "version": "0.2.2-rc.1.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -44,7 +44,10 @@
     "LICENSE",
     "NOTICE.md",
     "DISCLAIMER.md",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "engines": {

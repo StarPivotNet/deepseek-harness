@@ -43,6 +43,9 @@
     },
     {
       "path": "../../util/atomic-write"
+    },
+    {
+      "path": "../../util/native-command"
     }
   ]
 }

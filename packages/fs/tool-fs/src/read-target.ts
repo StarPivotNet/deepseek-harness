@@ -6,7 +6,9 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import type { FsInfo, FsTarget } from '@deepseek-ai/dsh-fs'
+import { ToolContextUnavailableError } from '@deepseek-ai/dsh-tools'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import { ImageInputError } from './image-error.ts'
 import { sessionResolveOptions } from './session-cwd.ts'
 
 /**
@@ -19,7 +21,9 @@ import { sessionResolveOptions } from './session-cwd.ts'
  * @param exec - the tool-execution context supplying the calling agent.
  * @param requestedPath - the raw, not-yet-resolved path rendered in refusal messages.
  * @param modality - the input modality the exact route must declare.
- * @throws when the route cannot be resolved or does not declare the modality.
+ * @throws ToolContextUnavailableError when no Agent route or `llm` service is available.
+ * @throws ImageInputError `IMAGE_UNSUPPORTED_MODEL` when an image route does not declare image input;
+ *   `read_video` reports that refusal as a plain tool error because its other failures are untyped too.
  */
 export async function assertMediaCapableRoute(
   ctx: Context,
@@ -27,16 +31,18 @@ export async function assertMediaCapableRoute(
   requestedPath: string,
   modality: 'image' | 'video',
 ): Promise<void> {
+  const noun = modality === 'image' ? 'an image' : 'a video'
   const routed = exec.agent?.session.requestHeader()?.config
   const provider = routed?.provider ?? exec.agent?.options.provider
   const model = routed?.model ?? exec.agent?.options.model
   const llm = ctx.get('llm')
   if (provider === undefined || model === undefined || llm === undefined) {
-    throw new Error(`cannot read "${requestedPath}" as ${modality === 'image' ? 'an image' : 'a video'}: the current model route could not be resolved`)
+    throw new ToolContextUnavailableError(`cannot read "${requestedPath}" as ${noun}: the current model route could not be resolved`)
   }
   const active = await llm.resolveModelInfo(provider, model, exec.signal)
   if (active.inputModalities === undefined || !active.inputModalities.includes(modality)) {
-    throw new Error(`cannot read "${requestedPath}" as ${modality === 'image' ? 'an image' : 'a video'}: model "${model}" does not declare ${modality} input; switch to ${modality === 'image' ? 'an image' : 'a video'}-capable model to read ${modality === 'image' ? 'images' : 'videos'}`)
+    const message = `cannot read "${requestedPath}" as ${noun}: model "${model}" does not declare ${modality} input; switch to ${noun}-capable model to read ${modality}s`
+    throw modality === 'image' ? new ImageInputError(message, 'IMAGE_UNSUPPORTED_MODEL') : new Error(message)
   }
 }
 

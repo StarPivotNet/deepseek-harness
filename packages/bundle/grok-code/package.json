@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-grok-code",
   "description": "Built-in Grok Code preset: Grok work strategy, think-act queue, plan mode, bundled reverse-engineering and authoring skills",
-  "version": "0.2.2-rc.1.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -25,16 +25,17 @@
   },
   "files": [
     "lib/index.js",
-    "presets",
-    "LICENSE",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"
   },
   "dependencies": {
-    "@deepseek-ai/cordis-plugin-include": "workspace:*",
+    "@deepseek-ai/cordis-plugin-include": "workspace:~",
     "js-yaml": "^4.3.2",
     "jsrsasign": "^11.1.0",
     "jszip": "^3.10.1"

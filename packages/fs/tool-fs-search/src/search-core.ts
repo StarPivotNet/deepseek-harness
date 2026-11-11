@@ -19,10 +19,11 @@
  * @module @deepseek-ai/dsh-tool-fs-search/search-core
  */
 
-import { existsSync } from 'node:fs'
-import { isAbsolute, join, parse, relative, sep } from 'node:path'
+import { isAbsolute, relative, sep } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { sessionSearchRoots } from '@deepseek-ai/dsh-sandbox-policy'
+import { spawnRipgrep } from '@deepseek-ai/dsh-util-ripgrep'
+export { resolveRgPath } from '@deepseek-ai/dsh-util-ripgrep'
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 import { ItemRetainer, TextRetainer } from '@deepseek-ai/dsh-output-retention'
 import type { RetainedItems } from '@deepseek-ai/dsh-output-retention'
@@ -155,35 +156,6 @@ function completeStdout(toolName: string, stdout: SubprocessOutputRead, rawOutpu
   )
 }
 
-let rgPathPromise: Promise<string> | undefined
-
-/**
- * The packaged ripgrep binary path, resolved lazily once per process.
- *
- * A single-file runtime uses the executable's `-rg` sidecar because a native
- * helper cannot be spawned from pkg's virtual filesystem. Node-mode builds
- * fall back to the platform package selected by `@vscode/ripgrep`. Resolving
- * at the call boundary keeps a missing or corrupt binary at the first search
- * call as `SEARCH_FAILED`, rather than failing the Loader composition.
- *
- * @returns the packaged binary's absolute path; the memoized promise rejects
- *   when the platform package cannot be resolved.
- */
-export function resolveRgPath(): Promise<string> {
-  rgPathPromise ??= Promise.resolve().then(async () => {
-    const executable = parse(process.execPath)
-    const executableSidecar = process.platform === 'win32'
-      ? join(executable.dir, `${executable.name}-rg.exe`)
-      : `${process.execPath}-rg`
-    if ('pkg' in process && existsSync(executableSidecar)) return executableSidecar
-    const dependency = (await import('@vscode/ripgrep')).rgPath
-    return process.versions.electron === undefined
-      ? dependency
-      : dependency.replace(/\.asar(?=[\\/])/u, '.asar.unpacked')
-  })
-  return rgPathPromise
-}
-
 /**
  * Run the packaged ripgrep binary with a plain argv vector and return its
  * complete raw stdout. The working directory is the calling agent's session
@@ -237,8 +209,8 @@ export async function runRipgrep(
     : await ctx.workingDirectory.ensure(exec.agent, exec.signal)
   let handle: SubprocessHandle
   try {
-    handle = ctx.subprocess.spawn({
-      argv: [await resolveRgPath(), '--no-config', ...argv],
+    handle = await spawnRipgrep(ctx.subprocess, {
+      argv,
       cwd: workdir,
       stdio: {
         stdin: 'ignore',
@@ -288,18 +260,6 @@ export async function runRipgrep(
 }
 
 /**
- * Map an `rg` output path to its display form: absolute paths inside the
- * resolved workdir become workdir-relative; everything else (relative output,
- * paths outside the workdir) passes through unchanged. Display-only —
- * returned paths are follow-up-readable in co-located workdir/filesystem
- * deployments where both resolve the same workspace (the documented v1
- * deployment requirement).
- *
- * @param path - one path as ripgrep printed it.
- * @param workdir - the resolved workdir the command ran in.
- * @returns the workdir-relative display path when possible, else `path` unchanged.
- */
-/**
  * Absolute folders a default grep/glob should search: the session cwd plus
  * existing additional workspace folders. Absent without a session or policy.
  * @param ctx - plugin context; reads optional `sandboxPolicy`.
@@ -313,6 +273,18 @@ export function searchRootsFor(ctx: Context, exec: ToolExecution): string[] | un
   return sessionSearchRoots(policy.foldersOf(session))
 }
 
+/**
+ * Map an `rg` output path to its display form: absolute paths inside the
+ * resolved workdir become workdir-relative; everything else (relative output,
+ * paths outside the workdir) passes through unchanged. Display-only —
+ * returned paths are follow-up-readable in co-located workdir/filesystem
+ * deployments where both resolve the same workspace (the documented v1
+ * deployment requirement).
+ *
+ * @param path - one path as ripgrep printed it.
+ * @param workdir - the resolved workdir the command ran in.
+ * @returns the workdir-relative display path when possible, else `path` unchanged.
+ */
 export function toWorkdirRelative(path: string, workdir: string): string {
   if (!isAbsolute(path)) return path
   const rel = relative(workdir, path)
