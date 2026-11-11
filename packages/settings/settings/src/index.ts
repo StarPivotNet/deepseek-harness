@@ -107,6 +107,11 @@ export abstract class SettingsProvider extends Service {
     }
   }
 
+  /**
+   * Read the in-memory values registered under one namespace.
+   * @param ns - namespace passed to {@link register}.
+   * @returns the stored values, or undefined when the namespace was never registered.
+   */
   get<T>(ns: string): T | undefined {
     return this.scopes.get(String(ns))?.value as T | undefined
   }
@@ -452,6 +457,10 @@ export class SettingsForms extends Service {
    * Fork-era namespace registration. Official 0.1.7 settings project live Config
    * through profile forms, so this keeps an in-memory scope for StarPivot plugins
    * that still call register/get.
+   * @param _ns - namespace the in-memory scope is stored under.
+   * @param _schema - accepted for signature compatibility; the scope stores plain values.
+   * @param options - optional initial values for the namespace.
+   * @returns the scope handle that reads, watches, patches, and replaces the stored values.
    */
   register<T>(_ns: string, _schema: unknown, options?: { base?: Partial<T> }): SettingsScope<T> {
     const ns = String(_ns)
@@ -470,6 +479,11 @@ export class SettingsForms extends Service {
     }
   }
 
+  /**
+   * Read the in-memory values registered under one namespace.
+   * @param ns - namespace passed to {@link register}.
+   * @returns the stored values, or undefined when the namespace was never registered.
+   */
   get<T>(ns: string): T | undefined {
     return this.scopes.get(ns)?.value as T | undefined
   }

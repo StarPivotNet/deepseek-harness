@@ -17,6 +17,11 @@ export class SystemPromptCatalog extends TypertRemoteService {
     super(ctx, 'systemPromptCatalog', { namespace: 'systemPrompt' })
   }
 
+  /**
+   * List every contributed system-prompt section for the Settings page.
+   * @returns the section inventory the composed system-prompt registry owns.
+   * @throws a RemoteError when the composition has no system-prompt registry.
+   */
   @Remote('list')
   list(): SystemPromptListValue {
     const systemPrompt = this.ctx.get('systemPrompt')

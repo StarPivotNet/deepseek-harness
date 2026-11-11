@@ -246,6 +246,11 @@ export class WorkspaceController extends TypertRemoteService {
     return this.commands.show(request.workspaceId)
   }
 
+  /**
+   * Stream Workspace membership frames filtered by the caller's Remote access.
+   * @param signal - cancellation for the subscription; aborting ends the stream.
+   * @returns baseline, upsert, and removal frames until the signal aborts.
+   */
   @Remote({ mode: 'stream' })
   async *follow(signal: AbortSignal): AsyncIterable<WorkspaceFollowFrame> {
     const access = this.ctx.remoteAccess
