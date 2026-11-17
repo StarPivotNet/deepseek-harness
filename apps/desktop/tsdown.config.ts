@@ -97,7 +97,9 @@ export default defineConfig([
     clean: false,
     // The asar ships lib/ alone with no node_modules: runtime dependencies
     // must be inlined, and electron stays external as the host-provided builtin.
-    deps: { neverBundle: ['electron', 'bufferutil', 'utf-8-validate'], alwaysBundle: ['electron-updater', 'electron-updater/out/electronHttpExecutor.js', 'semver', 'ws', '@deepseek-ai/cordis', '@deepseek-ai/dsh-api-gateway', '@deepseek-ai/dsh-api-gateway/stream-protocol'] },
+    // `dsh-error` is the shared error base the bundled atomic-write and Typert
+    // paths import, so it needs the same treatment as the other workspace peers.
+    deps: { neverBundle: ['electron', 'bufferutil', 'utf-8-validate'], alwaysBundle: ['electron-updater', 'electron-updater/out/electronHttpExecutor.js', 'semver', 'ws', '@deepseek-ai/cordis', '@deepseek-ai/dsh-api-gateway', '@deepseek-ai/dsh-api-gateway/stream-protocol', '@deepseek-ai/dsh-error'] },
   },
   ...(['preload-app', 'preload-welcome', 'preload-platform-account', 'preload-mandatory', 'preload-update-dialog'] as const).map(name => ({
     // Sandboxed Electron preloads run as CommonJS even though the application package is ESM.
