@@ -6,7 +6,9 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   VENDORED_HOST_DIRECTORIES,
+  deployedPackageName,
   deployedPackagePath,
+  materializeWorkspaceLinks,
   restoreVendoredHostPackages,
   vendoredPackageName,
 } from './restore-vendored-host.ts'
@@ -46,6 +48,63 @@ describe('restoreVendoredHostPackages', () => {
     const copied = restoreVendoredHostPackages(deployed, root)
     expect(copied).toContain('@deepseek-ai/schemastery')
     expect(lstatSync(dest).isSymbolicLink()).toBe(false)
-    expect(JSON.parse(readFileSync(join(dest, 'package.json'), 'utf8')).name).toBe('@deepseek-ai/schemastery')
+    const manifest = JSON.parse(readFileSync(join(dest, 'package.json'), 'utf8')) as { name: string }
+    expect(manifest.name).toBe('@deepseek-ai/schemastery')
+  })
+})
+
+describe('materializeWorkspaceLinks', () => {
+  /** Deployed tree whose manifest names the application package. */
+  function deployedTree(): string {
+    const deployed = mkdtempSync(join(tmpdir(), 'dsh-deploy-links-'))
+    writeFileSync(join(deployed, 'package.json'), '{"name":"@deepseek-ai/dsh"}\n')
+    mkdirSync(join(deployed, 'node_modules', '@deepseek-ai'), { recursive: true })
+    return deployed
+  }
+
+  /** Workspace package a deploy left linked, with build output and ignored directories. */
+  function workspacePackage(): string {
+    const workspace = mkdtempSync(join(tmpdir(), 'dsh-workspace-pkg-'))
+    writeFileSync(join(workspace, 'package.json'), '{"name":"@deepseek-ai/dsh-error","main":"lib/index.js"}\n')
+    mkdirSync(join(workspace, 'lib'), { recursive: true })
+    writeFileSync(join(workspace, 'lib', 'index.js'), 'export {}\n')
+    mkdirSync(join(workspace, 'tests'), { recursive: true })
+    writeFileSync(join(workspace, 'tests', 'index.spec.ts'), 'test\n')
+    mkdirSync(join(workspace, 'node_modules', 'left-pad'), { recursive: true })
+    writeFileSync(join(workspace, 'node_modules', 'left-pad', 'index.js'), 'module.exports = 1\n')
+    return workspace
+  }
+
+  it('replaces a linked workspace package with a material copy', () => {
+    const deployed = deployedTree()
+    const workspace = workspacePackage()
+    const link = join(deployed, 'node_modules', '@deepseek-ai', 'dsh-error')
+    symlinkSync(workspace, link)
+    expect(materializeWorkspaceLinks(deployed)).toEqual(['@deepseek-ai/dsh-error'])
+    expect(lstatSync(link).isSymbolicLink()).toBe(false)
+    expect(existsSync(join(link, 'lib', 'index.js'))).toBe(true)
+    expect(existsSync(join(link, 'tests'))).toBe(false)
+    expect(existsSync(join(link, 'node_modules'))).toBe(false)
+  })
+
+  it('leaves material packages and drops the deployed package\'s own link', () => {
+    const deployed = deployedTree()
+    const scope = join(deployed, 'node_modules', '@deepseek-ai')
+    mkdirSync(join(scope, 'cosmokit'), { recursive: true })
+    writeFileSync(join(scope, 'cosmokit', 'package.json'), '{"name":"@deepseek-ai/cosmokit"}\n')
+    symlinkSync(join(root, 'apps', 'cli'), join(scope, 'dsh'))
+    expect(materializeWorkspaceLinks(deployed)).toEqual(['@deepseek-ai/dsh'])
+    expect(existsSync(join(scope, 'dsh'))).toBe(false)
+    expect(existsSync(join(scope, 'cosmokit', 'package.json'))).toBe(true)
+  })
+
+  it('names the deployed package from its manifest', () => {
+    expect(deployedPackageName(deployedTree())).toBe('@deepseek-ai/dsh')
+  })
+
+  it('reports a dangling workspace link instead of copying nothing', () => {
+    const deployed = deployedTree()
+    symlinkSync(join(deployed, 'missing-workspace-package'), join(deployed, 'node_modules', '@deepseek-ai', 'dsh-error'))
+    expect(() => materializeWorkspaceLinks(deployed)).toThrow(/dsh-error is a dangling symlink/u)
   })
 })

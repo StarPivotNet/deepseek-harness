@@ -5,8 +5,8 @@
  * a deployed `@deepseek-ai/dsh` cannot resolve them until they are restored.
  */
 
-import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync } from 'node:fs'
+import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { isEntry } from '../release/process.ts'
@@ -112,6 +112,68 @@ export function restoreVendoredHostPackages(deployedRoot: string, repoRoot: stri
   return copied
 }
 
+/**
+ * Read the scoped package name a deployed tree installs as the application.
+ * @param deployedRoot - `pnpm deploy` target whose manifest names the deployed package.
+ * @returns the `@deepseek-ai/...` name, or undefined when the manifest has none.
+ */
+export function deployedPackageName(deployedRoot: string): string | undefined {
+  const parsed: unknown = JSON.parse(readFileSync(join(deployedRoot, 'package.json'), 'utf8'))
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined
+  const name = (parsed as { name?: unknown }).name
+  return typeof name === 'string' ? name : undefined
+}
+
+/**
+ * Copy every deployed `node_modules/@deepseek-ai` entry that `pnpm deploy --legacy`
+ * left as a workspace symlink, so the deployed tree carries no link into the
+ * build checkout. A peer-only workspace dependency stays off the production
+ * dependency graph — `dsh-atomic-write` declares `@deepseek-ai/dsh-error` as a
+ * peer — so deploy only links it, and the link dangles once `docker COPY` takes
+ * the deployed tree alone: the Host then fails with ERR_MODULE_NOT_FOUND.
+ *
+ * The deployed package's own entry is dropped rather than copied: it names the
+ * deploy root, so copying it would place a second copy of the application
+ * inside its own `node_modules`.
+ * @param deployedRoot - `pnpm deploy` target that contains `node_modules`.
+ * @returns scoped names of the packages materialized or dropped.
+ */
+export function materializeWorkspaceLinks(deployedRoot: string): readonly string[] {
+  const scope = join(deployedRoot, 'node_modules', '@deepseek-ai')
+  if (!existsSync(scope)) return []
+  const payload = realpathSync(deployedRoot)
+  const self = deployedPackageName(deployedRoot)
+  const materialized: string[] = []
+  for (const leaf of readdirSync(scope)) {
+    const destination = join(scope, leaf)
+    if (!lstatSync(destination).isSymbolicLink()) continue
+    const name = `@deepseek-ai/${leaf}`
+    if (name === self) {
+      rmSync(destination, { force: true })
+      materialized.push(name)
+      continue
+    }
+    if (!existsSync(destination)) {
+      throw new Error(`restore-vendored-host: ${name} is a dangling symlink; deploy it or remove the link`)
+    }
+    const source = realpathSync(destination)
+    rmSync(destination, { force: true })
+    materialized.push(name)
+    if (payload === source || payload.startsWith(source + sep)) continue
+    cpSync(source, destination, {
+      recursive: true,
+      dereference: true,
+      filter: (entry) => {
+        const relative = entry.slice(source.length).replaceAll('\\', '/')
+        if (relative === '/node_modules' || relative.startsWith('/node_modules/')) return false
+        if (relative === '/tests' || relative.startsWith('/tests/')) return false
+        return true
+      },
+    })
+  }
+  return materialized
+}
+
 /** CLI entry: `pnpm exec tsx scripts/docker/restore-vendored-host.ts --deployed <dir>`. */
 function main(): void {
   const { values } = parseArgs({
@@ -125,11 +187,10 @@ function main(): void {
     throw new Error('restore-vendored-host: --deployed is required')
   }
   const copied = restoreVendoredHostPackages(values.deployed, values.root ?? defaultRoot)
-  if (copied.length === 0) {
-    console.log('restore-vendored-host: vendored Host packages already present')
-    return
-  }
-  console.log(`restore-vendored-host: copied ${copied.join(', ')}`)
+  if (copied.length === 0) console.log('restore-vendored-host: vendored Host packages already present')
+  else console.log(`restore-vendored-host: copied ${copied.join(', ')}`)
+  const materialized = materializeWorkspaceLinks(values.deployed)
+  if (materialized.length > 0) console.log(`restore-vendored-host: materialized ${materialized.join(', ')}`)
 }
 
 if (isEntry(import.meta.url)) main()
