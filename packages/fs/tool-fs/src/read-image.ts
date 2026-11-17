@@ -13,7 +13,7 @@
 
 import { basename, extname } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
-import { AttachmentError, AttachmentId } from '@deepseek-ai/dsh-attachment'
+import { AttachmentError, type AttachmentId } from '@deepseek-ai/dsh-attachment'
 import type { AttachmentStore, ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { defineTool, ToolArgsError, ToolContextUnavailableError } from '@deepseek-ai/dsh-tools'
@@ -21,6 +21,7 @@ import type { GenericCallView, ToolExecution } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-fs'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import { ImageInputError } from './image-error.ts'
+import { brandString } from '@deepseek-ai/dsh-brand'
 import { assertMediaCapableRoute, resolveRegularReadTarget } from './read-target.ts'
 
 /** Extensions `read_image` accepts; magic-byte validation at the attachment service stays authoritative. */
@@ -119,7 +120,7 @@ export function imageMediaTypeForPath(filePath: string): ImageMediaType | undefi
  * @param exec - the tool-execution context supplying the calling agent.
  * @param requestedPath - the raw, not-yet-resolved path rendered in refusal messages.
  * @throws ToolContextUnavailableError when no Agent route or `llm` service is available.
- * @throws ImageInputError `IMAGE_UNSUPPORTED_MODEL` when the route does not declare image input.
+ * @throws ImageInputError `MODEL_DOES_NOT_SUPPORT_IMAGES` when the route does not declare image input.
  */
 export function assertImageCapableRoute(ctx: Context, exec: ToolExecution, requestedPath: string): Promise<void> {
   return assertMediaCapableRoute(ctx, exec, requestedPath, 'image')
@@ -140,7 +141,7 @@ function assertDeploymentAccepts(attachments: AttachmentStore, mediaType: ImageM
  */
 export function imageRefFromValue(image: ImageReadValue['image']): ImageAttachmentRef {
   return {
-    attachmentId: AttachmentId(image.attachmentId),
+    attachmentId: brandString<AttachmentId>(image.attachmentId),
     mediaType: image.mediaType,
     bytes: image.bytes,
     width: image.width,

@@ -83,7 +83,7 @@ function providedServiceNames(ctx: Context): string[] {
 
 /** Whether the root realm maps `name` to a live registration. */
 function rootResolves(ctx: Context, name: string): boolean {
-  const key = ctx.root[Context.isolate][name]
+  const key = ctx[Context.root][Context.isolate][name]
   return key !== undefined && ctx.reflect.store[key] !== undefined
 }
 

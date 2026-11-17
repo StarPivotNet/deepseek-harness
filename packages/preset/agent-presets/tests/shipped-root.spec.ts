@@ -15,9 +15,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
-import Include, { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import Include, { parseEntryYaml } from '@deepseek-ai/cordis-plugin-include'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import * as yaml from 'js-yaml'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import AgentPresets, { SHIPPED_PRESET_ROOT, type Config } from '@deepseek-ai/dsh-agent-presets'
 
@@ -79,7 +78,7 @@ function findEntry(entries: unknown[], id: string): ShippedEntry | undefined {
 /** Read and validate one shipped preset's Cordis entry list. */
 async function shippedEntries(id: string): Promise<unknown[]> {
   const source = await readFile(join(SHIPPED_PRESET_ROOT, id, 'agent.cordis.yml'), 'utf8')
-  const entries: unknown = yaml.load(source, { schema: entryListSchema })
+  const entries: unknown = parseEntryYaml(source)
   if (!Array.isArray(entries)) throw new TypeError(`${id} preset must contain a Cordis entry list`)
   return entries.map((entry: unknown) => entry)
 }

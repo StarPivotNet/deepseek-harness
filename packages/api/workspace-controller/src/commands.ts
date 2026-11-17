@@ -3,11 +3,12 @@
 import { mkdir, realpath } from 'node:fs/promises'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import type { Context } from '@deepseek-ai/cordis'
+import { brandString } from '@deepseek-ai/dsh-brand'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import type { Workspace } from '@deepseek-ai/dsh-workspace'
 import {
   WorkspaceActiveSessionError,
   WorkspaceArchivedSessionPinError,
-  WorkspaceId,
   WorkspaceMoveInvalidError,
   WorkspaceOrderInvalidError,
   WorkspaceUnknownSessionError,
@@ -99,7 +100,7 @@ export class WorkspaceCommands {
    */
   delete(request: WorkspaceDeleteRequest): Promise<WorkspaceDeleteValue> {
     return this.enqueue(async () => {
-      if (!await this.ctx.workspaceRegistry.delete(WorkspaceId(request.workspaceId))) {
+      if (!await this.ctx.workspaceRegistry.delete(brandString<WorkspaceId>(request.workspaceId))) {
         throw workspaceNotFound(request.workspaceId)
       }
       return { deleted: true }
@@ -114,10 +115,10 @@ export class WorkspaceCommands {
   async insertBefore(request: WorkspaceInsertBeforeRequest): Promise<WorkspaceOrderValue> {
     try {
       const workspaceIds = await this.ctx.workspaceRegistry.insertBefore(
-        WorkspaceId(request.workspaceId),
+        brandString<WorkspaceId>(request.workspaceId),
         request.beforeWorkspaceId === undefined
           ? undefined
-          : WorkspaceId(request.beforeWorkspaceId),
+          : brandString<WorkspaceId>(request.beforeWorkspaceId),
       )
       return { workspaceIds: [...workspaceIds] }
     } catch (error) {
@@ -284,7 +285,7 @@ export class WorkspaceCommands {
    * @returns the complete resulting hidden set.
    */
   async hide(workspaceId: WorkspaceId): Promise<{ hiddenWorkspaceIds: readonly WorkspaceId[] }> {
-    if (!await this.ctx.workspaceRegistry.hide(WorkspaceId(workspaceId))) {
+    if (!await this.ctx.workspaceRegistry.hide(workspaceId)) {
       throw workspaceNotFound(workspaceId)
     }
     return { hiddenWorkspaceIds: [...this.ctx.workspaceRegistry.hiddenWorkspaceIds] }
@@ -296,14 +297,14 @@ export class WorkspaceCommands {
    * @returns the complete resulting hidden set.
    */
   async show(workspaceId: WorkspaceId): Promise<{ hiddenWorkspaceIds: readonly WorkspaceId[] }> {
-    if (!await this.ctx.workspaceRegistry.show(WorkspaceId(workspaceId))) {
+    if (!await this.ctx.workspaceRegistry.show(workspaceId)) {
       throw workspaceNotFound(workspaceId)
     }
     return { hiddenWorkspaceIds: [...this.ctx.workspaceRegistry.hiddenWorkspaceIds] }
   }
 
   private requireWorkspace(workspaceId: WorkspaceId): Workspace {
-    const workspace = this.ctx.workspaceRegistry.get(WorkspaceId(workspaceId))
+    const workspace = this.ctx.workspaceRegistry.get(brandString<WorkspaceId>(workspaceId))
     if (workspace === undefined) throw workspaceNotFound(workspaceId)
     return workspace
   }

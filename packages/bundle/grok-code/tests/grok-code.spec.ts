@@ -9,9 +9,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import { parseEntryYaml } from '@deepseek-ai/cordis-plugin-include'
 import { entryListProblem } from '@deepseek-ai/dsh-agent-preset-registry'
-import * as yaml from 'js-yaml'
 import { buildDefinition, packagePaths } from '../src/index.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
@@ -62,20 +61,21 @@ describe('dsh-grok-code bundle', () => {
   it('points every relative row and the skill directory inside the package', () => {
     const paths = packagePaths()
     const rows = collect(buildDefinition().plugins as Row[])
-    const files = rows.filter((row) => row.name.startsWith('file:'))
+    const files = rows.filter(row => row.name.startsWith('file:'))
     expect(files.length).toBeGreaterThan(0)
     for (const row of files) {
       expect(row.name.startsWith('file:///')).toBe(true)
-      expect(row.name).toContain('/packages/bundle/grok-code/'.replaceAll('/', process.platform === 'win32' ? '/' : '/'))
+      // Cordis `file:` rows are URL-form, so the separator is always a slash.
+      expect(row.name).toContain('/packages/bundle/grok-code/')
     }
-    const skills = rows.find((row) => row.id === 'skill-filesystem')
+    const skills = rows.find(row => row.id === 'skill-filesystem')
     expect((skills?.config as { customSkillDirs?: string[] }).customSkillDirs).toEqual([paths.skills])
   })
 
   it('names only workspace packages in its package rows', () => {
     const known = workspacePackageNames()
     const rows = collect(buildDefinition().plugins as Row[])
-      .filter((row) => !row.name.startsWith('file:') && row.name !== 'cordis:group')
+      .filter(row => !row.name.startsWith('file:') && row.name !== 'cordis:group')
     expect(rows.length).toBeGreaterThan(0)
     for (const row of rows) {
       expect(known.has(row.name), `${String(row.id)} names ${row.name}`).toBe(true)
@@ -84,15 +84,15 @@ describe('dsh-grok-code bundle', () => {
 
   it('carries no prompt variable the host does not register', () => {
     const composition = readFileSync(join(packagePaths().presetDir, 'agent.cordis.yml'), 'utf8')
-    const variables = [...composition.matchAll(/\{\{([^{}]+)\}\}/g)].map((match) => match[1])
+    const variables = [...composition.matchAll(/\{\{([^{}]+)\}\}/g)].map(match => match[1])
     expect(variables).toEqual(['model'])
   })
 
   it('keeps the four local corrections applied to the upstream composition', () => {
     const rows = collect(buildDefinition().plugins as Row[])
-    const byId = (id: string): Row | undefined => rows.find((row) => row.id === id)
+    const byId = (id: string): Row | undefined => rows.find(row => row.id === id)
     expect(byId('workflow-ptc')?.name).toBe('@deepseek-ai/dsh-workflow-ptc')
-    expect(rows.some((row) => row.name === '@deepseek-ai/dsh-workflow-worker-thread')).toBe(false)
+    expect(rows.some(row => row.name === '@deepseek-ai/dsh-workflow-worker-thread')).toBe(false)
     expect(byId('official-file-prompt-shadow')?.disabled).toBe(true)
     expect((byId('tool-web')?.config as { fetch?: boolean }).fetch).toBe(true)
     expect((byId('tool-subagent')?.config as { agentPreset?: string }).agentPreset).toBe('grok-code')
@@ -105,15 +105,15 @@ describe('dsh-grok-code bundle', () => {
     const definition = buildDefinition()
     expect(entryListProblem(definition.plugins)).toBeUndefined()
     const ids = collect(definition.plugins as Row[])
-      .map((row) => row.id)
+      .map(row => row.id)
       .filter((id): id is string => typeof id === 'string')
     expect(new Set(ids).size, `duplicate row id in ${ids.join(', ')}`).toBe(ids.length)
   })
 
   it('parses with the Loader dialect the roster uses', () => {
     const composition = readFileSync(join(packagePaths().presetDir, 'agent.cordis.yml'), 'utf8')
-    const parsed = yaml.load(composition, { schema: entryListSchema }) as Row[]
+    const parsed = parseEntryYaml(composition) as Row[]
     expect(Array.isArray(parsed)).toBe(true)
-    expect(parsed.every((row) => typeof row.name === 'string' && row.name !== '')).toBe(true)
+    expect(parsed.every(row => typeof row.name === 'string' && row.name !== '')).toBe(true)
   })
 })

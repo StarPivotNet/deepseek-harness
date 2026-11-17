@@ -11,10 +11,9 @@
  */
 
 import { readFile } from 'node:fs/promises'
-import { load } from 'js-yaml'
 import type { FiberState } from '@deepseek-ai/cordis'
 import { isJsExpr, type EntryTree } from '@deepseek-ai/cordis-plugin-loader'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import { parseEntryYaml } from '@deepseek-ai/cordis-plugin-include'
 import { entryListProblem } from './discovery.ts'
 import type { PresetTrust } from './preset.ts'
 
@@ -150,7 +149,7 @@ function flattenRows(
 /**
  * Plugin rows of one composition file, for a preset with no live mount.
  *
- * Parsed with the Loader's own dialect ({@link entryListSchema}), so the rows
+ * Parsed with the Loader's own dialect ({@link parseEntryYaml}), so the rows
  * reported are the rows a mount would start from. A file that stopped reading
  * as a composition — discovery judged the preset healthy moments earlier, so
  * only an edit racing this read gets here — answers as broken with the raced
@@ -165,7 +164,7 @@ export async function fileComposition(
 ): Promise<{ rows: AgentPresetCompositionRow[] } | { broken: string }> {
   let rows: unknown
   try {
-    rows = load(await readFile(path, 'utf8'), { schema: entryListSchema })
+    rows = parseEntryYaml(await readFile(path, 'utf8'))
   } catch (error) {
     /* v8 ignore next -- fs and js-yaml throw Errors for every failure here; the fallback keeps a hostile value readable */
     return { broken: error instanceof Error ? error.message : String(error) }

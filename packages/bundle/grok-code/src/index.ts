@@ -20,7 +20,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import { parseEntryYaml } from '@deepseek-ai/cordis-plugin-include'
 import { load } from 'js-yaml'
 
 /** Cordis plugin name. */
@@ -116,7 +116,7 @@ export function buildDefinition(): {
   const paths = packagePaths()
   const file = join(paths.presetDir, 'agent.cordis.yml')
   if (!existsSync(file)) throw new Error(`grok-code: composition missing at ${file}`)
-  const parsed: unknown = load(readFileSync(file, 'utf8'), { schema: entryListSchema })
+  const parsed: unknown = parseEntryYaml(readFileSync(file, 'utf8'))
   if (!Array.isArray(parsed)) throw new Error('grok-code: composition must be a top-level list of plugin rows')
   const metadataFile = join(paths.presetDir, 'preset.yml')
   const metadata = (existsSync(metadataFile) ? load(readFileSync(metadataFile, 'utf8')) : {}) as PresetMetadata
@@ -174,7 +174,7 @@ export function apply(ctx: Context): void {
         release = await registry.register(definition)
         let broken: string | undefined
         try {
-          broken = (await registry.list()).find((preset) => preset.id === PRESET_ID)?.broken
+          broken = (await registry.list()).find(preset => preset.id === PRESET_ID)?.broken
         } catch {
           // The registry refuses to list; the registration itself already succeeded.
         }

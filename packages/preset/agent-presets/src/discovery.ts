@@ -26,8 +26,7 @@ import { readdir, readFile, stat } from 'node:fs/promises'
 import { isBuiltin } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { load } from 'js-yaml'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import { parseEntryYaml } from '@deepseek-ai/cordis-plugin-include'
 import { expandHomePath } from '@deepseek-ai/dsh-home-paths'
 import { readPresetMetadata } from './metadata.ts'
 import { PRESET_ID, type AgentPreset, type PresetRoot } from './preset.ts'
@@ -210,7 +209,7 @@ async function unresolvableRows(
 
 /**
  * Why the composition at `path` cannot mount, or undefined when it looks
- * loadable. Parsed with the loader's own YAML dialect ({@link entryListSchema},
+ * loadable. Parsed with the loader's own YAML dialect ({@link parseEntryYaml},
  * the one carrying `!!js`), so health can never call a composition broken
  * that the loader would accept.
  * A package-lookup failure becomes this composition's broken reason, so one
@@ -232,7 +231,7 @@ async function compositionProblem(
   }
   let rows: unknown
   try {
-    rows = load(content, { schema: entryListSchema })
+    rows = parseEntryYaml(content)
   } catch (error) {
     /* v8 ignore next -- js-yaml throws YAMLException (an Error) for every parse failure; the fallback keeps a hostile value readable */
     const full = error instanceof Error ? error.message : String(error)

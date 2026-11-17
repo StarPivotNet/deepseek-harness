@@ -27,10 +27,9 @@ import { spawnSync } from 'node:child_process'
 import { homedir } from 'node:os'
 import { basename, delimiter, dirname, join, relative, resolve, sep } from 'node:path'
 import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import { applyEntryPatches, stringifyEntryYaml, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import type { Context } from '@deepseek-ai/cordis'
-import * as yaml from 'js-yaml'
 import type { DshBundleManifest, DshPackageManifest } from '@deepseek-ai/dsh-package-manifest'
 import { INSTALLATION_OWNED_PROFILE_TUPLES, PROFILE_TEMPLATES, RETIRED_BUNDLES } from '@deepseek-ai/dsh-official-bundles'
 import { assertBundlePlatform } from './bundle-platform.ts'
@@ -954,6 +953,6 @@ export function runProfilePnpm(options: RunProfilePnpmOptions): ProfilePnpmResul
 export function writeProfilePatches(dir: string, patches: readonly PatchOptions[]): void {
   writeFileSync(
     join(dir, PROFILE_PATCH_FILENAME),
-    yaml.dump([...patches], { schema: entryListSchema, noRefs: true }).trimEnd() + '\n',
+    stringifyEntryYaml([...patches]),
   )
 }

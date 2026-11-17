@@ -337,7 +337,7 @@ export class AgentPresets extends Service {
     const evaluateExpression = (expression: string): unknown => evaluate(this.ctx.loader.ctx, expression)
     // Mount records span every Cordis runtime in the process; only this
     // runtime's mounts describe this roster's presets.
-    const rootFiber = this.ctx.root.fiber
+    const rootFiber = this.ctx[Context.root].fiber
     const found: AgentPresetComposition[] = []
     for (const preset of await this.list()) {
       const identity = {

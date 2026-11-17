@@ -2,8 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import * as yaml from 'js-yaml'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import { parseEntryYaml } from '@deepseek-ai/cordis-plugin-include'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import * as plugin from '../src/index.ts'
 import { readPresetDefinition } from '../../redteam/src/preset-composition.ts'
@@ -13,7 +12,7 @@ const root = dirname(fileURLToPath(new URL('../package.json', import.meta.url)))
 
 describe('organization Purge bundle', () => {
   it('declares the default-on layer and keeps every red-team entry in the package', () => {
-    const patch = yaml.load(readFileSync(join(root, 'cordis.patch.yml'), 'utf8'), { schema: entryListSchema }) as {
+    const patch = parseEntryYaml(readFileSync(join(root, 'cordis.patch.yml'), 'utf8')) as {
       insert?: { id?: string; name?: string; config?: Record<string, unknown> }[]
     }[]
     const rows = patch.flatMap(row => row.insert ?? [])

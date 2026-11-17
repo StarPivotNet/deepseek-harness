@@ -22,7 +22,7 @@ import { sessionResolveOptions } from './session-cwd.ts'
  * @param requestedPath - the raw, not-yet-resolved path rendered in refusal messages.
  * @param modality - the input modality the exact route must declare.
  * @throws ToolContextUnavailableError when no Agent route or `llm` service is available.
- * @throws ImageInputError `IMAGE_UNSUPPORTED_MODEL` when an image route does not declare image input;
+ * @throws ImageInputError `MODEL_DOES_NOT_SUPPORT_IMAGES` when an image route does not declare image input;
  *   `read_video` reports that refusal as a plain tool error because its other failures are untyped too.
  */
 export async function assertMediaCapableRoute(
@@ -42,7 +42,7 @@ export async function assertMediaCapableRoute(
   const active = await llm.resolveModelInfo(provider, model, exec.signal)
   if (active.inputModalities === undefined || !active.inputModalities.includes(modality)) {
     const message = `cannot read "${requestedPath}" as ${noun}: model "${model}" does not declare ${modality} input; switch to ${noun}-capable model to read ${modality}s`
-    throw modality === 'image' ? new ImageInputError(message, 'IMAGE_UNSUPPORTED_MODEL') : new Error(message)
+    throw modality === 'image' ? new ImageInputError(message, 'MODEL_DOES_NOT_SUPPORT_IMAGES') : new Error(message)
   }
 }
 
