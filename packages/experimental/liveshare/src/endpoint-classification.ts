@@ -42,13 +42,34 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'llm/listProviders': 'reader-global-read', // the page lists providers
   'session/canOpenWorkspacePath': 'reader-global-read', // the page asks whether a path can be opened
   'session/modelCatalog': 'reader-global-read', // the page reads the model catalog
+  'pluginEvents/follow': 'reader-global-read', // the page follows the plugin graph; the Host sends a non-owner schema defaults, never configured values
+  'productAnalytics/enabled': 'reader-global-read', // the page asks whether this host accepts analytics
+  'productAnalytics/report': 'reader-global-read', // the page reports its own product events
+  'productAnalytics/watchPolicy': 'reader-global-read', // the page follows the analytics policy
+  'speech/cancelPreparation': 'reader-global-read', // the page cancels its recognizer preparation
+  'speech/catalog': 'reader-global-read', // the page reads recorder providers and limits
+  'speech/follow': 'reader-global-read', // the page follows recognizer readiness
+  'speech/prepare': 'reader-global-read', // the page prepares a recognizer for its own recording
+  'speech/transcribe': 'reader-global-read', // the page transcribes its own recording
 
   // ── reader-session-read ─────────────────────────────────────────────────────────────
   'commands/list': 'reader-session-read', // the page lists slash commands for a visible Session (also granted globally)
+  'fileReferences/list': 'reader-session-read', // the reader lists files of a Session workspace it can read
   'fileUploads/upload': 'reader-session-read', // the reader attaches a file to a Session it can see; visibility alone decides
   'session/control': 'reader-session-read', // the page follows a visible Session control stream (also granted globally)
   'session/list': 'reader-session-read', // the page lists Sessions (also granted globally)
   'goals/get': 'reader-session-read', // the page reads the goal of a visible Session
+  'goals/edit': 'reader-session-read', // the page edits the goal of a visible Session; visibility alone decides
+  'goals/clear': 'reader-session-read', // the page clears the goal of a visible Session
+  'goals/complete': 'reader-session-read', // the page completes the goal of a visible Session
+  'goals/create': 'reader-session-read', // the page creates a goal on a visible Session
+  'goals/pause': 'reader-session-read', // the page pauses the goal of a visible Session
+  'goals/resume': 'reader-session-read', // the page resumes the goal of a visible Session
+  'job/list': 'reader-session-read', // the page lists the background jobs of a visible Session
+  'job/follow': 'reader-session-read', // the page follows one background job of a visible Session
+  'sessionReferenceResolver/candidates': 'reader-session-read', // the page lists sessions for an @ reference
+  'userQuestions/answer': 'reader-session-read', // the page answers a pending question of a visible Session
+  'userQuestions/attachWait': 'reader-session-read', // the page joins a pending question of a visible Session
   'session/attachment': 'reader-session-read', // the page reads an attachment of a visible Session
   'session/follow': 'reader-session-read', // the page follows a visible Session
   'session/page': 'reader-session-read', // the page reads a visible Session page
@@ -94,15 +115,11 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'account/startSignIn': 'owner-only', // owner account and sign-in; the served page never reads it
   'account/watch': 'owner-only', // owner account and sign-in; the served page never reads it
   'account/watchExpiry': 'owner-only', // owner account and sign-in; the served page never reads it
-  'job/follow': 'owner-only', // owner background jobs'
+  'commands/execute': 'owner-only', // owner executes a slash command
   'job/kill': 'owner-only', // owner background jobs
-  'job/list': 'owner-only', // owner background jobs'
-  'fileReferences/list': 'owner-only', // owner file references'
   'session/create': 'owner-only', // owner creates a Session
   'session/initializeDefaultModel': 'owner-only', // owner initializes a Session default model
   'session/openWorkspacePath': 'owner-only', // owner opens a Workspace path
-  'session/rehome': 'owner-only', // owner moves a Session to another Workspace
-  'session/rewrite': 'owner-only', // owner rewrites a settled prompt
   'session/search': 'owner-only', // owner searches across Sessions
   'session/selectModel': 'owner-only', // owner selects a Session model
   'session/updateQueue': 'owner-only', // owner edits queued input
@@ -117,7 +134,6 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'settings/openSettingsDocument': 'owner-only', // owner settings
   'settings/replace': 'owner-only', // owner settings
   'settings/update': 'owner-only', // owner settings
-  'systemPrompt/list': 'owner-only', // owner system-prompt documents
   'terminal/attach': 'owner-only', // owner terminals
   'terminal/close': 'owner-only', // owner terminals
   'terminal/create': 'owner-only', // owner terminals
@@ -130,16 +146,9 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'directoryPicker/createDirectory': 'owner-only', // owner filesystem picker
   'directoryPicker/list': 'owner-only', // owner filesystem picker
   'directoryPicker/pick': 'owner-only', // owner filesystem picker
-  'git/checkout': 'owner-only', // owner Workspace git state
-  'git/createBranch': 'owner-only', // owner Workspace git state
-  'git/describe': 'owner-only', // owner Workspace git state
-  'workspace/addFolder': 'owner-only', // owner edits Workspace folders
   'workspace/archiveSession': 'owner-only', // owner archives a Session
   'workspace/create': 'owner-only', // owner creates a Workspace
   'workspace/delete': 'owner-only', // owner deletes a Workspace
-  'workspace/hide': 'owner-only', // owner hides a Session from the sidebar
-  'workspace/removeFolder': 'owner-only', // owner edits Workspace folders
-  'workspace/show': 'owner-only', // owner shows a hidden Session again
   'workspace/initializeDefault': 'owner-only', // owner initializes the default Workspace
   'workspace/insertBefore': 'owner-only', // owner reorders Workspaces
   'workspace/insertSessionBefore': 'owner-only', // owner reorders Sessions
@@ -172,20 +181,13 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'pluginMarket/readEntryDetail': 'owner-only', // owner plugin market
   'pluginMarket/search': 'owner-only', // owner plugin market
   'pluginMarket/setIndexes': 'owner-only', // owner plugin market
-  'productAnalytics/enabled': 'owner-only', // owner product analytics
-  'productAnalytics/report': 'owner-only', // owner product analytics
-  'productAnalytics/watchPolicy': 'owner-only', // owner product analytics
-  'usage/overview': 'owner-only', // owner usage accounting
   'pluginRegistryProbe/fastest': 'owner-only', // owner plugin registry probe
-  'sessionReferenceResolver/candidates': 'owner-only', // owner composer reference resolution
+  'connectorAccounts/cancel': 'owner-only', // owner connector accounts on the Plugins page
+  'connectorAccounts/start': 'owner-only', // owner connector accounts on the Plugins page
+  'connectorAccounts/watch': 'owner-only', // owner connector accounts on the Plugins page
   'officeKit/generation': 'owner-only', // owner document export
   'officeKit/render': 'owner-only', // owner document export
-  'speech/cancelPreparation': 'owner-only', // owner voice input
-  'speech/catalog': 'owner-only', // owner voice input
   'speech/configure': 'owner-only', // owner voice input
-  'speech/follow': 'owner-only', // owner voice input
-  'speech/prepare': 'owner-only', // owner voice input
-  'speech/transcribe': 'owner-only', // owner voice input
   'claudeCodeMods/pressBand': 'owner-only', // owner Claude Code mods UI
   'claudeCodeMods/watchBand': 'owner-only', // owner Claude Code mods UI
   'cotTranslation/limits': 'owner-only', // owner chain-of-thought translation UI
@@ -215,20 +217,12 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'messageFeedback/delete': 'owner-only', // owner message feedback
   'messageFeedback/list': 'owner-only', // owner message feedback
   'messageFeedback/put': 'owner-only', // owner message feedback
-  'goals/clear': 'owner-only', // owner clears the goal
-  'goals/complete': 'owner-only', // owner completes the goal
-  'goals/create': 'owner-only', // owner creates a goal
-  'goals/edit': 'owner-only', // owner edits a goal
-  'goals/pause': 'owner-only', // owner pauses a goal
-  'goals/resume': 'owner-only', // owner resumes a goal
   'pluginInventory/list': 'owner-only', // owner plugin inventory
   'mcpManager/probe': 'owner-only', // owner MCP server management
   'mcpManager/restart': 'owner-only', // owner MCP server management
   'mcpManager/watch': 'owner-only', // owner MCP server management
-  'commands/execute': 'owner-only', // owner executes a slash command
   'permissionPresets/catalog': 'owner-only', // owner permission presets
-  'userQuestions/answer': 'owner-only', // owner answers a pending question
-  'userQuestions/attachWait': 'owner-only', // owner answers a pending question
+  'permissionPresets/set': 'owner-only', // owner switches the sandbox and approval preset; a viewer may not call it at any tier
   'llm/discoverModels': 'owner-only', // owner discovers models
   'web/listProviders': 'owner-only', // owner web search and fetch settings
   'agentPresets/list': 'owner-only', // owner agent presets
@@ -242,14 +236,6 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'schedule/edit': 'owner-only', // owner schedules
   'schedule/history': 'owner-only', // owner schedules
   'schedule/list': 'owner-only', // owner schedules
-  'automation/create': 'owner-only', // owner Automations spawn Host Sessions
-  'automation/delete': 'owner-only', // owner Automations spawn Host Sessions
-  'automation/deleteRun': 'owner-only', // owner Automations spawn Host Sessions
-  'automation/list': 'owner-only', // owner Automations spawn Host Sessions
-  'automation/listRuns': 'owner-only', // owner Automations spawn Host Sessions
-  'automation/runNow': 'owner-only', // owner Automations spawn Host Sessions
-  'automation/setEnabled': 'owner-only', // owner Automations spawn Host Sessions
-  'automation/update': 'owner-only', // owner Automations spawn Host Sessions
   'schedule/run': 'owner-only', // owner schedules
   'schedule/view': 'owner-only', // owner schedules
   'subagents/interruptByUser': 'owner-only', // owner subagents
@@ -268,6 +254,26 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'liveshareShares/stop': 'owner-only',
   'liveshareShares/testPublish': 'owner-only',
   'liveshareShares/testRelay': 'owner-only',
+  // StarPivot fork surfaces: no reader role names these either, so they stay owner-only.
+  'automation/create': 'owner-only', // owner Automations spawn Host Sessions
+  'automation/delete': 'owner-only', // owner Automations spawn Host Sessions
+  'automation/deleteRun': 'owner-only', // owner Automations spawn Host Sessions
+  'automation/list': 'owner-only', // owner Automations spawn Host Sessions
+  'automation/listRuns': 'owner-only', // owner Automations spawn Host Sessions
+  'automation/runNow': 'owner-only', // owner Automations spawn Host Sessions
+  'automation/setEnabled': 'owner-only', // owner Automations spawn Host Sessions
+  'automation/update': 'owner-only', // owner Automations spawn Host Sessions
+  'git/checkout': 'owner-only', // owner Workspace git state
+  'git/createBranch': 'owner-only', // owner Workspace git state
+  'git/describe': 'owner-only', // owner Workspace git state
+  'session/rehome': 'owner-only', // owner moves a Session to another Workspace
+  'session/rewrite': 'owner-only', // owner rewrites a settled prompt
+  'systemPrompt/list': 'owner-only', // owner system-prompt documents
+  'usage/overview': 'owner-only', // owner usage accounting
+  'workspace/addFolder': 'owner-only', // owner edits Workspace folders
+  'workspace/hide': 'owner-only', // owner hides a Session from the sidebar
+  'workspace/removeFolder': 'owner-only', // owner edits Workspace folders
+  'workspace/show': 'owner-only', // owner shows a hidden Session again
   'liveshareShares/updatePermissions': 'owner-only',
 } as const satisfies Readonly<Record<string, ViewerEndpointClass>>
 

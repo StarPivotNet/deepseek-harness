@@ -11,14 +11,15 @@ import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import SessionQueryEngine from '@deepseek-ai/dsh-session-query'
 import SessionControl from '@deepseek-ai/dsh-session-control'
 import Storage from '@deepseek-ai/dsh-storage'
-import { DomainFacility } from '@deepseek-ai/dsh-storage-domain'
+import * as StorageDomain from '@deepseek-ai/dsh-storage-domain'
+import * as StorageJson from '@deepseek-ai/dsh-storage-json'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as ToolSessionControl from '@deepseek-ai/dsh-tool-session-control'
 import SessionTitle from '@deepseek-ai/dsh-session-title'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import WorkspaceRegistry from '@deepseek-ai/dsh-workspace'
-import { MemoryStorageBackend } from '../../../storage/storage-domain/tests/helpers/memory-backend.ts'
 
 class TestSessionQueryEngine extends SessionQueryEngine {
   override searchSessions(
@@ -39,14 +40,13 @@ class TestSessionQueryEngine extends SessionQueryEngine {
 
 
 async function executeTool(ctx: Context, input: { signal: AbortSignal; callId: ToolCallId; name: string; arguments: unknown; agent?: Agent }): Promise<import('@deepseek-ai/dsh-tools').ToolExecutionResult> {
-  const batch = await ctx.tools.execute({
-    calls: [{ type: 'tool-call', id: input.callId, name: input.name, arguments: JSON.stringify(input.arguments ?? {}) }],
+  return executeToolFixture(ctx, {
+    callId: input.callId,
+    name: input.name,
+    arguments: input.arguments ?? {},
     signal: input.signal,
     ...input.agent === undefined ? {} : { agent: input.agent },
   })
-  const result = batch.results[0]?.result
-  if (result === undefined) throw new Error('tool batch returned no result')
-  return result
 }
 
 async function directoryHarness(): Promise<Context> {
@@ -75,8 +75,8 @@ async function titleHarness(): Promise<Context> {
 async function harness(): Promise<Context> {
   const ctx = await directoryHarness()
   await ctx.plugin(Storage)
-  ctx.storage.backend.register('memory', new MemoryStorageBackend())
-  const facility = new DomainFacility(ctx, { backend: 'memory', routes: {} })
+  await ctx.plugin(StorageJson, { root: await makeRoot() })
+  await ctx.plugin(StorageDomain, { backend: 'json' })
   ctx.provide('sessionPersistence', { list: () => Promise.resolve([]) } as never)
   await ctx.plugin(SessionTitle, {
     fallbackMaxWords: 5,
@@ -84,7 +84,6 @@ async function harness(): Promise<Context> {
     maxTitleBytes: 80,
   })
   await ctx.plugin(WorkspaceRegistry)
-  void facility
   return ctx
 }
 
@@ -356,9 +355,10 @@ describe('dsh-tool-session-control', () => {
     expect(unarchived.value).toEqual({ sessionId: 'kept', archived: false })
     expect(ctx.workspaceRegistry.archivedSessionIds).toEqual([])
 
+    // Unarchiving never checks existence: removing an id cannot introduce an unknown one.
     const missing = await callTool(ctx, 'session_control_unarchive', { session_id: 'ghost' })
-    expect(missing.isError).toBe(true)
-    expect(text(missing)).toContain("unknown session 'ghost'")
+    expect(missing.isError).toBe(false)
+    expect(ctx.workspaceRegistry.archivedSessionIds).toEqual([])
     await ctx.fiber.dispose()
   })
 
@@ -549,7 +549,7 @@ describe('dsh-tool-session-control', () => {
 
     const unknown = await callTool(ctx, 'session_control_archive', { session_id: 'ghost' })
     expect(unknown.isError).toBe(true)
-    expect(text(unknown)).toContain("unknown session 'ghost'")
+    expect(text(unknown)).toContain("cannot archive session 'ghost'")
 
     const dir = await makeDir('reorder-throw')
     const workspace = await ctx.workspaceRegistry.create(dir)
@@ -565,10 +565,8 @@ describe('dsh-tool-session-control', () => {
   it('unregisters library tools when workspaceRegistry unloads', async () => {
     const ctx = await directoryHarness()
     await ctx.plugin(Storage)
-    ctx.storage.backend.register('memory', new MemoryStorageBackend())
-    const facility = new DomainFacility(ctx, { backend: 'memory', routes: {} })
-    ctx.storage.mount('domain', facility)
-    ctx.provide('storageDomain', facility)
+    await ctx.plugin(StorageJson, { root: await makeRoot() })
+    await ctx.plugin(StorageDomain, { backend: 'json' })
     ctx.provide('sessionPersistence', { list: () => Promise.resolve([]) } as never)
     const workspaceFiber = ctx.plugin(WorkspaceRegistry)
     await workspaceFiber

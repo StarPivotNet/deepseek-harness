@@ -1,0 +1,38 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "tsBuildInfoFile": "lib/tsconfig.host.tsbuildinfo"
+  },
+  "files": [
+    "src/index.ts",
+    "src/types.ts",
+    "src/plugin-events.ts",
+    "src/hmr-settings.ts",
+    "src/reload-endpoint.ts"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../modules"
+    },
+    {
+      "path": "../../typert/protocol"
+    },
+    {
+      "path": "../../util/deque"
+    },
+    {
+      "path": "../../settings/settings"
+    },
+    {
+      "path": "../../host/webserver"
+    }
+  ]
+}

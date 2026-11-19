@@ -241,11 +241,12 @@ export function apply(ctx: ClientContext): void {
     decorateNamed('update')
   }
 
-  // The Plugins settings page composes feature-owned tabs under
-  // `settings.plugins.tab`; registering a competing `settings.section` with
-  // the shell's own id would be dropped by the first-wins section dedupe.
-  ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
-    name: 'settings.plugins.tab',
+  // The Plugins page composes feature-owned tabs after its own Installed
+  // tab; this Discover tab carries its own Host mutations, so it registers
+  // here rather than as a competing `settings.section`, which the shell's
+  // first-wins section dedupe would drop.
+  ctx.slots.inject('plugins.tab', () => ctx.slots.register({
+    name: 'plugins.tab',
     id: 'discover',
     order: 5,
     label: () => t('nav'),

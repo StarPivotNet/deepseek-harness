@@ -368,7 +368,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           cwd: profile.dir,
           home: profile.dir,
           startedBundles: [],
-          overlays: [],
+          overlayPaths: [],
           telemetryDisabledEnv: undefined,
         })
         writeProfilePatches(profile.dir, applyEnablement(patches, request.entryId, request.enabled))

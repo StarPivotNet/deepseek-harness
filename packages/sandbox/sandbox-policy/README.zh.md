@@ -45,10 +45,10 @@ kind: "package-reference"
 | 字段 | 默认值 | 含义 |
 |---|---|---|
 | `mode` | `read-only` | 会话起始的部署默认模式，加载时验证 |
-| `workspaceRoot` | `process.cwd()` | 无 agent 调用或没有 cwd 的会话所用的绝对回退根目录；相对值在加载时拒绝。普通 agent 调用使用会话的不可变 cwd；cwd 为相对路径或含 NUL 字节时调用以 `SANDBOX_INVALID_ROOT` 失败 |
+| `workspaceRoot` | `process.cwd()` | 无 agent 调用所用的绝对回退根目录；未挂载工作目录服务时，header 没有目录的会话也使用它；相对值在加载时拒绝。普通 agent 调用使用会话的工作目录；根为相对路径或含 NUL 字节时调用以 `SANDBOX_INVALID_ROOT` 失败 |
 | `additionalWritableRoots` | `[]` | 在 `workspace-write` 下额外允许写入的物理绝对目录；Windows 文件工具执行这些授权，Windows 子进程忽略它们，`read-only` 不授予访问权限 |
 
-对于关联的 Git worktree，调用方可通过 `additionalWritableRoots` 授予共享 Git 目录的写权限。调用方必须显式选择该目录；策略不会读取 Git 文件或授权父检出目录。这些授权是组合中所有会话共享的部署配置，而非保存的 Session 权限。授权整个 Git 目录也允许修改钩子和配置，后续主机 Git 调用可能在沙箱之外执行它们；仅对可信任务使用此授权。使用物理绝对目录路径。执行限制的主机在每次调用时拒绝不存在的路径、非目录和符号链接目录，包括两次调用之间被替换为符号链接的目录。远端授权在远端主机上验证。
+会话的工作区根是它所在的目录，读取自[工作目录服务](../../session/working-directory/README.zh.md)：Host 每次移动 Session 的目录（例如进入或离开 worktree），边界都随之移动。对于关联的 Git worktree，仓库的 Git 目录位于该根之外，因此在 `workspace-write` 下写入它的 Git 命令会被拒绝，直到有授权覆盖它：部署可以通过 `additionalWritableRoots` 向所有会话授权，Host 插件可以通过 `registerWritableRoot` 向单个 live Session 授权。调用方必须显式选择该目录；策略不会读取 Git 文件或授权父检出目录。这些授权是组合中所有会话共享的部署配置，而非保存的 Session 权限。授权整个 Git 目录也允许修改钩子和配置，后续主机 Git 调用可能在沙箱之外执行它们；仅对可信任务使用此授权。使用物理绝对目录路径。执行限制的主机在每次调用时拒绝不存在的路径、非目录和符号链接目录，包括两次调用之间被替换为符号链接的目录。远端授权在远端主机上验证。
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-sandbox-policy)是每个受支持字段及其 JSDoc 的穷尽式真源。
 
@@ -60,7 +60,7 @@ kind: "package-reference"
 
 ### 切换会话模式
 
-会话的模式可以在运行时通过 UI 策略控件或显式切换来更改；切换记录在会话日志中，并在该会话的下一次受限调用时生效。切换通过回放跨重启保留，每个会话保持自己的模式——两个会话绝不会看到彼此状态。切换后的会话继续以不可变的工作区 cwd 作为写入边界。
+会话的模式可以在运行时通过 UI 策略控件或显式切换来更改；切换记录在会话日志中，并在该会话的下一次受限调用时生效。切换通过回放跨重启保留，每个会话保持自己的模式——两个会话绝不会看到彼此状态。切换后的会话继续以其工作区根作为写入边界。
 
 ### 失败与恢复
 
@@ -73,30 +73,16 @@ kind: "package-reference"
 
 <details>
 <summary>实现细节——点击展开</summary>
-- `mode`：部署默认 `SandboxMode`（`read-only`／`workspace-write`／`danger-full-access`），加载时验证。默认为 `read-only`（故障安全）。
-- `workspaceRoot`：无 agent（智能体）的调用或没有 cwd 的会话在 `workspace-write` 下可写入的回退目录。默认为 `process.cwd()`；无论显式配置还是采用默认值，都会解析为其绝对文件系统标识。普通 agent 调用改用其会话头中不可变的 `cwd`。
-- `gitDescribeCacheMs`：同一 worktree 路径复用成功 `git.describe` 快照的毫秒数。默认 `500`。`0` 关闭缓存。checkout 和 createBranch 始终返回新快照。
 
 本节解释策略解析、逐会话存储与模型可见贡献；可观察行为已在[使用本包](#use-this-package)中完整说明。
 
 ### 解析优先级
-- `ctx.sandboxPolicy.resolve({ session?, mode? })`：解析一项完整的逐调用策略。显式批准的模式优先于会话最后一条 `sandbox/mode` 事件，后者又优先于 `defaultMode`；会话最后一条 `git/worktree` overlay 优先于不可变的 header `cwd`，再成为 `workspaceRoot`，否则使用配置的回退值。所属 workspace 的附加文件夹会进入同一策略的 `additionalRoots`。规范化先于词法归一化，因此 `symlink/..` 与进程工作目录解析保持一致。
-- `ctx.sandboxPolicy.defaultMode`／`ctx.sandboxPolicy.workspaceRoot`：`resolve()` 使用的部署默认值与回退根目录。
-- `ctx.sandboxPolicy.foldersOf(session)`／`sessionSearchRoots(folders)`：所属 workspace 的附加文件夹，以及默认 grep／glob 使用的仍存在目录子集。
-- `sandbox:policy`：直接派生自 `resolve({ session })` 的请求时缓存安全上下文贡献。它说明该模式中与具体能力无关的文件操作约定，以及 `workspace-write` 下规范化的会话工作区；工具归属方仍负责特定于操作的拒绝与升权引导。
-- `workspace:folders`：由 `foldersOf(session)` 贡献的请求时缓存安全上下文。单文件夹工作区不输出；否则列出会话当前工作目录和每个附加文件夹，已消失的路径标为 `(missing)`。
-- `effectiveSandboxMode(events)`：会话 `sandbox/mode` 事件的纯 fold（最后一次切换胜出，没有则为 `undefined`），在 `resolve()` 内使用。
-- `setSandboxMode(session, mode)`：逐会话覆盖的唯一写入路径：恰好追加一条 `sandbox/mode` 事件。切换本身就是事件；不会在带外修改模式。
-- `sessionWorkingDirectory(session)`／`setSessionHome(session, path)`／`setSessionWorktree(session, overlay)`：按日志时间取最后一条 `workspace/home` 或 `git/worktree`，否则 header cwd；家的唯一写入路径恰好追加一条 `workspace/home` 事件。
-- `SANDBOX_MODES`：所有模式，用于选项展示与运行时验证。
 
-`resolve({ session, mode })` 返回一份完整的逐调用策略：已批准的显式模式优先于会话最后一条 `sandbox/mode` 事件，后者又优先于部署默认值。会话的不可变 `cwd` 提供工作区根目录；否则使用配置的回退值。执行环境中的绝对路径写法保持不变。执行限制的提供方在自己的文件系统上规范化根目录，因此远端 `symlink/..` 路径绝不会在 Harness 主机上解析。
+`resolve({ session, mode })` 返回一份完整的逐调用策略：已批准的显式模式优先于会话最后一条 `sandbox/mode` 事件，后者又优先于部署默认值。工作目录服务给出的会话目录提供工作区根目录；没有该服务时依次使用 header 目录和配置的根。执行环境中的绝对路径写法保持不变。执行限制的提供方在自己的文件系统上规范化根目录，因此远端 `symlink/..` 路径绝不会在 Harness 主机上解析。
 
 ### 逐会话存储
 
-运行时切换是在对应会话日志中追加的一条仅记录 `sandbox/mode` 事件——切换本身就是事件，任何机制都不会在带外修改模式状态。`effective = explicit grant ?? fold(events) ?? deployment default`，因此覆盖通过回放跨重启保留，两个会话也绝不会看到彼此状态。工作区标识无需事件：创建时记录的不可变 `SessionHeader.cwd` 是该会话每次调用使用的根。事件仍只进入日志；在每次请求前，归属方会把当前事实贡献给完整运行时上下文快照，agent loop（智能体循环）将该快照记录为一条带来源的 `user/message`。
-运行时切换是在对应会话日志中追加的一条 `sandbox/mode` 事件。`effective = explicit grant ?? fold(events) ?? deployment default`，因此覆盖会通过回放跨重启保留，两个会话也绝不会看到彼此状态。出生 cwd 仍是持久化身份。工具 cwd 会 fold 最后一条 `workspace/home` 或 `git/worktree` overlay。工作区成员关系只 fold `workspace/home`，否则用 header cwd，因此分支 overlay 不会改侧栏分组。这些事件仍只进入日志；在下一次请求前，归属方会将当前事实贡献给完整运行时上下文快照。
-运行时切换是在对应会话日志中追加的一条仅写入日志的 `sandbox/mode` 事件——切换本身就是事件，任何机制都不会在带外修改模式状态。`effective = explicit grant ?? fold(events) ?? deployment default`，因此覆盖通过回放跨重启保留，两个会话也绝不会看到彼此状态。工作区标识无需事件：创建时记录的不可变 `SessionHeader.cwd` 是该会话每次调用使用的根。事件仍只进入日志；在每次请求前，归属方会把当前事实贡献给完整运行时上下文快照，agent loop（智能体循环）将该快照记录为一条带来源的 `user/message`。
+运行时切换是在对应会话日志中追加的一条仅写入日志的 `sandbox/mode` 事件——切换本身就是事件，任何机制都不会在带外修改模式状态。`effective = explicit grant ?? fold(events) ?? deployment default`，因此覆盖通过回放跨重启保留，两个会话也绝不会看到彼此状态。工作区标识无需自己的事件：工作目录服务的 `workingDirectory` 投影给出该会话每次调用使用的根。事件仍只进入日志；在每次请求前，归属方会把当前事实贡献给完整运行时上下文快照，agent loop（智能体循环）将该快照记录为一条带来源的 `user/message`。
 
 ### 模型可见文本
 
@@ -156,22 +142,6 @@ Current DSH file policy: workspace-write. Any available operation enforced by th
 ```markdown
 Current DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.
 ```
-
-### 多文件夹工作区地图
-
-#### 模型看到的内容
-
-所属 workspace 有附加文件夹时，同一份运行时上下文快照还会携带 `workspace:folders`，与文件沙箱模式无关。
-
-```markdown
-This session's workspace has multiple folders.
-Current working directory (relative tool paths resolve here): "<cwd>".
-Additional folders in this workspace:
-- "<extra>"
-These additional folders are part of the same workspace. Use their absolute paths with bash workdir, read/write/edit, grep, and glob. Do not assume the checkout at the current working directory is the only tree.
-```
-
-已消失的附加文件夹仍会列出，并标 `(missing)`。单文件夹工作区不贡献任何内容。
 
 #### Token 影响
 

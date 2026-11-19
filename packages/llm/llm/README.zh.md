@@ -37,10 +37,11 @@ kind: "package-reference"
 
 ### 最小组合
 
-挂载服务与至少一个适配器，然后在每个请求中按名称选择提供方：
+挂载服务与至少一个适配器，然后在每个请求中按名称选择提供方。下面的 DeepSeek 路由还要求挂载 [`dsh-deepseek-auth`](../../account/deepseek-auth/README.zh.md)，由它释放 API 密钥：
 
 ```yaml
 - name: '@deepseek-ai/dsh-llm'
+- name: '@deepseek-ai/dsh-deepseek-auth'
 - name: '@deepseek-ai/dsh-llm-deepseek-api-key'
   config:
     apiKeyEnv: DEEPSEEK_API_KEY
@@ -86,6 +87,7 @@ const configure = (maxTokens: number): ConfigureCall =>
 
 ### 你可以做什么
 
+- **提取内容文本**——从 `@deepseek-ai/dsh-llm/message` 导入的 `extractTextContent(content, options?)` 按顺序仅拼接 `text` 块，保留空白与空文本块，忽略所有其他块类型且不生成占位符。可选的 `options.separator` 默认为 `''`。它接受只读内容，没有文本块时返回 `''`。
 - **流式发起一次模型调用**——`ctx.llm.stream(options)` 为任何已注册提供方与模型产出原始分片（token 级增量）；消费方用 `BlockAssembler` 组装。
 - **注册提供方适配器**——一个适配器拥有一个或多个提供方路由，其注册会捕获该路由的重试策略；重复注册同一路由会以 `DUPLICATE_ADAPTER` 失败。
 - **通过配置暴露并激活提供方**——适配器声明可配置提供方路由与 settings namespace，配置界面因此可以激活休眠提供方并编辑连接信息，无需重启。`LlmConfigurableProvider.error` 报告供修复的配置诊断；未受影响的模型仍可提供服务。条目还可携带 `defaultBaseURL`，即配置未设置端点时适配器使用的端点；以及 `nativeAuth`，即配置未指定凭据引用时适配器认证读取的环境变量与 OAuth 登录；`baseURLEnv` 列出配置端点所用的环境变量。配置界面直接从目录读取这些字段，无需调用适配器。
@@ -109,6 +111,7 @@ const configure = (maxTokens: number): ConfigureCall =>
 
 ### 设计理念
 消息内容是类型化内容块数组：`text`、`reasoning`、`image`、`video`、`tool-call`、`tool-result`。`ImageBlock` 只携带持久 `ImageAttachmentRef`，`VideoBlock` 只携带持久 `VideoAttachmentRef`；提供方字节和请求尺寸之后再解析。联合仍从可合并扩展的 `ContentBlockMap` 派生，因此插件可以通过 declaration merging 添加其他块类型。assistant 消息使用模型来源，其中携带生成该消息的提供方和模型，以及可选的适配器私有回放状态。dispatch 前，`LlmRuntime` 只在历史提供方路由与目标提供方路由当前由完全相同的适配器实例拥有时才保留该状态；随后由适配器判定能否在模型或提供方间恢复或转换该状态。
+
 每次分发都使用随适配器世代捕获的确切模型模态。支持图片的适配器把持久图片引用投影为路由专用请求版本。模态省略 `image` 或 `video` 的路由则收到确定性的附件占位文本，其中也包括嵌套工具结果中的媒体，追加式会话历史不会改变。`offloadRequestImagesWithPolicy()` 提供确定性的从旧到新图片移除，支持按原始字节或 base64 计数，也支持图片数量或字节量步长；适配器提供确切派生版本的字节长度。
 
 本服务基于一项职责分离原则：**逻辑约定是提供方无关的，适配器拥有协议。** 它一次性地定义规范消息、内容块与流式分片词汇，每个提供方适配器只把自己的协议格式翻译为该词汇。注册表是拓扑的拥有者——适配器路由、可配置提供方条目与发现 offer 都在这里注册，并随其 fiber 一起 dispose（资源释放）——而 agent loop 的请求始终是会话日志的纯函数：loop 构建的请求以深度冻结状态到达，因此监听器与适配器只能读取，绝不能改写。
@@ -119,14 +122,13 @@ const configure = (maxTokens: number): ConfigureCall =>
 |---|---|
 | [`src/index.ts`](src/index.ts) | `LlmRuntime` 服务：适配器注册表、可配置提供方目录、模型发现、调用准备与流式边界 |
 | [`src/types.ts`](src/types.ts) | `StreamChunk` 协议、内容块映射、结束原因与共享词汇 |
-| [`src/message.ts`](src/message.ts) | 投递、历史与请求共享的不可变消息构造函数 |
+| [`src/message.ts`](src/message.ts) | 内容文本提取与投递、历史、请求共享的不可变消息构造函数 |
 | [`src/assembler.ts`](src/assembler.ts) | `BlockAssembler`：分片到块的增量组装 |
 | [`src/assistant-stream.ts`](src/assistant-stream.ts) | 带时间信息的紧凑 Assistant 流累积、严格校验、精确展开与记录级读取器 |
 | [`src/call-config.ts`](src/call-config.ts) | 调用配置校验、适配器默认值填入与请求冻结 |
 | [`src/retry-policy.ts`](src/retry-policy.ts) | 提供方自有重试策略解析（normal 与 always 模式） |
 | [`src/error.ts`](src/error.ts) | `HarnessError`/`LlmError` 分类体系与提供方无关失败 code |
 | [`src/content.ts`](src/content.ts) | 共享文件与图片辅助函数：内容遍历、文件投影、图片卸载计数与已卸载图片投影 |
-| [`src/api-key.ts`](src/api-key.ts) | 每个适配器共享的凭据格式校验 |
 | [`src/adapter-failure.ts`](src/adapter-failure.ts) | 把失败归一化为终止 finish 分片 |
 
 ### 主流程

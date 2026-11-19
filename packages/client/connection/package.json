@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-connection",
   "description": "Authenticated RPC transport and generation lifecycle",
-  "version": "0.2.2-rc.3.2",
+  "version": "0.2.2-rc.5",
   "publishConfig": {
     "access": "public"
   },
@@ -70,6 +70,7 @@
     "@deepseek-ai/dsh-host-directory-picker": "workspace:*",
     "@deepseek-ai/dsh-settings": "workspace:*",
     "@deepseek-ai/dsh-tool-todo": "workspace:*",
-    "@deepseek-ai/dsh-util-values": "workspace:*"
+    "@deepseek-ai/dsh-util-values": "workspace:*",
+    "@deepseek-ai/dsh-client-config": "workspace:*"
   }
 }

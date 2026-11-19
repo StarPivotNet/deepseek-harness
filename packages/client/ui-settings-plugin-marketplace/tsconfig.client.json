@@ -30,6 +30,7 @@
     { "path": "../../api/session-controller/tsconfig.client.json" },
     { "path": "../ui-commands" },
     { "path": "../ui-conversation/tsconfig.client.json" },
+    { "path": "../ui-plugin-manager/tsconfig.client.json" },
     { "path": "../ui-primitives" },
     { "path": "../ui-settings/tsconfig.client.json" },
     { "path": "../ui-slots" },

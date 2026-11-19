@@ -37,7 +37,7 @@ async function bench() {
 function declare(slots: SlotRegistry): () => void {
   return slots.register({
     name: 'root',
-    children: { 'settings.plugins.tab': { kind: 'list', scope: 'root' } },
+    children: { 'plugins.tab': { kind: 'list', scope: 'root' } },
   } as never, () => null)
 }
 
@@ -52,28 +52,28 @@ describe('ui-settings-plugin-marketplace browser plugin', () => {
     const b = await bench()
     const fiber = b.ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
-    expect(b.slots.entries('settings.plugins.tab')).toHaveLength(0)
+    expect(b.slots.entries('plugins.tab')).toHaveLength(0)
 
     const stop = declare(b.slots)
-    await vi.waitFor(() => { expect(b.slots.entries('settings.plugins.tab')).toHaveLength(1) })
-    const entry = b.slots.entries('settings.plugins.tab')[0]!
+    await vi.waitFor(() => { expect(b.slots.entries('plugins.tab')).toHaveLength(1) })
+    const entry = b.slots.entries('plugins.tab')[0]!
     expect(entry.component).toBe(MarketplaceSettingsSection)
     expect(entry.options).toMatchObject({ id: 'discover', order: 5 })
     expect(entry.locale).toBe(NS)
     expect(resolveSlotLabel(entry.options.label)).toBe('插件市场')
 
     b.locale.setLocale('en')
-    expect(resolveSlotLabel(b.slots.entries('settings.plugins.tab')[0]!.options.label)).toBe('Marketplace')
+    expect(resolveSlotLabel(b.slots.entries('plugins.tab')[0]!.options.label)).toBe('Marketplace')
 
     stop()
-    expect(b.slots.entries('settings.plugins.tab')).toHaveLength(0)
+    expect(b.slots.entries('plugins.tab')).toHaveLength(0)
     declare(b.slots)
     await vi.waitFor(() => {
-      expect(b.slots.entries('settings.plugins.tab')[0]?.component).toBe(MarketplaceSettingsSection)
+      expect(b.slots.entries('plugins.tab')[0]?.component).toBe(MarketplaceSettingsSection)
     })
 
     await fiber.dispose()
-    expect(b.slots.entries('settings.plugins.tab')).toHaveLength(0)
+    expect(b.slots.entries('plugins.tab')).toHaveLength(0)
     await b.ctx.fiber.dispose()
   })
 })

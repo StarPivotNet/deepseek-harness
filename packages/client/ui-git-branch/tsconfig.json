@@ -8,7 +8,7 @@
     "src"
   ],
   "references": [
-    { "path": "../ui-workspace" },
+    { "path": "../ui-workspace/tsconfig.client.json" },
     {
       "path": "../../../vendor/cordis"
     },

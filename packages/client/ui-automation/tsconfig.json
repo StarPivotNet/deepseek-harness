@@ -11,7 +11,7 @@
   "references": [
     { "path": "../../typert/protocol" },
     { "path": "../ui-session" },
-    { "path": "../ui-workspace" },
+    { "path": "../ui-workspace/tsconfig.client.json" },
     {
       "path": "../../../vendor/cordis"
     },

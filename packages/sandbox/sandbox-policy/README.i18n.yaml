@@ -21,26 +21,26 @@
   en: 6704447e52ec295b
   zh: 9ed812d9e29d5533
 /deepseek-ai-dsh-sandbox-policy/use-this-package/minimal-configuration:
-  en: 4425f5a22850d740
-  zh: 7dfd299ade0fc561
+  en: 6a8e527fb4c08c9e
+  zh: 7aded9efad17c0a6
 /deepseek-ai-dsh-sandbox-policy/use-this-package/registering-a-session-s-writable-directory:
   en: 841ea47ef1ed7ee6
   zh: cd573e67a67742e2
 /deepseek-ai-dsh-sandbox-policy/use-this-package/switching-a-session-s-mode:
-  en: 957d72691e470e5c
-  zh: c22a3a750af0e4a3
+  en: dabffeed89b56cc8
+  zh: 272680e5656e707c
 /deepseek-ai-dsh-sandbox-policy/use-this-package/failures-and-recovery:
   en: 9cef5f64a050f468
   zh: 5dc42c148b2c902d
 /deepseek-ai-dsh-sandbox-policy/understand-the-implementation:
-  en: 52dbf84af1888e20
-  zh: 5021ae55c0b8fe78
+  en: 2d560aa6681fcfb8
+  zh: e1c6361a6fa40c63
 /deepseek-ai-dsh-sandbox-policy/understand-the-implementation/resolution-precedence:
-  en: b96804c89e43bb0f
-  zh: c1ff99af01a64a4a
+  en: bc34dd3840f8c143
+  zh: c6ffff0926278c93
 /deepseek-ai-dsh-sandbox-policy/understand-the-implementation/the-per-session-store:
-  en: 3406f8cfeb31a242
-  zh: fc6eeeb4b6cb5e86
+  en: 819edb63f3763f20
+  zh: 6068d08827596b22
 /deepseek-ai-dsh-sandbox-policy/understand-the-implementation/model-visible-text:
   en: af0d19c6de17a272
   zh: d90e538f9ac85b77
@@ -71,16 +71,10 @@
 /deepseek-ai-dsh-sandbox-policy/model-experience/current-file-sandbox-policy/what-the-model-sees/danger-full-access:
   en: 4e28324a011422a1
   zh: bf31ffce30f06a09
-/deepseek-ai-dsh-sandbox-policy/model-experience/multi-folder-workspace-map:
-  en: 58b028536852b940
-  zh: 38b2d94c23030bd5
-/deepseek-ai-dsh-sandbox-policy/model-experience/multi-folder-workspace-map/what-the-model-sees:
-  en: 527e5362b42eb21f
-  zh: 6ffa7bf2fde3b015
-/deepseek-ai-dsh-sandbox-policy/model-experience/multi-folder-workspace-map/token-effect:
+/deepseek-ai-dsh-sandbox-policy/model-experience/current-file-sandbox-policy/token-effect:
   en: fe4724cbdaa928b4
   zh: 5c2d6d3d42e863a1
-/deepseek-ai-dsh-sandbox-policy/model-experience/multi-folder-workspace-map/kv-cache-effect:
+/deepseek-ai-dsh-sandbox-policy/model-experience/current-file-sandbox-policy/kv-cache-effect:
   en: a16a657e0e5145fb
   zh: 4b19263a728990dc
 /deepseek-ai-dsh-sandbox-policy/known-limitations-and-deferred-work:

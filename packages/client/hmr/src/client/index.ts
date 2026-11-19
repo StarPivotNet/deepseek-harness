@@ -1,19 +1,23 @@
-/** Web SSE transport for page-owned client entry reconciliation and rebuilt code replacement. */
+/** Remote-stream transport for page-owned client entry reconciliation, rebuilt code replacement, and synced configuration. */
 import type { Context } from '@deepseek-ai/cordis'
-import { EventSourceParserStream } from 'eventsource-parser/stream'
-import type { PluginsEventParseResult } from '../events.ts'
-import { EVENTS_ROUTE, RELOAD_ENDPOINT, parsePluginsEventFrame } from '../events.ts'
+import { RemoteSnapshotStream, RemoteStreamCarrierError, type RemoteStreamCarrierFailure } from '@deepseek-ai/dsh-api-gateway/client'
+import type {} from '@deepseek-ai/dsh-api-remote-access/client'
+import type {} from '@deepseek-ai/dsh-client-modules/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+// This package mounts its own namespace, so the channel does not depend on the api-remotes assembly being replaceable.
+import pluginEventsRemote from '@deepseek-ai/dsh-client-hmr/remote'
+import type { PluginsEventBaseline, PluginsEventFrame, PluginsEventIncrement } from '../types.ts'
+import { RELOAD_ENDPOINT } from '../reload-endpoint.ts'
 import { ReloadRow, type ReloadRowInjected } from './ReloadRow.tsx'
 import { en, zh, type HmrSettingsKey } from './locales.ts'
 import { ClientHmrReloadPolicy } from './reload-policy.ts'
-import { CLIENT_HMR_SETTINGS_NAMESPACE, type ClientHmrSettings } from '../hmr-settings.ts'
+import { CLIENT_HMR_SETTINGS_NAMESPACE, DEFAULT_AUTO_RELOAD, type ClientHmrSettings } from '../hmr-settings.ts'
 
-export type { PluginsEventFrame } from '../events.ts'
-export { EVENTS_ENDPOINT, EVENTS_ROUTE, RELOAD_ENDPOINT } from '../events.ts'
+export type * from '../types.ts'
+export { RELOAD_ENDPOINT } from '../reload-endpoint.ts'
 export type { ReloadRowInjected, ReloadRowProps } from './ReloadRow.tsx'
 export type { HmrSettingsKey } from './locales.ts'
 export {
@@ -34,102 +38,138 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 /** Cordis plugin name. */
 export const name = 'client-hmr'
 
-/** Required service: the client module system whose entry controller handles received frames. */
-export const inject = ['loader', 'modules', 'slots', 'locale', 'connection', 'remote', 'settingsScope']
+/** Required services: the module system whose entry controller handles frames, the Remote carrier, and Remote access. */
+export const inject = ['modules', 'remote', 'remoteAccess']
 
-/** Request carrier a shell installs when it owns the page transport, such as the worker preview's tunnel. */
-type PageTransportFetch = (input: string, init: RequestInit) => Promise<Response>
+const CARRIER_LOST: RemoteStreamCarrierFailure['code'] = 'gateway/carrier-lost'
+/** Remote failures a Host reload produces while it withdraws `pluginEvents` with the socket still open. */
+const RELOADING: ReadonlySet<string> = new Set(['gateway/invocation-unavailable', 'gateway/service-unavailable'])
 
-/** Page global carrying the shell transport; absent in the served web app. */
-interface PageTransportGlobal {
-  __DSH_TRANSPORT__?: { fetch?: PageTransportFetch }
+/**
+ * Open one generation, reporting an endpoint the Host has withdrawn while it reloads as a carrier loss, so the stream
+ * reconnects instead of ending.
+ * @param open - opens the generation's frames.
+ * @yields the generation's frames.
+ */
+async function *reconnectWhileReloading(open: () => AsyncIterable<PluginsEventFrame>): AsyncIterable<PluginsEventFrame> {
+  try {
+    yield * open()
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && RELOADING.has(String(error.code))) {
+      throw new RemoteStreamCarrierError('Plugin events are unavailable while the Host reloads', { cause: error })
+    }
+    throw error
+  }
+}
+
+/** The generated `pluginEvents` client method this plugin calls. */
+interface PluginEventsNamespace {
+  follow(signal: AbortSignal): AsyncIterable<PluginsEventFrame>
+}
+
+/** Receivers of one followed stream. */
+interface PluginEventSinks {
+  /** A generation's complete graph. */
+  readonly baseline: (frame: PluginsEventBaseline) => void
+  /** One increment after the baseline. */
+  readonly increment: (frame: PluginsEventIncrement) => void
+  /** A terminal stream failure; graph changes stop until the page reloads. */
+  readonly failed: (error: unknown) => void
 }
 
 /**
- * Read the document-relative events route through a shell-owned transport until it closes or `signal` aborts.
- * @param fetch - The shell's request carrier.
- * @param signal - Aborts the stream when the plugin disposes.
- * @param receive - Handles one SSE `data` payload.
- * @throws Error when the Host refuses the stream or the stream ends while the plugin is active.
+ * Follow `pluginEvents/follow` as a reconnecting baseline-and-increment stream.
+ * @param ctx - context carrying the Remote carrier and the mounted `pluginEvents` namespace.
+ * @param sinks - frame receivers.
+ * @returns the disposer that stops the stream and waits until no frame can arrive.
  */
-async function readPageTransportEvents(fetch: PageTransportFetch, signal: AbortSignal, receive: (data: string) => void): Promise<void> {
-  const response = await fetch(EVENTS_ROUTE, { method: 'GET', headers: { accept: 'text/event-stream' }, signal })
-  if (!response.ok || response.body === null) {
-    throw new Error(`client-hmr: ${EVENTS_ROUTE} answered ${String(response.status)}`)
-  }
-  const reader = response.body.pipeThrough(new TextDecoderStream()).pipeThrough(new EventSourceParserStream()).getReader()
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) break
-    receive(value.data)
-  }
-  if (!signal.aborted) throw new Error(`client-hmr: ${EVENTS_ROUTE} closed; client graph changes stop until the page reloads`)
+function followPluginEvents(ctx: Context, sinks: PluginEventSinks): () => Promise<void> {
+  // `$mount` registered the namespace as its own service; only this plugin mounts it, so it is read by name rather
+  // than through a declared injection.
+  const namespace = ctx.get('remote.pluginEvents') as PluginEventsNamespace | undefined
+  if (namespace === undefined) throw new Error('client-hmr: the mounted pluginEvents namespace is not registered')
+  const stream = ctx.remote.$stream<PluginsEventFrame>({
+    name: 'Plugin events',
+    open: signal => reconnectWhileReloading(() => namespace.follow(signal)),
+    // A Host-side end (the service restarting) reconnects rather than ending the logical stream.
+    ended: (): RemoteStreamCarrierFailure => Object.assign(new Error('Plugin events stream ended'), { code: CARRIER_LOST }),
+  })
+  const control = new RemoteSnapshotStream<PluginsEventBaseline, PluginsEventIncrement>(stream, {
+    name: 'Plugin events',
+    isSnapshot: (frame): frame is PluginsEventBaseline => frame.type === 'baseline',
+    replace: sinks.baseline,
+    update: sinks.increment,
+    failed: sinks.failed,
+  })
+  control.start()
+  return () => control.dispose()
 }
 
 /**
- * Forward graph snapshots and rebuilds to the page's shared serial controller. The event stream arrives through the
- * shell transport when the page has one, otherwise through the browser `EventSource`.
- * @param ctx - Plugin context with the client module system.
+ * Register the plugin-reload Settings row where the settings surface exists, then forward each stream generation's
+ * graph and rebuilds to the page's serial entry controller, which also applies each row's synced configuration, while
+ * Remote access allows the stream.
+ * @param ctx - Plugin context with the client module system and Remote carrier.
+ * @returns the disposer of this plugin's `pluginEvents` namespace.
  */
-export function apply(ctx: Context): void {
-  const policy = new ClientHmrReloadPolicy(
-    ctx.settingsScope.bind<ClientHmrSettings>({ namespace: CLIENT_HMR_SETTINGS_NAMESPACE }),
-  )
-  ctx.effect(() => ctx.locale.register(SETTINGS_NS, { zh, en }), 'client-hmr: settings row dictionaries')
-  ctx.slots.inject('settings.general.item', () => ctx.slots.register({
-    name: 'settings.general.item',
-    id: 'plugin-reload',
-    order: 30,
-    locale: SETTINGS_NS,
-    inject: (): ReloadRowInjected => ({
-      hooks: { autoReload: policy.autoReload },
-      setAutoReload: (enabled) => { policy.setAutoReload(enabled) },
-      reloadPlugins: async () => {
-        const response = await fetch(RELOAD_ENDPOINT, { method: 'POST' })
-        if (!response.ok) throw new Error(`client-hmr: manual reload failed with HTTP ${String(response.status)}`)
-        const body = await response.json() as { ok?: boolean; reloaded?: number }
-        if (body.ok !== true || typeof body.reloaded !== 'number') {
-          throw new Error('client-hmr: manual reload returned an invalid body')
-        }
-        return body.reloaded
-      },
-    }),
-  }, ReloadRow))
+export async function apply(ctx: Context): Promise<() => Promise<void>> {
+  // The row needs the slots, locale, and settings services of the settings page; a page without them keeps the
+  // default preference and reloads rebuilt code, exactly as a Host that publishes rebuilds does.
+  const preference: { autoReload?: ObservableSnapshot<boolean> } = {}
+  ctx.inject(['slots', 'locale', 'settingsScope'], (scope: Context) => {
+    const policy = new ClientHmrReloadPolicy(
+      scope.settingsScope.bind<ClientHmrSettings>({ namespace: CLIENT_HMR_SETTINGS_NAMESPACE }),
+    )
+    preference.autoReload = policy.autoReload
+    scope.effect(() => scope.locale.register(SETTINGS_NS, { zh, en }), 'client-hmr: settings row dictionaries')
+    scope.slots.inject('settings.general.item', () => scope.slots.register({
+      name: 'settings.general.item',
+      id: 'plugin-reload',
+      order: 30,
+      locale: SETTINGS_NS,
+      inject: (): ReloadRowInjected => ({
+        hooks: { autoReload: policy.autoReload },
+        setAutoReload: (enabled) => { policy.setAutoReload(enabled) },
+        reloadPlugins: async () => {
+          const response = await fetch(RELOAD_ENDPOINT, { method: 'POST' })
+          if (!response.ok) throw new Error(`client-hmr: manual reload failed with HTTP ${String(response.status)}`)
+          const body = await response.json() as { ok?: boolean; reloaded?: number }
+          if (body.ok !== true || typeof body.reloaded !== 'number') {
+            throw new Error('client-hmr: manual reload returned an invalid body')
+          }
+          return body.reloaded
+        },
+      }),
+    }, ReloadRow))
+  })
+
+  const unmount = await ctx.remote.$mount(pluginEventsRemote)
   const entries = ctx.modules.entries
-  const handle = (frame: Extract<PluginsEventParseResult, { kind: 'frame' }>['frame']): void => {
-    const run = frame.type === 'graph'
-      ? Promise.resolve().then(() => entries.sync(frame.graph))
-      : entries.reload(frame.id, frame.rev)
-    void run.catch((error: unknown) => { ctx.logger.error(error) })
+  // A malformed graph throws synchronously from sync(); both paths report through the same rejection.
+  const run = (task: () => Promise<void>): void => {
+    void Promise.resolve().then(task).catch((error: unknown) => { ctx.logger.error(error) })
   }
-  const receive = (data: string): void => {
-    let value: unknown
-    try {
-      value = JSON.parse(data)
-    } catch {
-      // Wire boundary: a malformed transport frame is dropped loudly.
-      ctx.logger.warn(`client-hmr: unparseable event frame: ${data}`)
-      return
-    }
-    const parsed = parsePluginsEventFrame(value)
-    if (parsed.kind === 'invalid') {
-      ctx.logger.warn(`client-hmr: invalid event frame: ${data}`)
-    } else if (parsed.kind === 'frame') {
-      handle(parsed.frame)
-    }
+  const sinks: PluginEventSinks = {
+    baseline: (frame) => { run(() => entries.sync(frame.graph)) },
+    increment: (frame) => {
+      switch (frame.type) {
+        case 'graph':
+          run(() => entries.sync(frame.graph))
+          break
+        case 'rebuilt':
+          // The durable preference decides whether a rebuild replaces running code without a refresh.
+          if (preference.autoReload?.getSnapshot() ?? DEFAULT_AUTO_RELOAD) run(() => entries.reload(frame.id, frame.rev))
+          break
+        case 'reload':
+          run(() => entries.reload(frame.id, frame.rev))
+          break
+        default:
+          // Forward compatibility: a newer Host's increment type is ignored.
+          break
+      }
+    },
+    failed: (error) => { ctx.logger.error('client-hmr: plugin events stopped; client graph changes stop until the page reloads', error) },
   }
-
-  ctx.effect(() => {
-    const transport = (globalThis as PageTransportGlobal).__DSH_TRANSPORT__
-    if (transport?.fetch !== undefined) {
-      const controller = new AbortController()
-      void readPageTransportEvents(transport.fetch, controller.signal, receive).catch((error: unknown) => {
-        if (!controller.signal.aborted) ctx.logger.error(error)
-      })
-      return () => { controller.abort() }
-    }
-    const source = new EventSource(EVENTS_ROUTE)
-    source.addEventListener('message', (event: MessageEvent<string>) => { receive(event.data) })
-    return () => { source.close() }
-  }, 'client-hmr: event source')
+  ctx.remoteAccess.whenAccess('pluginEvents/follow', () => followPluginEvents(ctx, sinks))
+  return unmount
 }

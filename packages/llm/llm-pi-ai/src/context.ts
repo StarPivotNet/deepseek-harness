@@ -5,6 +5,7 @@
  */
 
 import { brandString } from '@deepseek-ai/dsh-brand'
+import { extractTextContent } from '@deepseek-ai/dsh-llm/message'
 import { contentHasImage, IMAGE_OFFLOAD_REQUIRED_CODE, LlmError, offloadedImageText, projectOffloadedImages, requestImageHandleText, requiredImageOffload } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, GenerateOptions, ImageAttachmentAccessResolver, Message, RequestMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { AttachmentId } from '@deepseek-ai/dsh-attachment/types'
@@ -49,15 +50,6 @@ export function readEmbeddedVideoMarker(text: string): { attachmentId: string; l
   if (attachmentId.length === 0 || attachmentId.includes(VIDEO_REQUEST_MARKER_SUFFIX)) return undefined
   return { attachmentId, length: end + VIDEO_REQUEST_MARKER_SUFFIX.length }
 }
-
-/** Join the text blocks of a harness message. */
-function flattenText(message: RequestMessage): string {
-  return message.content
-    .filter(block => block.type === 'text')
-    .map(block => block.text)
-    .join('')
-}
-
 
 /** Recover the pi-ai toolResult message for one harness tool-role message. */
 function toolResultOf(
@@ -124,7 +116,7 @@ function userContent(
         break
     }
   }
-  if (content.every(block => block.type === 'text')) return content.map(block => block.text).join('')
+  if (content.every(block => block.type === 'text')) return extractTextContent(content)
   return content
 }
 
@@ -181,7 +173,7 @@ function splitSystemPrompt(options: GenerateOptions): SystemPromptSplit {
   let end = 0
   for (const message of options.messages) {
     if (message.role !== 'system') break
-    text.push(flattenText(message))
+    text.push(extractTextContent(message.content))
     end++
   }
   const systemPrompt = text.filter(Boolean).join('\n\n')
@@ -260,7 +252,7 @@ function appendSharedHistory(
     return true
   }
   if (message.role === 'system') {
-    const content = flattenText(message)
+    const content = extractTextContent(message.content)
     if (content.length > 0) {
       if (supportsMidConvoSystemMessages) {
         messages.push({ role: 'system', content, timestamp: 0 })
@@ -294,10 +286,10 @@ function textOnlyContext(
     }
     if (appendSharedHistory(message, options, messages, toolNames, supportsMidConvoSystemMessages, onReplayDegrade, prefixDigests)) continue
     if (message.role === 'tool') {
-      messages.push(toolResultOf(message, toolNames, flattenText(message)))
+      messages.push(toolResultOf(message, toolNames, extractTextContent(message.content)))
       continue
     }
-    messages.push({ role: 'user', content: flattenText(message), timestamp: 0 })
+    messages.push({ role: 'user', content: extractTextContent(message.content), timestamp: 0 })
   }
   return piContext(split.systemPrompt, options, messages)
 }

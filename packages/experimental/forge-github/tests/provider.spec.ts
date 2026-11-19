@@ -27,7 +27,9 @@ function output(stdout: unknown, exitCode = 0, stderr = ''): GhOutput {
   return { exitCode, stdout: typeof stdout === 'string' ? stdout : JSON.stringify(stdout), stderr }
 }
 
-const limits: GitHubLimits = { maxOutputBytes: 8_388_608, maxReviewThreads: 1_000, maxCommits: 250, maxViewedFiles: 3_000 }
+const limits: GitHubLimits = {
+  maxOutputBytes: 8_388_608, maxReviewThreads: 1_000, maxCommits: 250, maxViewedFiles: 3_000, maxViewerItems: 50,
+}
 
 function provider(run: GhRunner): GitHubProvider {
   return new GitHubProvider(run, ['github.com', 'GHE.corp.example'], limits)
@@ -44,6 +46,13 @@ describe('GitHub provider addressing', () => {
     expect(subject.changeRequestFromUrl('https://github.com/octo/demo/pull/4')).toEqual(pull(4))
     expect(subject.changeRequestFromUrl('https://gitlab.com/octo/demo/pull/4')).toBeUndefined()
     expect(subject.changeRequestFromUrl('https://github.com/octo/demo/issues/4')).toBeUndefined()
+  })
+
+  it('lists its configured hosts in lowercase once each and names GitHub pull requests', () => {
+    expect(new GitHubProvider(fakeGh(() => output('')).run, ['github.com', 'GHE.corp.example', 'ghe.corp.example'], limits).hosts)
+      .toEqual(['github.com', 'ghe.corp.example'])
+    expect(subject.label).toBe('GitHub')
+    expect(subject.changeRequestNoun).toBe('pull-request')
   })
 
   it('builds canonical pull request URLs', () => {
@@ -107,13 +116,13 @@ describe('GitHub provider fetch', () => {
     expect(results.get(changeRequestKey(pull(2)))).toMatchObject({ title: 'Change 2' })
   })
 
-  it('reports a review thread page that GitHub refuses', async () => {
+  it('reports a review thread page that GitHub refuses under its rate limit', async () => {
     const gh = fakeGh(args => args.includes(`query=${THREADS_QUERY}`)
       ? output({ message: 'API rate limit exceeded' }, 1, 'gh: API rate limit exceeded (HTTP 403)')
       : output({ data: { r0: { p0: pullRequestNode(1, { reviewThreads: threadPage([true], 'threads-1') }) } } }))
 
     await expect(provider(gh.run).fetchChecks(pull(1), signal))
-      .resolves.toEqual({ code: 'unavailable', message: 'gh: API rate limit exceeded (HTTP 403)' })
+      .resolves.toEqual({ code: 'rate-limited', message: 'gh: API rate limit exceeded (HTTP 403)' })
   })
 
   it.each([
@@ -174,16 +183,18 @@ describe('GitHub provider fetch', () => {
   })
 
   it.each([
-    [output({ message: 'API rate limit exceeded' }, 1), 'API rate limit exceeded'],
-    [output({ errors: [{ message: 'Check page failed' }] }, 1), 'Check page failed'],
-    [output({ data: { node: { contexts: { pageInfo: { hasNextPage: true, endCursor: 'page-1' }, nodes: [] } } } }), 'GitHub check pagination did not advance'],
-    [output({ data: { node: { contexts: { pageInfo: { hasNextPage: true, endCursor: null }, nodes: [] } } } }), 'GitHub check pagination did not advance'],
-  ])('rejects an incomplete check read without losing another pull request', async (page, message) => {
+    [output({ message: 'API rate limit exceeded' }, 1), 'rate-limited', 'API rate limit exceeded'],
+    [output({ errors: [{ message: 'Check page failed' }] }, 1), 'unavailable', 'Check page failed'],
+    [output({ data: { node: { contexts: { pageInfo: { hasNextPage: true, endCursor: 'page-1' }, nodes: [] } } } }), 'unavailable',
+      'GitHub check pagination did not advance'],
+    [output({ data: { node: { contexts: { pageInfo: { hasNextPage: true, endCursor: null }, nodes: [] } } } }), 'unavailable',
+      'GitHub check pagination did not advance'],
+  ])('rejects an incomplete check read without losing another pull request', async (page, code, message) => {
     const gh = fakeGh(args => args.includes('id=fixed-rollup') ? page : output({ data: { r0: { p0: firstPage(), p1: pullRequestNode(2) } } }))
     const subject = provider(gh.run)
     const results = await subject.fetch([pull(1), pull(2)], signal)
     const details = await subject.fetchChecks(pull(1), signal)
-    expect(details).toEqual({ code: 'unavailable', message })
+    expect(details).toEqual({ code, message })
     expect(results.get(changeRequestKey(pull(2)))).toMatchObject({ title: 'Change 2' })
     expect(gh.calls).toHaveLength(3)
   })
@@ -229,7 +240,7 @@ describe('GitHub provider fetch', () => {
 
   it.each([
     [{ message: 'Bad credentials' }, 1, 'gh: Bad credentials (HTTP 401)', 'unauthenticated', 'gh: Bad credentials (HTTP 401)'],
-    [{ message: 'API rate limit exceeded' }, 1, 'gh: API rate limit exceeded (HTTP 403)', 'unavailable', 'gh: API rate limit exceeded (HTTP 403)'],
+    [{ message: 'API rate limit exceeded' }, 1, 'gh: API rate limit exceeded (HTTP 403)', 'rate-limited', 'gh: API rate limit exceeded (HTTP 403)'],
     [{ message: 'Bad credentials' }, 1, '', 'unauthenticated', 'Bad credentials'],
     [{ message: '' }, 0, '', 'unavailable', 'unexpected GitHub response'],
     [null, 1, '', 'unavailable', 'gh exited with 1'],
@@ -239,6 +250,11 @@ describe('GitHub provider fetch', () => {
     const subject = provider(gh.run)
     expect([...(await subject.fetch([pull(1)], signal)).values()]).toEqual([{ code, message }])
     await expect(subject.findByHead(demo, 'topic', signal)).rejects.toThrow(`head branch lookup failed: ${message}`)
+  })
+
+  it('reports a GraphQL rate limit error on a pull request as rate-limited', async () => {
+    const gh = fakeGh(() => output({ data: { r0: null }, errors: [{ type: 'RATE_LIMITED', path: ['r0'], message: 'API rate limit exceeded' }] }))
+    expect([...(await provider(gh.run).fetch([pull(1)], signal)).values()]).toEqual([{ code: 'rate-limited', message: 'API rate limit exceeded' }])
   })
 
   it('rejects unconfigured hosts without querying them and still fetches allowed hosts', async () => {
@@ -336,22 +352,22 @@ describe('GitHub provider readiness', () => {
   it('is ready when gh auth status succeeds for the host', async () => {
     const gh = fakeGh(() => output('Logged in to github.com'))
 
-    await expect(provider(gh.run).readiness('github.com', signal)).resolves.toEqual({ state: 'ready', message: null })
+    await expect(provider(gh.run).readiness('github.com', signal)).resolves.toEqual({ state: 'ready', message: null, signIn: null })
     expect(gh.calls).toEqual([['auth', 'status', '--hostname', 'github.com']])
   })
 
   it('reports the first diagnostic line when gh is not signed in', async () => {
     await expect(provider(fakeGh(() => output('', 1, 'You are not logged into any GitHub hosts.\nRun gh auth login')).run).readiness('github.com', signal))
-      .resolves.toEqual({ state: 'unauthenticated', message: 'You are not logged into any GitHub hosts.' })
+      .resolves.toEqual({ state: 'unauthenticated', message: 'You are not logged into any GitHub hosts.', signIn: { command: 'gh auth login --hostname github.com' } })
     await expect(provider(fakeGh(() => output('github.com\n  X Failed to log in', 1)).run).readiness('github.com', signal))
-      .resolves.toEqual({ state: 'unauthenticated', message: 'github.com' })
+      .resolves.toEqual({ state: 'unauthenticated', message: 'github.com', signIn: { command: 'gh auth login --hostname github.com' } })
     await expect(provider(fakeGh(() => output('', 1)).run).readiness('github.com', signal))
-      .resolves.toEqual({ state: 'unauthenticated', message: 'gh is not signed in to github.com' })
+      .resolves.toEqual({ state: 'unauthenticated', message: 'gh is not signed in to github.com', signIn: { command: 'gh auth login --hostname github.com' } })
   })
 
   it('is unavailable when gh cannot start and rethrows other failures', async () => {
     await expect(provider(() => Promise.reject(new GhUnavailableError('gh could not start: spawn gh ENOENT')))
-      .readiness('github.com', signal)).resolves.toEqual({ state: 'unavailable', message: 'gh could not start: spawn gh ENOENT' })
+      .readiness('github.com', signal)).resolves.toEqual({ state: 'unavailable', message: 'gh could not start: spawn gh ENOENT', signIn: null })
     await expect(provider(() => Promise.reject(new Error('timed out'))).readiness('github.com', signal)).rejects.toThrow('timed out')
   })
 })
@@ -692,7 +708,7 @@ it('rejects readiness, actions, and content reads for an unconfigured host witho
   const subject = provider(gh.run)
   const target = pull(7, { ...demo, host: 'unconfigured.example' })
   const message = 'forge-github: host "unconfigured.example" is not configured'
-  await expect(subject.readiness(target.repository.host, signal)).resolves.toEqual({ state: 'unavailable', message })
+  await expect(subject.readiness(target.repository.host, signal)).resolves.toEqual({ state: 'unavailable', message, signIn: null })
   await expect(subject.markReady(target, signal)).resolves.toEqual({ code: 'failed', message })
   await expect(subject.merge(target, { method: 'squash', headSha: 'a'.repeat(40) }, signal)).resolves.toEqual({ code: 'failed', message })
   await expect(subject.diff(target, 'a'.repeat(40), signal)).resolves.toEqual({ code: 'unavailable', message })

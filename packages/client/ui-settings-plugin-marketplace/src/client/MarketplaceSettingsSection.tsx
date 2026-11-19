@@ -13,6 +13,8 @@ import {
 import type {
   InjectFace, PropsLocale, PropsRuntime,
 } from '@deepseek-ai/dsh-client-ui-slots'
+// Type-only: pulls the Plugins page's contributed-tab contract (SlotMap merge).
+import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
 import { catalogPackageLabel, installedHoverLabel } from './catalog-label.ts'
 import { updatedAgoLine, updatedAgoRelative } from './updated-ago.ts'
 import { allTags, parseTagInput } from '../shared.ts'
@@ -88,7 +90,7 @@ export interface MarketplaceSettingsSectionInjected {
 
 /** Full component props assembled by the Settings slot renderer. */
 export type MarketplaceSettingsSectionProps =
-  PropsRuntime<'settings.plugins.tab'>
+  PropsRuntime<'plugins.tab'>
   & PropsLocale<'settings.pluginMarketplace'>
   & InjectFace<MarketplaceSettingsSectionInjected>
 

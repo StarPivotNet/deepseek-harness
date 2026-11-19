@@ -29,14 +29,11 @@ kind: "package-reference"
 
 [`@deepseek-ai/dsh-api-session-controller`](../session-controller/README.zh.md) 拥有 agent（智能体）与会话身份策略，包括供其他 namespace 使用的 Typert lookup 解析器。本包选择并挂载生成的会话 contribution，无需直接依赖 `@deepseek-ai/dsh-session` 的运行时；激活策略由会话控制器负责。
 
-Client 组合挂载 Office 转换、Commands、Agent Teams、凭据、settings、Goal、Schedule、Host 自动化、用户问题、动态 Cordis、文件与会话引用、只读 Host 插件清单、插件安装源响应比较、消息反馈、权限预设、会话控制器、subagents、Web 提供方列表和 Workspace 控制器 contribution。`permissionPresets` namespace 返回 current-session 控件使用的完整进程级目录。该组合卸载时，Cordis effect 的所有权机制会撤回所有贡献；`@deepseek-ai/dsh-api-gateway/client` 负责描述符校验、可追踪的 namespace 服务、直接与作用域方法、调用、流与取消。Client 入口通过 Cordis 消费共享的 `TypertClientRemote` 接口，不导入具体 Gateway；它只以 type-only 形式重新导出 Gateway Client face 的声明合并，因此消费端经由本外观取到转发事件词汇时，运行时不会多出一条通往 Gateway 实现的边。
+Client 组合挂载 Office 转换、Commands、Agent Teams、凭据、settings、Goal、Schedule、Host 自动化、动态 Cordis、文件与会话引用、只读 Host 插件清单、插件安装源响应比较、连接器账号、消息反馈、权限预设、会话控制器、subagents、Web 提供方列表和 Workspace 控制器 contribution。`permissionPresets` namespace 返回 current-session 控件使用的完整进程级目录。该组合卸载时，Cordis effect 的所有权机制会撤回所有贡献；`@deepseek-ai/dsh-api-gateway/client` 负责描述符校验、可追踪的 namespace 服务、直接与作用域方法、调用、流与取消。Client 入口通过 Cordis 消费共享的 `TypertClientRemote` 接口，不导入具体 Gateway；它只以 type-only 形式重新导出 Gateway Client face 的声明合并，因此消费端经由本外观取到转发事件词汇时，运行时不会多出一条通往 Gateway 实现的边。
 
-本包不拥有物理传输或 Host 服务发现。它只把应用选择投影为生成的 Remote contribution 和唯一的 Host Cordis event source；API Gateway 负责 endpoint、carrier、取消与重连。Web 或未来的 TUI 只要提供同一份不依赖 React 的 `ctx.remote` 约定，均可复用其 Client face。
 本 facade 同时是 Client 包指称 wire 类型词汇的正门。它以 type-only 方式转出 Remote 失败词汇（`RemoteResult`、`RemoteFailure`、`RemoteErrorCode`、`RemoteErrorDetailsMap`）、Host 事实（`RemoteHostFacts`），以及各已选领域对 Client 安全的载荷类型，因此 Client 功能包只 import 一个 specifier，不必伸手进 `dsh-typert-protocol`、Gateway 或某个拥有方的 Host 入口。有两类包刻意不走这道门：本装配自己选中的 API 层包——反向 import 会形成依赖环——以及它们的测试，后者直接从 `dsh-typert-protocol` 取失败词汇。UI 包的测试则从 [`dsh-client-test-runtime`](../../test-support/client-runtime/README.zh.md) 取 `RemoteError` 构造器。
 
 本包不拥有物理传输或 Host 服务发现。它只把应用选择投影为生成的 Remote contribution，以及每个 Client 各自独立的 Host 事件源；API Gateway 负责 endpoint、carrier、取消与重连。Web 或未来的 TUI 只要提供同一份不依赖 React 的 `ctx.remote` 约定，均可复用其 Client face。
-
-所选 namespace 挂载完成后，Client 组合会在活动的 Connection handle 上安装兼容的 `connection.api` 面。仍按 Typert 拆分前一元客户端编译的插件继续调用 `llm.providers`、`llm.models`、`settings.describe` 与 `settings.update`；这些方法包装 `ctx.remote.llm` 与 `ctx.remote.settings`，并返回历史上的 `{ result }` 信封。当前产品代码仍直接使用 `ctx.remote`。
 
 -----
 
@@ -79,8 +76,6 @@ Host entry 为每条 Client 流独立注册一组 allowlist listener 和一个�
 
 - 能力集合由构建时显式导入的值固定确定；Client 不会在运行时发现 Host 中已启用的服务或 Remote 定义。
 - 若要增加能力，必须显式导入相应的 `/remote` 值并在此组合中挂载。
-- 只有仍在等待的作用域 waterfall 会在重连后重放；单向通知仍是相互隔离的 best-effort 投递。
-- `connection.api` 是给仍读取 Typert 拆分前一元面的 Client 插件用的兼容投影。它只覆盖 `llm.providers`、`llm.models`、`settings.describe` 与 `settings.update`；新表面必须调用 `ctx.remote`。
 - 只有仍在等待的作用域 waterfall 会在重连后回放；单向通知仍是相互隔离的 best-effort 投递，不会回放。需要可靠恢复的状态必须由拥有方提供查询、游标或初始基线。
 
 

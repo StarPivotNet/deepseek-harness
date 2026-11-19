@@ -66,10 +66,10 @@ describe('SandboxPolicyService', () => {
     expect(ctx.sandboxPolicy.workspaceRoot).toBe(resolve(process.cwd()))
   })
 
-  it('carries a configured mode and resolves the workspace root absolute', async () => {
+  it('carries a configured mode and keeps the configured root in execution-world spelling', async () => {
     const ctx = await mounted({ mode: 'workspace-write', workspaceRoot: '/ws/../ws/./sub' })
     expect(ctx.sandboxPolicy.defaultMode).toBe('workspace-write')
-    expect(ctx.sandboxPolicy.workspaceRoot).toBe(resolve('/ws/../ws/./sub'))
+    expect(ctx.sandboxPolicy.workspaceRoot).toBe('/ws/../ws/./sub')
   })
 
   it.each(['relative/workspace', '/invalid\0root'])('rejects an invalid deployment workspace root at load: %j', async (workspaceRoot) => {
@@ -163,7 +163,7 @@ describe('SandboxPolicyService', () => {
     })
   })
 
-  it.skipIf(process.platform === 'win32')('resolves a symlink-sensitive session cwd with POSIX component semantics', async () => {
+  it.skipIf(process.platform === 'win32')('keeps a symlink-sensitive session cwd in its execution-world spelling', async () => {
     const root = mkdtempSync(join(tmpdir(), 'dsh-policy-cwd-'))
     try {
       const lexical = join(root, 'lexical')
@@ -178,7 +178,7 @@ describe('SandboxPolicyService', () => {
 
       expect(ctx.sandboxPolicy.resolve({ session: session('sess-symlink-parent', cwd) })).toEqual({
         mode: 'workspace-write',
-        workspaceRoot: realpathSync.native(physical),
+        workspaceRoot: cwd,
         sessionId: 'sess-symlink-parent',
       })
     } finally {
@@ -325,7 +325,7 @@ describe('session writable-root registrations', () => {
 describe('sandbox:policy request context', () => {
   it.each(['read-only', 'workspace-write', 'danger-full-access'] as const)('renders the exact %s policy without a capability inventory', async (mode) => {
     const ctx = await promptMounted({ mode, workspaceRoot: '/fallback' })
-    const workspaceRoot = resolve('/projects/current')
+    const workspaceRoot = '/projects/../projects/current'
     const expected = {
       'read-only': 'Current DSH file policy: read-only. Any available operation enforced by the DSH file sandbox cannot modify files in the standing mode. Do not refuse a required modification from this policy alone: try an available tool normally and follow any denial and escalation guidance it returns.',
       'workspace-write': `Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: ${JSON.stringify(workspaceRoot)}. Some platform temporary areas may also be writable.`,

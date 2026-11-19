@@ -45,10 +45,10 @@ Load the package with a default mode; the fail-safe default is `read-only`, and 
 | Field | Default | Meaning |
 |---|---|---|
 | `mode` | `read-only` | The deployment default mode a session starts from, validated at load |
-| `workspaceRoot` | `process.cwd()` | Absolute fallback root for agentless calls or sessions without a cwd; relative values fail at load. Normal agent calls use the session's immutable cwd; a relative cwd or one containing a NUL byte fails the call with `SANDBOX_INVALID_ROOT` |
+| `workspaceRoot` | `process.cwd()` | Absolute fallback root for agentless calls and, without the working-directory service, sessions without a header directory; relative values fail at load. Normal agent calls use the session's working directory; a relative root or one containing a NUL byte fails the call with `SANDBOX_INVALID_ROOT` |
 | `additionalWritableRoots` | `[]` | Physical absolute directories also writable under `workspace-write`; Windows file tools honor them, Windows subprocesses ignore them, and `read-only` grants no access |
 
-For a linked Git worktree, the caller can grant its shared Git directory with `additionalWritableRoots`. The caller selects that directory explicitly; the policy does not inspect Git files or grant a parent checkout. These grants are deployment configuration shared by the composition's sessions, rather than saved Session permissions. Granting the entire Git directory also permits changes to hooks and configuration that a later host Git invocation can execute outside the sandbox; use that grant only for trusted tasks. Use physical absolute directory paths. The enforcing host rejects missing paths, non-directories, and symlinked directories on each call, including a directory replaced by a symlink between calls. Remote grants are validated on the remote host.
+A session's workspace root is the directory it works in, read from the [working-directory service](../../session/working-directory/README.md): every Host move of the Session's directory, such as entering or leaving a worktree, moves the boundary with it. For a linked Git worktree, the repository's Git directory lies outside that root, so Git commands that write it are denied under `workspace-write` until a grant covers it: the deployment can grant it to every session with `additionalWritableRoots`, and a Host plugin can grant it to one live Session with `registerWritableRoot`. The caller selects that directory explicitly; the policy does not inspect Git files or grant a parent checkout. These grants are deployment configuration shared by the composition's sessions, rather than saved Session permissions. Granting the entire Git directory also permits changes to hooks and configuration that a later host Git invocation can execute outside the sandbox; use that grant only for trusted tasks. Use physical absolute directory paths. The enforcing host rejects missing paths, non-directories, and symlinked directories on each call, including a directory replaced by a symlink between calls. Remote grants are validated on the remote host.
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-sandbox-policy) is the exhaustive source for every accepted field and its JSDoc.
 
@@ -60,7 +60,7 @@ Registration and disposal affect subsequent policy resolutions and the next mode
 
 ### Switching a session's mode
 
-A session's mode can be switched at runtime through a UI policy control or an explicit switch; the switch is recorded in the session log and takes effect on the session's next confined call. The switch survives restart through replay, and each session keeps its own mode — two sessions never see each other's state. A switched session keeps its immutable workspace cwd as the writable boundary.
+A session's mode can be switched at runtime through a UI policy control or an explicit switch; the switch is recorded in the session log and takes effect on the session's next confined call. The switch survives restart through replay, and each session keeps its own mode — two sessions never see each other's state. A switched session keeps its workspace root as the writable boundary.
 
 ### Failures and recovery
 
@@ -73,29 +73,16 @@ An invalid configured mode is rejected when the plugin loads, so a typo fails lo
 
 <details>
 <summary>Implementation internals — click to expand</summary>
-- `mode` — the deployment default `SandboxMode` (`read-only` / `workspace-write` / `danger-full-access`), validated at load. Default `read-only` (fail-safe).
-- `workspaceRoot` — the fallback directory `workspace-write` may write under for agentless calls or sessions without a cwd. Default `process.cwd()`, resolved to its absolute filesystem identity either way. A normal agent call uses its session header's immutable `cwd` instead.
-- `gitDescribeCacheMs` — milliseconds to reuse a successful `git.describe` snapshot for the same worktree path. Default `500`. `0` disables the cache. Checkout and createBranch always return a fresh snapshot.
 
 This section explains policy resolution, the per-session store, and the model-visible contribution; the observable behavior is fully covered in [Use this package](#use-this-package).
 
 ### Resolution precedence
-- `ctx.sandboxPolicy.resolve({ session?, mode? })` — resolves one complete per-call policy. An explicit approved mode outranks the session's last `sandbox/mode` event, which outranks `defaultMode`; the session's last `git/worktree` overlay outranks its immutable header `cwd` before becoming `workspaceRoot`, otherwise the configured fallback applies. Additional folders from the owning workspace become `additionalRoots` on the same policy. Canonicalization precedes lexical normalization so `symlink/..` agrees with process working-directory resolution.
-- `ctx.sandboxPolicy.defaultMode` / `ctx.sandboxPolicy.workspaceRoot` — the deployment default and fallback root used by `resolve()`.
-- `ctx.sandboxPolicy.foldersOf(session)` / `sessionSearchRoots(folders)` — the owning workspace's additional folders plus the existing-directory subset used by default grep/glob.
-- `sandbox:policy` — a request-time cache-safe context contribution derived directly from `resolve({ session })`. It states the mode's capability-neutral file-effect contract and the canonical session workspace under `workspace-write`; tool owners retain operation-specific denial and escalation guidance.
-- `workspace:folders` — a request-time cache-safe context contribution from `foldersOf(session)`. Empty for a single-folder workspace; otherwise it lists the session current working directory and every additional folder, including vanished ones marked `(missing)`.
-- `effectiveSandboxMode(events)` — the pure fold of a session's `sandbox/mode` events (the last switch wins, or `undefined`), used inside `resolve()`.
-- `setSandboxMode(session, mode)` — THE write path for a per-session override: appends exactly one `sandbox/mode` event. The switch IS its event; nothing mutates the mode out of band.
-- `sessionWorkingDirectory(session)` / `setSessionHome(session, path)` / `setSessionWorktree(session, overlay)` — the last `workspace/home` or `git/worktree` by log time, or the header cwd; THE home write path appends exactly one `workspace/home` event.
-- `SANDBOX_MODES` — every mode, for option advertisement and runtime validation.
 
-`resolve({ session, mode })` returns one complete per-call policy: an approved explicit mode outranks the session's last `sandbox/mode` event, which outranks the deployment default. The session's immutable `cwd` supplies the workspace root; otherwise the configured fallback applies. Absolute execution-world spelling is preserved. Enforcing providers canonicalize the root on their own filesystem, so remote `symlink/..` paths are never resolved on the Harness host.
+`resolve({ session, mode })` returns one complete per-call policy: an approved explicit mode outranks the session's last `sandbox/mode` event, which outranks the deployment default. The session's directory from the working-directory service supplies the workspace root; without that service its header directory and then the configured root do. Absolute execution-world spelling is preserved. Enforcing providers canonicalize the root on their own filesystem, so remote `symlink/..` paths are never resolved on the Harness host.
 
 ### The per-session store
 
-A runtime switch is one log-only `sandbox/mode` event on the session it applies to — the switch IS its event, and nothing mutates mode state out of band. `effective = explicit grant ?? fold(events) ?? deployment default`, so an override survives restart by replay and two sessions never see each other's state. Workspace identity needs no event: the immutable `SessionHeader.cwd` recorded at creation is the root for every call in that session. The event stays log-only; before each request, the owner contributes the current fact to the full runtime-context snapshot, and the agent loop logs that snapshot as a sourced `user/message`.
-A runtime switch is one log-only `sandbox/mode` event on the session it applies to. `effective = explicit grant ?? fold(events) ?? deployment default`, so an override survives restart by replay and two sessions never see each other's state. Birth cwd stays the persistence identity. Tool cwd folds the last `workspace/home` or `git/worktree` overlay. Workspace membership folds only `workspace/home`, else header cwd, so a branch overlay does not change the sidebar group. The events stay log-only; before the next request, the owner contributes the current fact to the full runtime-context snapshot.
+A runtime switch is one log-only `sandbox/mode` event on the session it applies to — the switch IS its event, and nothing mutates mode state out of band. `effective = explicit grant ?? fold(events) ?? deployment default`, so an override survives restart by replay and two sessions never see each other's state. Workspace identity needs no event of its own: the working-directory service's `workingDirectory` projection names the root for every call in that session. The event stays log-only; before each request, the owner contributes the current fact to the full runtime-context snapshot, and the agent loop logs that snapshot as a sourced `user/message`.
 
 ### Model-visible text
 
@@ -155,22 +142,6 @@ Current DSH file policy: workspace-write. Any available operation enforced by th
 ```markdown
 Current DSH file policy: danger-full-access. The DSH file sandbox does not restrict file modifications by available operations.
 ```
-
-### Multi-folder workspace map
-
-#### What the model sees
-
-When the owning workspace has additional folders, the same runtime-context snapshot also carries `workspace:folders`, independent of the file-sandbox mode.
-
-```markdown
-This session's workspace has multiple folders.
-Current working directory (relative tool paths resolve here): "<cwd>".
-Additional folders in this workspace:
-- "<extra>"
-These additional folders are part of the same workspace. Use their absolute paths with bash workdir, read/write/edit, grep, and glob. Do not assume the checkout at the current working directory is the only tree.
-```
-
-A vanished additional folder stays listed with `(missing)`. A single-folder workspace contributes nothing.
 
 #### Token effect
 

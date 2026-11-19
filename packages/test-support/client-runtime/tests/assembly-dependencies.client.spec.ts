@@ -14,16 +14,16 @@ const hmrTest = createClientTest({ roster: hmrRoster }, { awaitConnected: false 
 const sessionTest = createClientTest({ roster: sessionRoster })
 
 describe('bundle dependency closures', () => {
-  hmrTest('activates HMR with its declared module provider', async ({ start }) => {
-    expect(hmrRoster.rows.map(row => row.name)).toContain(MODULES)
+  hmrTest('activates HMR with its declared module and Remote carrier providers', async ({ start }) => {    expect(hmrRoster.rows.map(row => row.name)).toContain(MODULES)
     const client = await start()
     const entry = [...client.ctx.loader.entries()].find(row => row.options.name === HMR)
     expect(entry?.fiber?.state).toBe(FiberState.ACTIVE)
     expect(client.ctx.get('modules')).toBeDefined()
-    // StarPivot Host HMR also seats a General-settings reload row, so the
-    // closure pulls connection/locale/slots rather than remaining connectionless.
-    expect(client.ctx.get('connection')).toBeDefined()
-  }, 60_000)
+    expect(client.ctx.get('config')).toBeDefined()
+    expect(client.ctx.get('remote')).toBeDefined()
+    // The fork's plugin-reload Settings row seats slots, locale, and a settings scope in this closure too.
+    expect(client.ctx.get('slots')).toBeDefined()
+    expect(client.ctx.get('locale')).toBeDefined()  }, 60_000)
 
   sessionTest('activates Session Controller with its declared file-upload provider', async ({ mock, start }) => {
     expect(sessionRoster.rows.map(row => row.name)).toContain(FILE_UPLOAD)

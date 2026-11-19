@@ -24,9 +24,8 @@ export type {
   UserTextDocumentInput, UserTextEvaluator, UserTextId, UserTextNode, UserTextRule, UserTextTransformContext,
 } from './contract/user-text.ts'
 export type { UserTextRegistry } from './conversation/user-text-registry.ts'
-export { apply, Config, inject } from './apply.ts'
+export { apply, inject } from './apply.ts'
 export type { AssistantRouteOwnerProps } from './contract/slots.ts'
-export type { Config as ConversationConfig } from './apply.ts'
 export { UiConversation } from './conversation/assembly.ts'
 export type { ConversationBinding } from './conversation/assembly.ts'
 export type { ConversationGroupRegistry } from './conversation/group-registry.ts'
@@ -88,7 +87,7 @@ export type {
   ComposerBarInjected, ComposerBarOwnerProps, ComposerBarProps, ComposerChainProps,
   ConversationHeaderActionOwnerProps, ConversationHeaderCornerOwnerProps, ConversationHeaderLineageOwnerProps,
   ConversationContentInputProps, ConversationContentProps,
-  ConversationInjected, ConversationSessionHeaderInjected, ConversationSessionHeaderSlotProps,
+  ConversationInjected, ConversationSessionHeaderInjected, ConversationSessionHeaderSlotProps, ConversationShellInjected,
   ConversationSessionInjected, ConversationSessionSlotProps, ConversationSlotProps,
   ConversationViewActionEntry, ConversationViewActionsOwnerProps, ConversationViewsProps,
   ConversationWidthControlsInputProps, ConversationWidthControlsProps,
@@ -96,6 +95,7 @@ export type {
   HeroAgentPresetOwnerProps, HeroBrandMarkOwnerProps, HeroFrameOwnerProps, InputControlOwnerProps, InputZone,
   MessageImageLabels, MessageImageLoader, MessageImageSource, MessageImagesContentInput, MessageImagesOwnerProps, UseConversation,
   UserTextInput, UserTextInjected, UserTextNodeOwnerProps, UserTextNodeProps,
+  WorkspaceSelectedHandler, WorkspaceSessionAdopter,
   UseConversationViews,
 } from './contract/slots.ts'
 export type {
