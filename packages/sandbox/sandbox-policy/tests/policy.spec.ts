@@ -232,8 +232,8 @@ describe('SandboxPolicyService', () => {
 
   it('disposes the service and context contribution from a child fiber (HMR safety)', async () => {
     const ctx = new Context()
-    await ctx.plugin(SystemPrompt)
     await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(SystemPrompt)
     const fiber = await ctx.plugin(SandboxPolicyService, {})
     expect(ctx.sandboxPolicy).toBeDefined()
     expect(await policyContext(ctx, session('sess-hmr'))).toContain('read-only')

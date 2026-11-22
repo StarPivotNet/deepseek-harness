@@ -33,8 +33,8 @@ function request<P>(payload: P): P {
 async function composed(workspaces: readonly Workspace[] = []): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SessionStore)
-  await ctx.plugin(SystemPrompt, { personaPrefix: '' })
   await ctx.plugin(SessionProjectionRegistry)
+  await ctx.plugin(SystemPrompt, { personaPrefix: '' })
   await ctx.plugin(AgentRegistry)
   await installSessionReadTestServices(ctx)
   ctx.provide('workspaceRegistry', { list: () => workspaces, archivedSessionIds: [] } as never)
@@ -277,6 +277,7 @@ describe('sessions.fork', () => {
       await mountAgentLoopTestDependencies(ctx)
       const harness = await mountAgentLoopTestHarness(ctx)
       await ctx.plugin(TokenMeter)
+      await installSessionReadTestServices(ctx)
       const compact = new BasicCompactionEngine(ctx, { auto: false })
       const adapter = new MockAdapter([
         textResponse('reply'), textResponse('checkpoint'), textResponse('continued'),

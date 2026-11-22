@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
+import SessionProjections from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -28,6 +29,7 @@ describe('Purge and red-team runtime loading', () => {
     vi.stubEnv('DSH_HOME', home)
     vi.stubEnv('DSH_SURFACE', 'web')
     context = new Context()
+    await context.plugin(SessionProjections)
     await context.plugin(SystemPrompt)
     await context.plugin(ToolRuntime)
     const loader = Object.create(Loader.prototype) as Loader

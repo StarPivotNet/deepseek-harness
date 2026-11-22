@@ -9,6 +9,7 @@
  * itself, and a released limit must all be refused before anything runs.
  */
 
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import {
   existsSync,
   mkdirSync,
@@ -138,6 +139,7 @@ beforeEach(async () => {
 
   ctx = new Context()
   provideWorkingDirectoryFixture(ctx, root)
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(NativeToolExecutor)

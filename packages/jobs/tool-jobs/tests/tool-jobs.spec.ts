@@ -51,9 +51,9 @@ function startedId(ctx: Context, legacy: string): JobId {
 
 async function setup(config: ToolJobs.Config = {}, registry: RegistryConfig = {}) {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
-  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(NativeToolExecutor)
   const agentsFiber = await ctx.plugin(AgentRegistry)
   await ctx.plugin(LocalJobRegistry, registry)
@@ -201,6 +201,7 @@ describe('tool-jobs setup', () => {
 
   it('serves unowned jobs in a composition without an agent registry', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(NativeToolExecutor)
@@ -217,9 +218,9 @@ describe('tool-jobs setup', () => {
 
   it('rejects a config whose default wait exceeds the cap', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(NativeToolExecutor)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalJobRegistry)
@@ -238,9 +239,9 @@ describe('tool-jobs setup', () => {
     // Reports the load outcome as text: a resolved fiber is not safely printable.
     const loadWith = async (maxConsecutiveWakes: number): Promise<string> => {
       const ctx = new Context()
+      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
-      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(NativeToolExecutor)
       await ctx.plugin(AgentRegistry)
       await ctx.plugin(LocalJobRegistry)
@@ -338,9 +339,9 @@ describe('tool-jobs setup', () => {
     // Bypasses the schemastery defaults on purpose: apply() must stand on its
     // own `??` fallbacks when embedded programmatically without the schema.
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(NativeToolExecutor)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalJobRegistry)
@@ -761,9 +762,9 @@ describe('completion notices across scoped mounts', () => {
    */
   it('delivers one notice from the owning scope when two mounts share the registry', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(NativeToolExecutor)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalJobRegistry)

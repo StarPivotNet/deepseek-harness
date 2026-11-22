@@ -158,9 +158,15 @@ export function applyUserSystemPrompts(
   const binding = settings.bindings.find(entry => entry.provider === provider && entry.model === model)
   if (binding === undefined || binding.promptIds.length === 0) return assembly
   const byId = new Map(settings.prompts.map(prompt => [prompt.id, prompt]))
-  const sections = binding.promptIds.flatMap((id) => {
+  // Place bound prompts after every registered section unless the binding replaces them all.
+  const firstOrder = binding.override
+    ? 0
+    : assembly.sections.reduce((max, section) => Math.max(max, section.order), 0)
+  const sections = binding.promptIds.flatMap((id, position) => {
     const prompt = byId.get(id)
-    return prompt === undefined ? [] : [{ name: `user-system-prompt:${id}`, text: prompt.text }]
+    return prompt === undefined
+      ? []
+      : [{ name: `user-system-prompt:${id}`, order: firstOrder + position + 1, text: prompt.text }]
   })
   if (sections.length === 0) return assembly
   return {

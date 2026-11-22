@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import UserSystemPrompts, {
   applyUserSystemPromptOverrides,
@@ -15,6 +16,8 @@ const RULES = { id: 'rules', name: 'Rules', text: 'Never guess.' }
 
 async function boot(settings: UserSystemPromptsSettings): Promise<{ ctx: Context }> {
   const ctx = new Context()
+  // SystemPrompt admits its sections through ctx.sessionProjections.
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt, { personaPrefix: 'You are the deployment persona.' })
   await ctx.plugin(UserSystemPrompts, settings)
   ctx.systemPrompt.variable('provider', () => 'deepseek-official')
@@ -139,45 +142,45 @@ describe('applyUserSystemPrompts', () => {
 
   it('appends selected prompts in listed order', () => {
     const result = applyUserSystemPrompts(
-      { sections: [{ name: 'base', text: 'base' }], contexts: [], tools: [], variables: {} },
+      { sections: [{ name: 'base', order: 0, text: 'base' }], contexts: [], tools: [], variables: {}, systemUpdates: () => [] },
       settings,
       'deepseek-official',
       'deepseek-v4-flash',
     )
     expect(result.sections).toEqual([
-      { name: 'base', text: 'base' },
-      { name: 'user-system-prompt:rules', text: 'Never guess.' },
-      { name: 'user-system-prompt:style', text: 'Be concise.' },
+      { name: 'base', order: 0, text: 'base' },
+      { name: 'user-system-prompt:rules', order: 1, text: 'Never guess.' },
+      { name: 'user-system-prompt:style', order: 2, text: 'Be concise.' },
     ])
   })
 
   it('replaces the assembled prompt when override is set', () => {
     const result = applyUserSystemPrompts(
-      { sections: [{ name: 'base', text: 'base' }], contexts: [], tools: [], variables: {} },
+      { sections: [{ name: 'base', order: 0, text: 'base' }], contexts: [], tools: [], variables: {}, systemUpdates: () => [] },
       { ...settings, bindings: [{ ...settings.bindings[0]!, override: true }] },
       'deepseek-official',
       'deepseek-v4-flash',
     )
     expect(result.sections).toEqual([
-      { name: 'user-system-prompt:rules', text: 'Never guess.' },
-      { name: 'user-system-prompt:style', text: 'Be concise.' },
+      { name: 'user-system-prompt:rules', order: 1, text: 'Never guess.' },
+      { name: 'user-system-prompt:style', order: 2, text: 'Be concise.' },
     ])
   })
 
   it('leaves an assembly without provider or model unchanged', () => {
-    const assembly = { sections: [{ name: 'base', text: 'base' }], contexts: [], tools: [], variables: {} }
+    const assembly = { sections: [{ name: 'base', order: 0, text: 'base' }], contexts: [], tools: [], variables: {}, systemUpdates: () => [] }
     expect(applyUserSystemPrompts(assembly, settings, undefined, 'm')).toBe(assembly)
     expect(applyUserSystemPrompts(assembly, settings, '', 'm')).toBe(assembly)
   })
 
   it('leaves an unmatched model unchanged', () => {
-    const assembly = { sections: [{ name: 'base', text: 'base' }], contexts: [], tools: [], variables: {} }
+    const assembly = { sections: [{ name: 'base', order: 0, text: 'base' }], contexts: [], tools: [], variables: {}, systemUpdates: () => [] }
     expect(applyUserSystemPrompts(assembly, settings, 'other', 'model')).toBe(assembly)
   })
 
   it('drops a selected id that is no longer in the library', () => {
     const result = applyUserSystemPrompts(
-      { sections: [{ name: 'base', text: 'base' }], contexts: [], tools: [], variables: {} },
+      { sections: [{ name: 'base', order: 0, text: 'base' }], contexts: [], tools: [], variables: {}, systemUpdates: () => [] },
       {
         prompts: [STYLE],
         bindings: [{
@@ -191,7 +194,7 @@ describe('applyUserSystemPrompts', () => {
       'deepseek-official',
       'deepseek-v4-flash',
     )
-    expect(result.sections).toEqual([{ name: 'base', text: 'base' }])
+    expect(result.sections).toEqual([{ name: 'base', order: 0, text: 'base' }])
   })
 })
 
@@ -200,12 +203,13 @@ describe('applyUserSystemPromptOverrides', () => {
     const result = applyUserSystemPromptOverrides(
       {
         sections: [
-          { name: 'harness:identity', text: 'You are an AI agent powered by DeepSeek Harness.' },
-          { name: 'deployment:persona', text: 'You are the deployment persona.' },
+          { name: 'harness:identity', order: 0, text: 'You are an AI agent powered by DeepSeek Harness.' },
+          { name: 'deployment:persona', order: 1, text: 'You are the deployment persona.' },
         ],
         contexts: [],
         tools: [],
         variables: {},
+        systemUpdates: () => [],
       },
       {
         prompts: [],
@@ -214,13 +218,13 @@ describe('applyUserSystemPromptOverrides', () => {
       },
     )
     expect(result.sections).toEqual([
-      { name: 'harness:identity', text: 'Custom opener.' },
-      { name: 'deployment:persona', text: 'You are the deployment persona.' },
+      { name: 'harness:identity', order: 0, text: 'Custom opener.' },
+      { name: 'deployment:persona', order: 1, text: 'You are the deployment persona.' },
     ])
   })
 
   it('ignores an override whose section is not assembled', () => {
-    const assembly = { sections: [{ name: 'base', text: 'base' }], contexts: [], tools: [], variables: {} }
+    const assembly = { sections: [{ name: 'base', order: 0, text: 'base' }], contexts: [], tools: [], variables: {}, systemUpdates: () => [] }
     expect(applyUserSystemPromptOverrides(assembly, {
       prompts: [],
       bindings: [],
@@ -273,7 +277,7 @@ describe('UserSystemPrompts', () => {
     })
 
     expect((await ctx.systemPrompt.assemble()).sections).toEqual([
-      { name: 'user-system-prompt:style', text: 'Be concise.' },
+      { name: 'user-system-prompt:style', text: 'Be concise.', order: 1 },
     ])
     await ctx.fiber.dispose()
   })
@@ -293,7 +297,7 @@ describe('UserSystemPrompts', () => {
       overrides: [{ name: 'harness:identity', text: 'Custom opener.' }],
     })
     expect((await ctx.systemPrompt.assemble()).sections.find(section => section.name === 'harness:identity'))
-      .toEqual({ name: 'harness:identity', text: 'Custom opener.' })
+      .toEqual({ name: 'harness:identity', text: 'Custom opener.', order: expect.any(Number) })
     await ctx.fiber.dispose()
   })
 })

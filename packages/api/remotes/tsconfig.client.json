@@ -111,6 +111,12 @@
       "path": "../../boot/plugin-market"
     },
     {
+      "path": "../../interaction/action-cards"
+    },
+    {
+      "path": "../../extensions/plugin-recommendations"
+    },
+    {
       "path": "../../document/office-kit"
     },
     {

@@ -19,12 +19,14 @@ import type {
 } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import { workspaceDisplayTitle } from '@deepseek-ai/dsh-api-workspace-controller/default-workspace'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
+import { TextSearchIndex } from '@deepseek-ai/dsh-util-text-search'
 import type { DirectoryFlowOwnerProps, WorkspacePickerFactoryProps, WorkspacePickerProps } from './contract/slots.ts'
 import { isNoRepoWorkspace } from './tree.ts'
 import { distinguishingPathSuffixes } from './path-suffix.ts'
 import css from './WorkspacePicker.module.css'
 
 const ADD_WORKSPACE = '::add-workspace'
+const VISIBLE_WORKSPACE_ROWS = 6
 
 /** Core flow props: the owner supplies popover control and pick semantics. */
 export interface WorkspacePickFlowProps {
@@ -96,6 +98,9 @@ export function WorkspacePickFlow({
   const hidden = new Set(workspaceSnapshot.hiddenWorkspaceIds)
   const workspaces = workspaceSnapshot.items.filter(workspace =>
     !hidden.has(workspace.workspaceId) && !isNoRepoWorkspace(workspace))
+  const showSearch = !addOnly && workspaces.length > 1
+  const [query, setQuery] = useState('')
+  if ((!open || !showSearch) && query !== '') setQuery('')
   const [errorOpen, setErrorOpen] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
   const [flowOpen, setFlowOpen] = useState(false)
@@ -139,8 +144,12 @@ export function WorkspacePickFlow({
     const suffixes = distinguishingPathSuffixes(rows)
     return rows.map(row => ({ ...row, suffix: suffixes.get(row.id) }))
   }, [pinAdd, workspaces, defaultWorkspaceName])
+  const searchIndex = useMemo(() => open && showSearch
+    ? new TextSearchIndex(listed, ({ title, path }) => ({ fuzzy: [title], substring: [path] }))
+    : undefined, [open, showSearch, listed])
+  const matching = searchIndex?.search(query) ?? listed
   const items: MenuEntry[] = pinAdd
-    ? listed.map(({ id, title, path, suffix }) => ({
+    ? matching.map(({ id, title, path, suffix }) => ({
       id,
       // The title gives way first, so the suffix that tells the rows apart
       // stays visible; the native tooltip carries the full path.
@@ -160,7 +169,7 @@ export function WorkspacePickFlow({
   // Nothing listed and nothing to add with (a composition that mounts this
   // package without any directory-picker): an empty popover would claim a
   // choice that does not exist, so the anchor gesture shows nothing at all.
-  const menuIsEmpty = items.length === 0
+  const menuIsEmpty = !pinAdd && addEntries.length === 0
 
   const closeModal = (): void => {
     setErrorOpen(false)
@@ -253,6 +262,14 @@ export function WorkspacePickFlow({
         anchor={null}
         items={items}
         {...pinAdd ? { footer: addEntries } : {}}
+        search={showSearch ? {
+          label: t('picker.search'),
+          value: query,
+          onChange: setQuery,
+          emptyMessage: t('picker.noResults'),
+          skipAutoFocusOnTouch: true,
+        } : undefined}
+        maxVisibleRows={pinAdd ? VISIBLE_WORKSPACE_ROWS : undefined}
         selectedId={selectedId}
         onSelect={handleSelect}
         onClose={onClose}
